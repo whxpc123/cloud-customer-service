@@ -121,6 +121,8 @@ cloud-customer-service/
 
 ## 第三章：意图识别
 
+当前已增加格式日志：调用识别接口后，在 IDEA Run 控制台搜索 `[Intent JSON Schema]` 和 `[Intent Output Format]`。设置环境变量 `INTENT_SCHEMA_LOG_LEVEL=INFO` 并重启可关闭。完整说明及实际格式文件见 [第三章日志说明](docs/chapters/03-structured-output.md#查看实际-json-schema-和输出格式日志)。
+
 ```bash
 curl 'http://localhost:18080/api/intents/recognize' \
   -H 'Content-Type: application/json' \

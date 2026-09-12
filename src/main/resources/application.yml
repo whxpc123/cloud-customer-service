@@ -16,3 +16,5 @@ spring:
 logging:
   level:
     org.springframework.ai.converter.BeanOutputConverter: OFF
+    # 学习时打印类型生成的 Schema/格式说明；设置 INTENT_SCHEMA_LOG_LEVEL=INFO 可关闭。
+    com.example.cloudcustomerservice.intent.CustomerIntentRecognizer: ${INTENT_SCHEMA_LOG_LEVEL:DEBUG}

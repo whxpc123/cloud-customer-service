@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +17,9 @@ public class CustomerIntentRecognizer {
 
     private static final Logger log = LoggerFactory.getLogger(CustomerIntentRecognizer.class);
     private final ChatClient intentChatClient;
+    // 与 .entity(Class) 内部相同的转换器；显式持有后可查看实际生成的 Schema 和格式说明。
+    private final BeanOutputConverter<IntentRecognitionResult> outputConverter =
+            new BeanOutputConverter<>(IntentRecognitionResult.class);
 
     public CustomerIntentRecognizer(@Qualifier("intentChatClient") ChatClient intentChatClient) {
         this.intentChatClient = intentChatClient;
@@ -26,6 +30,10 @@ public class CustomerIntentRecognizer {
             return IntentRecognitionResult.fallback();
         }
         try {
+            if (log.isDebugEnabled()) {
+                log.debug("[Intent JSON Schema]\n{}", outputConverter.getJsonSchema());
+                log.debug("[Intent Output Format]\n{}", outputConverter.getFormat());
+            }
             IntentRecognitionResult result = intentChatClient
                     .prompt()
                     .options(ChatOptions.builder().temperature(0.1).build())
@@ -37,7 +45,7 @@ public class CustomerIntentRecognizer {
                             </customer_message>
                             """).param("message", message))
                     .call()
-                    .entity(IntentRecognitionResult.class);
+                    .entity(outputConverter);
             return validate(result, message);
         }
         catch (RuntimeException ex) {

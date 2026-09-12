@@ -15,6 +15,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -48,7 +49,7 @@ class CustomerIntentRecognitionTest {
     @MockitoBean private ChatModel chatModel;
 
     @Test
-    void convertsJsonToTypedResultUsingSeparateClassifierAndLowTemperature() throws Exception {
+    void convertsJsonToTypedResultUsingSeparateClassifierAndLowTemperature(CapturedOutput output) throws Exception {
         modelReturns("""
                 {"intent":"LOGISTICS_QUERY","orderNo":"A10001","confidence":0.96,"missingFields":[]}
                 """);
@@ -66,6 +67,13 @@ class CustomerIntentRecognitionTest {
                 .contains("意图识别器").doesNotContain("【回答风格】");
         assertThat(prompt.getValue().getOptions().getTemperature()).isEqualTo(0.1);
         assertThat(prompt.getValue().getContents()).contains("LOGISTICS_QUERY", "missingFields");
+        var converter = new BeanOutputConverter<>(
+                com.example.cloudcustomerservice.intent.IntentRecognitionResult.class);
+        // 验证日志格式就是传到 ChatModel 的格式，不是手写示例或另一份 Schema。
+        assertThat(prompt.getValue().getUserMessage().getText()).contains(converter.getFormat());
+        assertThat(output.getAll()).contains("[Intent JSON Schema]", converter.getJsonSchema(),
+                        "[Intent Output Format]", converter.getFormat())
+                .doesNotContain("我的订单 A10001 到哪里了？");
     }
 
     @Test

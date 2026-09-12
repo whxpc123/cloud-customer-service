@@ -110,3 +110,42 @@ curl 'http://localhost:18080/api/intents/recognize' \
 聊天回归“你是谁？”仍回答云杉商城智能客服，没有误用结构化分类器。
 
 七条基础样例只是本次小样本观察，不等于线上准确率。本章没有持久化聊天、建设运营统计后台、查询真实订单或执行退款；第四章等待用户提供 Chat Memory 与 conversationId 的具体内容。
+
+## 查看实际 JSON Schema 和输出格式日志
+
+第三章后续补充：`CustomerIntentRecognizer` 显式持有 `BeanOutputConverter<IntentRecognitionResult>`，调用 `.entity(outputConverter)`。这与 `.entity(IntentRecognitionResult.class)` 内部创建的转换器相同，便于打印用于当前调用的同一份格式要求。
+
+每次有效识别请求会在 IDEA Run 控制台打印两段 DEBUG 日志：
+
+```java
+log.debug("[Intent JSON Schema]\n{}", outputConverter.getJsonSchema());
+log.debug("[Intent Output Format]\n{}", outputConverter.getFormat());
+```
+
+运行 `requests.http` 中任意第三章非空识别请求，搜索 `[Intent JSON Schema]` 和 `[Intent Output Format]` 即可看到完整内容；启动应用本身或调用 `/api/chat` 不会输出这两段。
+
+- [当前版本实际生成的 Schema](03-generated-format/intent-result.schema.json)
+- [当前版本实际生成的完整格式说明](03-generated-format/intent-output-format.txt)
+
+当前 Spring AI 1.1.2 的普通结构化输出流程，在 `ChatModelCallAdvisor` 中将 `getFormat()` 追加到当前 User Message 后面。发给模型的消息是：
+
+```text
+System：意图识别器身份和分类规则
+
+User：请识别下面客户消息的业务意图。
+      <customer_message>客户当前消息</customer_message>
+      Your response should be in JSON format.
+      ...其余格式指令...
+      Here is the JSON Schema instance your output must adhere to:
+      ...Schema...
+```
+
+本项目没有启用原生结构化输出模式；不能将这段 Prompt 等同于 HTTP API 的原生 `response_format/json_schema` 强制约束。日志只打印 Java 类型生成的静态 Schema 与格式要求，没有打印完整客户输入、模型回答或 API Key。
+
+默认 `INTENT_SCHEMA_LOG_LEVEL=DEBUG` 便于学习。在 IDEA 运行配置中设置 `INTENT_SCHEMA_LOG_LEVEL=INFO` 并重启即可关闭这两段日志；无需开启整个 Spring AI 的 DEBUG，也不要打开已关闭的 BeanOutputConverter 原始输出错误日志。
+
+**读 Schema 时注意：**当前生成器将四个字段都列为 required；confidence 只有 number 类型，没有自动生成 0～1 上下界；orderNo 的生成类型是 string，没有自动标记为 nullable。实际 record 仍允许 orderNo=null，且当前转换器直接反序列化，不执行完整 JSON Schema 验证。因此日志展示的是生成器的实际格式提示，业务约束仍以 Java 校验为准；未来若改用原生严格 Schema，应先对齐可空性与数值约束。
+
+验证：测试捕获到的实际 ChatModel User Message 包含同一个 converter.getFormat()，DEBUG 日志也包含相同格式，且不包含测试客户原文；原有转换异常日志保护测试继续通过。
+
+本次 IDEA 实测（2026-09-12 23:24）：Java 17 重启成功；请求“我的订单 A10001 到哪里了？”返回 HTTP 200 / LOGISTICS_QUERY，Run 控制台出现两段 DEBUG 日志及完整英文格式说明。

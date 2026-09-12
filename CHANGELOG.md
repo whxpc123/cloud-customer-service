@@ -4,6 +4,14 @@
 
 **历史说明：**第 1～3 章最初在同一工作目录中递进开发，尚未使用 Git。以下三个版本于 2026-09-12 根据本任务中已实现的代码补建，提交时间是补建时间。各标签的代码已分别执行构建验证。
 
+## 第三章补充 · 查看 JSON Schema 与格式日志
+
+- 显式复用 BeanOutputConverter，打印实际 getJsonSchema() / getFormat()，并将同一个转换器传入 entity。
+- 默认开启本地学习 DEBUG 日志，设置 `INTENT_SCHEMA_LOG_LEVEL=INFO` 可关闭；日志不含客户原文和凭证。
+- 保存实际生成的 Schema / 格式说明，并解释普通 Prompt 约束与原生结构化输出的区别。
+- 验证日志格式与实际发给 ChatModel 的格式一致，27 项测试通过。
+- 本次为第三章补充提交，保留原 `chapter-03` 标签不动。
+
 ## 第三章 · `chapter-03` · Structured Output
 
 - 新增 `CustomerIntent` 七类枚举和请求、结果 record。
