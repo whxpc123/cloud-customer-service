@@ -1,6 +1,11 @@
 server:
   port: ${SERVER_PORT:18080}
 
+app:
+  ai:
+    # 完整消息和返回文本可能包含客户数据，默认关闭；本地调试显式开启。
+    log-payload: ${AI_LOG_PAYLOAD:false}
+
 spring:
   application:
     name: cloud-customer-service

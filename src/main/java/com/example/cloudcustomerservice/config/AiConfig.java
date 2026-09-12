@@ -1,6 +1,8 @@
 package com.example.cloudcustomerservice.config;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -8,11 +10,12 @@ import org.springframework.context.annotation.Configuration;
 public class AiConfig {
 
     @Bean("customerServiceChatClient")
-    public ChatClient customerServiceChatClient(ChatClient.Builder builder) {
-        // Starter 自动配置 ChatModel 和 Builder，业务代码只负责构建客户端。
+    public ChatClient customerServiceChatClient(ChatModel chatModel,
+            @Value("${app.ai.log-payload:false}") boolean logPayload) {
+        // Starter 自动配置真实 ChatModel，装饰器观察最终消息；不额外注册 ChatModel Bean。
         // 第二章：为每次请求添加默认 System Message，用户输入仍由 Controller 单独传递。
         // Prompt 指导模型行为；真实数据查询和业务权限由后续 Java 后端能力负责。
-        return builder.clone()
+        return ChatClient.builder(new PayloadLoggingChatModel(chatModel, logPayload, "customerServiceChatClient"))
                 .defaultSystem("""
                     你是“云杉商城”的智能客服助手。
 
@@ -48,8 +51,9 @@ public class AiConfig {
     }
 
     @Bean("intentChatClient")
-    public ChatClient intentChatClient(ChatClient.Builder builder) {
-        return builder.clone()
+    public ChatClient intentChatClient(ChatModel chatModel,
+            @Value("${app.ai.log-payload:false}") boolean logPayload) {
+        return ChatClient.builder(new PayloadLoggingChatModel(chatModel, logPayload, "intentChatClient"))
                 .defaultSystem("""
                     你是云杉商城的客户意图识别器，不直接回复客户。
                     只分析客户当前这一条消息，返回要求的结构化结果。

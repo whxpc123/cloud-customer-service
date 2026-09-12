@@ -23,7 +23,7 @@ POST /api/intents/recognize
 
 | 文件 | 作用 |
 | --- | --- |
-| `config/AiConfig.java` | 定义客服与意图识别两个具名 ChatClient，分别克隆 Builder 构建 |
+| `config/AiConfig.java` | 定义客服与意图识别两个具名 ChatClient，分别通过 ChatModel 日志装饰器创建独立 Builder |
 | `controller/ChatController.java` | 明确注入 customerServiceChatClient，仍返回自然语言 |
 | `intent/CustomerIntent.java` | 稳定的七类业务枚举 |
 | `intent/IntentRecognitionRequest.java` | 接收 message |
@@ -73,7 +73,7 @@ curl 'http://localhost:18080/api/intents/recognize' \
 - orderNo 必须非空、最长 64 个字符，且原样出现在当前输入中。这里只做基本来源校验，**不能证明它符合真实订单格式、确实存在或属于当前用户**。
 - 当前只支持缺失字段 `orderNo`，其他字段名视为非法结果。订单、物流、退款意图是否缺失订单号，由 Java 根据提取结果计算。
 - 补充 Prompt 约定：退款与人工同时出现时优先人工；多订单无法确定目标时选 UNKNOWN。这些语义规则仍依赖模型，不是确定性的权限或操作控制。
-- 异常只记录消息长度及错误类型，不记录用户原文、异常 message 或堆栈。关闭 `BeanOutputConverter` 自带的原始输出错误日志，并通过实际转换失败测试检查没有原文泄漏。模型服务或网络栈的其他日志仍需生产环境单独审计。
+- 默认关闭完整文本日志时，异常只记录消息长度及错误类型，不记录用户原文、异常 message 或堆栈。关闭 `BeanOutputConverter` 自带的原始输出错误日志，并通过实际转换失败测试检查没有原文泄漏。模型服务或网络栈的其他日志仍需生产环境单独审计。
 
 ## 异常与返回状态
 
@@ -140,7 +140,7 @@ User：请识别下面客户消息的业务意图。
       ...Schema...
 ```
 
-本项目没有启用原生结构化输出模式；不能将这段 Prompt 等同于 HTTP API 的原生 `response_format/json_schema` 强制约束。日志只打印 Java 类型生成的静态 Schema 与格式要求，没有打印完整客户输入、模型回答或 API Key。
+本项目没有启用原生结构化输出模式；不能将这段 Prompt 等同于 HTTP API 的原生 `response_format/json_schema` 强制约束。这两段静态日志只打印 Java 类型生成的 Schema 与格式要求。完整客户输入与模型回答由下述独立开关控制；不打印 API Key。
 
 默认 `INTENT_SCHEMA_LOG_LEVEL=DEBUG` 便于学习。在 IDEA 运行配置中设置 `INTENT_SCHEMA_LOG_LEVEL=INFO` 并重启即可关闭这两段日志；无需开启整个 Spring AI 的 DEBUG，也不要打开已关闭的 BeanOutputConverter 原始输出错误日志。
 
@@ -149,3 +149,33 @@ User：请识别下面客户消息的业务意图。
 验证：测试捕获到的实际 ChatModel User Message 包含同一个 converter.getFormat()，DEBUG 日志也包含相同格式，且不包含测试客户原文；原有转换异常日志保护测试继续通过。
 
 本次 IDEA 实测（2026-09-12 23:24）：Java 17 重启成功；请求“我的订单 A10001 到哪里了？”返回 HTTP 200 / LOGISTICS_QUERY，Run 控制台出现两段 DEBUG 日志及完整英文格式说明。
+
+## 查看完整提示词和原始返回日志
+
+`config/PayloadLoggingChatModel.java` 包装 Starter 提供的 ChatModel，两个 ChatClient 各自使用独立包装实例。日志在 `ChatModelCallAdvisor` 已追加格式要求之后、实际模型调用的边界记录，因而能够观察 `.entity(outputConverter)` 的最终输入。
+
+```text
+[LLM REQUEST] client=intentChatClient id=<本次请求 UUID>
+--- SYSTEM ---
+意图识别器身份与分类规则全文
+--- USER ---
+请识别下面客户消息的业务意图。
+...客户消息...
+Your response should be in JSON format.
+...完整格式要求及 JSON Schema...
+
+[LLM RESPONSE] client=intentChatClient id=<同一 UUID> candidate=0
+{"intent":"LOGISTICS_QUERY","orderNo":"A10001","confidence":0.95,"missingFields":[]}
+```
+
+上面是日志布局示意；实际日志打印完整文本，没有省略。`customerServiceChatClient` 对应普通聊天，同样打印 SYSTEM / USER 和原始回答。`candidate=0` 表示第一个返回候选。模型调用失败时记录 `[LLM ERROR]` 和异常类型；没有返回内容便不会有正常回复日志。输入在本地直接兜底、没有调用模型时也不会生成模型请求日志。
+
+完整文本日志默认由 `app.ai.log-payload: ${AI_LOG_PAYLOAD:false}` 关闭。当前共享 IDEA Application 配置为了学习已增加 `--app.ai.log-payload=true`，重新运行后即可在 Run 控制台搜索 `[LLM REQUEST]` / `[LLM RESPONSE]`。关闭时在 Run → Edit Configurations → Program arguments 删除该参数或改成 false；程序参数优先，单独设置 `AI_LOG_PAYLOAD=false` 不能覆盖它。终端或 JAR 启动可使用环境变量 `AI_LOG_PAYLOAD=true` 开启。
+
+这里观察的是当前纯文本调用的 ChatModel 消息与返回文本，不是底层 HTTP JSON 或请求头。完整日志包含客户原文；不记录模型配置、请求头和 API Key。Schema 静态日志开关 `INTENT_SCHEMA_LOG_LEVEL` 保持独立。
+
+原始模型 JSON 在反序列化和业务校验之前记录。如果模型给出非法 confidence，日志仍能看到原值，而 HTTP 接口会返回 UNKNOWN，便于区分模型生成与 Java 兜底。
+
+补充验证：JDK 17 执行 `./mvnw -B -ntp package` 成功，31 项测试通过。新增 4 项验证最终提示词含 Schema、原始返回与兜底结果的区别、聊天双向日志、关闭时无文本日志，以及流式订阅的惰性与分片透传。原有默认日志保护测试继续通过。
+
+IDEA 实测（2026-09-12 23:39）：Java 17.0.20.1 新进程成功监听 18080。真实 Qwen 请求“我的订单 A10001 到哪里了？”返回 HTTP 200 / LOGISTICS_QUERY / A10001 / 0.95；“你是谁？”返回 HTTP 200 和云杉商城客服介绍。Run 控制台确认两个客户端均出现完整请求与原始返回、对应 ID 相同，意图请求包含完整 Schema。应用保持在 IDEA 中运行，运行日志不提交到仓库。
