@@ -4,6 +4,15 @@
 
 **历史说明：**第 1～3 章最初在同一工作目录中递进开发，尚未使用 Git。以下三个版本于 2026-09-12 根据本任务中已实现的代码补建，提交时间是补建时间。各标签的代码已分别执行构建验证。
 
+## 第二章 · `chapter-02` · 客服身份与 System Prompt
+
+- 在 `AiConfig` 统一配置商城客服身份、风格和事实要求。
+- System Message 与当前 User Message 分开传递。
+- 根据真实模型表现补充未接入订单查询和退款办理的能力说明。
+- 验证：3 项自动测试通过；身份、越界、退款及连续对话样例已实测；IDEA JDK 17 启动通过。
+- 限制：没有 Memory，Prompt 不能保证事实正确。
+- 详情：[第二章](docs/chapters/02-system-prompt.md)。
+
 ## 第一章 · `chapter-01` · Spring Boot 首次连接 Qwen
 
 - 创建单个 Java 17 Maven 项目，锁定 Spring Boot 3.5.8、Spring AI 1.1.2、Alibaba 1.1.2.2。

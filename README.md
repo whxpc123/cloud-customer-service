@@ -1,10 +1,10 @@
 # cloud-customer-service
 
-当前版本：**第 1 章——Spring Boot → ChatClient → ChatModel → DashScope → Qwen**。
+当前版本：**第 2 章——System Prompt：云杉商城客服身份与行为约束**。
 
-章节记录：[第一章](docs/chapters/01-first-chat.md)。变化见 [CHANGELOG](CHANGELOG.md)。
+章节记录：[第一章](docs/chapters/01-first-chat.md) · [第二章](docs/chapters/02-system-prompt.md)。变化见 [CHANGELOG](CHANGELOG.md)。
 
-前三章历史于 2026-09-12 根据已实现代码补建，此标签对应第 1 章的可运行代码，不表示此前已经实时提交。
+前三章历史于 2026-09-12 根据已实现代码补建，此标签对应第 2 章的可运行代码，不表示此前已经实时提交。
 
 ## IDEA 启动
 
@@ -26,8 +26,8 @@ Java 17，Spring Boot 3.5.8，Spring AI 1.1.2，Spring AI Alibaba 1.1.2.2，Mave
 ./mvnw spring-boot:run
 ```
 
-运行需设置真实 `DASHSCOPE_API_KEY`；自动测试不需要真实 Key，也不访问模型。本章共 2 项自动测试，测试通过。
+运行需设置真实 `DASHSCOPE_API_KEY`；自动测试不需要真实 Key，也不访问模型。本章共 3 项自动测试，测试通过。
 
-`requests.http` 提供本章接口实验。第一章只提供通用聊天，没有客服身份或记忆。
+`requests.http` 提供本章接口实验。第二章配置 System / User 消息，尚无 Memory、意图识别或真实订单操作。
 
 每章使用独立提交和 `chapter-NN` 标签，后续章节按用户提供的内容实现。真实模型调用会使用百炼额度。
