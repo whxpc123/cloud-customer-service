@@ -1,6 +1,7 @@
 package com.example.cloudcustomerservice.controller;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -12,7 +13,7 @@ public class ChatController {
 
     private final ChatClient chatClient;
 
-    public ChatController(ChatClient customerServiceChatClient) {
+    public ChatController(@Qualifier("customerServiceChatClient") ChatClient customerServiceChatClient) {
         this.chatClient = customerServiceChatClient;
     }
 

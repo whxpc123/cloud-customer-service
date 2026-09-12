@@ -11,3 +11,8 @@ spring:
       chat:
         options:
           model: qwen-plus
+
+# BeanOutputConverter 的转换异常日志可能包含完整模型输出；服务层另记不含原文的元数据。
+logging:
+  level:
+    org.springframework.ai.converter.BeanOutputConverter: OFF

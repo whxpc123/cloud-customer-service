@@ -4,6 +4,16 @@
 
 **历史说明：**第 1～3 章最初在同一工作目录中递进开发，尚未使用 Git。以下三个版本于 2026-09-12 根据本任务中已实现的代码补建，提交时间是补建时间。各标签的代码已分别执行构建验证。
 
+## 第三章 · `chapter-03` · Structured Output
+
+- 新增 `CustomerIntent` 七类枚举和请求、结果 record。
+- 新增 `intentChatClient`，通过 `@Qualifier` 区分聊天与分类。
+- 新增 `POST /api/intents/recognize`，使用 `.entity(...)` 返回 Java 对象。
+- 增加输入限制、结果验证、UNKNOWN 兜底和不含原文的异常日志。
+- 增加用于说明 Java switch 路由的示例，不执行真实退款或订单操作。
+- 验证：27 项自动测试通过；七类基础样例真实调用符合预期；IDEA JDK 17 启动通过。
+- 详情：[第三章](docs/chapters/03-structured-output.md)。
+
 ## 第二章 · `chapter-02` · 客服身份与 System Prompt
 
 - 在 `AiConfig` 统一配置商城客服身份、风格和事实要求。
