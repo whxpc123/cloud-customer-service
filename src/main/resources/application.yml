@@ -1,0 +1,13 @@
+server:
+  port: ${SERVER_PORT:18080}
+
+spring:
+  application:
+    name: cloud-customer-service
+  ai:
+    dashscope:
+      # 按本项目约定使用 DASHSCOPE_API_KEY，不使用文章中的 AI_DASHSCOPE_API_KEY。
+      api-key: ${DASHSCOPE_API_KEY}
+      chat:
+        options:
+          model: qwen-plus

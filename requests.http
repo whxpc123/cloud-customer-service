@@ -1,0 +1,6 @@
+### 第一章：启动应用后请求模型（会消耗 API 额度）
+GET http://localhost:18080/api/chat?message=你好
+Accept: text/plain
+
+### 缺少 message 应返回 400，不调用模型
+GET http://localhost:18080/api/chat
