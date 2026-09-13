@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#173f4f">
+  <title>云杉客服 · 对话工作台</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/app.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <svg class="icons" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
+    <symbol id="tree" viewBox="0 0 32 32"><path d="m16 3-8 10h5l-7 9h8v7h4v-7h8l-7-9h5Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></symbol>
+    <symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="send" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7M12 5v15"/></symbol>
+    <symbol id="chat" viewBox="0 0 24 24"><path d="M20 15a3 3 0 0 1-3 3H9l-5 3V6a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3Z"/><path d="M8 8h8M8 12h5"/></symbol>
+    <symbol id="reset" viewBox="0 0 24 24"><path d="M4 10a8 8 0 1 1 2 8M4 4v6h6"/></symbol>
+    <symbol id="arrow" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5"/></symbol>
+  </defs></svg>
+  <div class="workspace">
+    <aside class="sidebar" aria-label="会话导航">
+      <a class="brand" href="/" aria-label="云杉客服首页"><span class="brand-mark"><svg><use href="#tree"/></svg></span><span>云杉客服<small>YUNSHAN SERVICE</small></span></a>
+      <button id="new-session" class="new-session"><svg><use href="#plus"/></svg>新建会话<span>＋</span></button>
+      <div class="nav-caption">我的会话 <span id="session-count">0</span></div>
+      <nav id="sessions" class="sessions" aria-label="选择会话"></nav>
+      <div class="sidebar-footer"><span class="small-tree">杉</span><div>把每次对话，接着聊下去。<small>当前标签页保留会话列表</small></div></div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar"><div class="breadcrumb">云杉商城 <span>/</span> 对话工作台</div><span class="mode"><i></i>学习演示</span></header>
+      <div class="workbench">
+        <section class="chat-panel" aria-label="客服聊天">
+          <header class="chat-header"><div><div class="eyebrow">CUSTOMER CONVERSATION</div><h1 id="session-title">开始一场对话</h1><p id="session-meta">正在创建会话…</p></div><button id="clear-memory" class="quiet-button" disabled><svg><use href="#reset"/></svg><span>清空记忆</span></button></header>
+          <div id="notice" class="notice" role="alert" hidden></div>
+          <div id="messages" class="messages" role="log" aria-label="聊天消息" aria-live="polite" aria-relevant="additions"></div>
+          <div class="composer-wrap">
+            <form id="chat-form" class="composer">
+              <label class="sr-only" for="message-input">输入消息</label>
+              <textarea id="message-input" rows="2" maxlength="4000" placeholder="说说您的问题，我们接着聊。" disabled></textarea>
+              <div class="composer-bottom"><span class="keyboard-tip">Enter 发送 <span>·</span> Shift + Enter 换行</span><span id="char-count" class="char-count">0 / 4000</span><button id="send-message" class="send-button" type="submit" aria-label="发送消息" disabled><svg><use href="#send"/></svg></button></div>
+            </form>
+            <p class="composer-note">AI 回复仅供参考；当前暂不能查询真实订单或办理退款。</p>
+          </div>
+        </section>
+
+        <aside class="inspector" aria-label="意图识别结果">
+          <details id="inspector-details" open>
+            <summary><span>对话洞察<small>理解这一句的需求</small></span><span class="detail-toggle">⌄</span></summary>
+            <div class="inspector-body">
+              <div class="insight-heading"><span class="live-dot"></span><span id="insight-status">等待第一条消息</span></div>
+              <div class="intent-label">客户意图</div><h2 id="intent-name">从一句话开始</h2><p id="intent-description">发送消息后，这里会显示识别出的需求和订单信息。</p>
+              <div class="order-card"><span>提到的订单</span><strong id="order-number">—</strong><small id="order-hint">当前尚无识别结果</small></div>
+              <div class="confidence-heading"><span>模型自评置信度</span><strong id="confidence">—</strong></div><div class="confidence-track"><div id="confidence-bar"></div></div><p class="fine-print">这是模型的自评，不代表实际正确率。</p>
+              <div class="missing-heading">还需要的信息</div><div id="missing-fields" class="missing-fields">等待识别</div>
+              <details class="raw-result"><summary>查看结构化结果 <span>{ }</span></summary><pre id="raw-json">发送消息后查看</pre></details>
+            </div>
+          </details>
+          <div class="memory-note"><svg><use href="#tree"/></svg><h3>记得上下文，聊得更连贯。</h3><p>同一会话保留最近 20 条消息。新建会话互相独立，清空记忆或服务重启后，需要重新提供上下文。</p></div>
+        </aside>
+      </div>
+    </main>
+  </div>
+
+  <template id="empty-state"><div class="empty-state"><div class="welcome-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><svg><use href="#tree"/></svg><span class="orbit-dot"></span><span class="art-label">HELLO, AGAIN.</span></div><span class="welcome-kicker">您好，这里是云杉客服</span><h2>每一句，都接得上。</h2><p>聊聊您的问题。关于订单、物流或售后，<br>我们从这里开始。</p><div class="suggestions"><button data-prompt="我的订单是 A10001。"><span>聊聊我的订单</span><small>我的订单是 A10001。</small><svg><use href="#arrow"/></svg></button><button data-prompt="买错了颜色，我想申请退货。"><span>我有售后问题</span><small>买错了颜色，想申请退货。</small><svg><use href="#arrow"/></svg></button></div></div></template>
+
+  <dialog id="clear-dialog" aria-labelledby="clear-title"><form method="dialog"><span class="dialog-icon"><svg><use href="#reset"/></svg></span><h2 id="clear-title">让这场对话重新开始？</h2><p>将清空当前会话的模型记忆。页面上的聊天记录仍然保留，但接下来的回答不会再参考此前内容。</p><div class="dialog-actions"><button value="cancel" class="quiet-button">取消</button><button id="confirm-clear" value="confirm" class="primary-button">清空记忆</button></div></form></dialog>
+  <noscript>请在浏览器中启用 JavaScript，以使用客服聊天界面。</noscript>
+</body>
+</html>

@@ -115,3 +115,5 @@ IDEA 配置仍启用 `--app.ai.log-payload=true`。搜索 `[LLM REQUEST]`：
 同一会话（包括清空）按请求完成顺序逐条操作，本章没有会话串行队列、并发锁、幂等 requestId 或跨实例一致性。内存 Repository 也没有自动过期和总会话数上限，结束实验可以调用清空接口。窗口不是完整聊天档案。
 
 章节中的 JDBC、PostgreSQL、完整 Chat History、用户归属验证是后续生产方案说明，本章按文意暂不接入。第五章再处理 Tool Calling。
+
+第四章后续增加了 [可视化聊天工作台](04-web-workbench.md)，直接访问应用首页即可操作上述会话接口。原 `chapter-04` 标签保留，本次界面属于独立补充提交。
