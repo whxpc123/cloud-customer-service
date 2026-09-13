@@ -4,6 +4,16 @@
 
 **历史说明：**第 1～3 章最初在同一工作目录中递进开发，尚未使用 Git。以下三个版本于 2026-09-12 根据本任务中已实现的代码补建，提交时间是补建时间。各标签的代码已分别执行构建验证。
 
+## 第六章 · `chapter-06` · Embedding 与语义排序
+
+- 配置已有 Starter 的 text-embedding-v4 / 1024 / document，继续使用 DASHSCOPE_API_KEY。
+- 增加 TextEmbeddingService、纯 Java 余弦计算、相似度比较与最多 20 条候选排序；按 10 条分批且保持对应关系。
+- 新增 local 环境专属实验 API 与可视化页面，展示实际维度、分数、排序和摘要 JSON；IDEA 共享配置启用 local。
+- 校验文本、候选数、向量数量/维度/有限数值；输入错误 400，模型异常 502。向量日志仅记录元数据。
+- 71 项自动测试与 Maven 打包通过；IDEA Java 17 / local / 18080 启动，真实相似度、排序与 20 候选分批调用通过，浏览器桌面/390px/320px 检查通过。
+- 相反政策结论和不同订单号仍得到高分；保留原始观察，不把语义分数当作业务结论。尚未实现向量持久化、VectorStore 或 RAG。
+- 详情：[第六章实现与验收](docs/chapters/06-embedding-lab.md)。
+
 ## 第五章 · `chapter-05` · Tool Calling 与订单归属查询
 
 - 新增可替换的 `OrderService`、两条本地模拟订单，以及 `queryCurrentUserOrder` 只读工具。

@@ -10,12 +10,19 @@ spring:
   application:
     name: cloud-customer-service
   ai:
+    model:
+      embedding: dashscope
     dashscope:
       # 按本项目约定使用 DASHSCOPE_API_KEY，不使用文章中的 AI_DASHSCOPE_API_KEY。
       api-key: ${DASHSCOPE_API_KEY}
       chat:
         options:
           model: qwen-plus
+      embedding:
+        options:
+          model: text-embedding-v4
+          dimensions: 1024
+          text-type: document
 
 # BeanOutputConverter 的转换异常日志可能包含完整模型输出；服务层另记不含原文的元数据。
 logging:
@@ -23,3 +30,6 @@ logging:
     org.springframework.ai.converter.BeanOutputConverter: OFF
     # 学习时打印类型生成的 Schema/格式说明；设置 INTENT_SCHEMA_LOG_LEVEL=INFO 可关闭。
     com.example.cloudcustomerservice.intent.CustomerIntentRecognizer: ${INTENT_SCHEMA_LOG_LEVEL:DEBUG}
+
+    # 此版本 SDK 的异常日志包含输入原文；实验服务另记数量、维度、耗时和异常类型。
+    com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel: OFF

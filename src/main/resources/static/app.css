@@ -1214,3 +1214,6 @@ dialog p {
   .new-session { grid-column: 2; grid-row: 1; }
   .chat-panel { height: calc(100dvh - 273px); }
 }
+
+.embedding-lab-link { font-size: 11px; color: var(--forest); text-decoration: none; margin-left: auto; margin-right: 16px; white-space: nowrap; }
+@media (max-width: 650px) { .embedding-lab-link { font-size: 10px; margin-right: 10px; } }

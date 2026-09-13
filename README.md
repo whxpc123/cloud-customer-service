@@ -2,9 +2,9 @@
 
 根据《第一章：老板下午要看的 AI 客服》实现的 Java 学习项目。后续章节在这个项目上逐步增加能力，每章的改动与验收方式记录在 `docs/chapters/`。
 
-当前进度：**第五章——Tool Calling，通过 Java 工具查询当前演示用户的模拟订单**。
+当前进度：**第六章——EmbeddingModel、余弦相似度与候选文本语义排序**。
 
-章节记录：[第一章](docs/chapters/01-first-chat.md) · [第二章](docs/chapters/02-system-prompt.md) · [第三章](docs/chapters/03-structured-output.md) · [第四章](docs/chapters/04-chat-memory.md) · [第五章](docs/chapters/05-tool-calling.md)。
+章节记录：[第一章](docs/chapters/01-first-chat.md) · [第二章](docs/chapters/02-system-prompt.md) · [第三章](docs/chapters/03-structured-output.md) · [第四章](docs/chapters/04-chat-memory.md) · [第五章](docs/chapters/05-tool-calling.md) · [第六章](docs/chapters/06-embedding-lab.md)。
 
 每章对应独立 Git 提交和 `chapter-NN` 标签，具体变化见 [CHANGELOG](CHANGELOG.md)。第 1～3 章历史根据已实现代码于 2026-09-12 补建；后续每章验收完成后提交并推送。
 
@@ -15,6 +15,7 @@
 | [chapter-03](https://github.com/whxpc123/cloud-customer-service/tree/chapter-03) | Structured Output、意图识别与结果校验 | [与第二章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-02...chapter-03) |
 | [chapter-04](https://github.com/whxpc123/cloud-customer-service/tree/chapter-04) | Chat Memory、会话接口、历史意图识别 | [与第三章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-03...chapter-04) |
 | [chapter-05](https://github.com/whxpc123/cloud-customer-service/tree/chapter-05) | Tool Calling、订单归属查询、页面实际工具结果 | [与第四章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-04...chapter-05) |
+| [chapter-06](https://github.com/whxpc123/cloud-customer-service/tree/chapter-06) | Embedding、余弦相似度、语义实验室 | [与第五章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-05...chapter-06) |
 
 在 GitHub 选择对应标签查看该章完整代码，在 Compare 页面选择相邻标签查看改动。阅读历史版本可以使用独立工作目录，例如 `git worktree add ../chapter-01-view chapter-01`，避免覆盖当前开发目录。
 
@@ -27,7 +28,8 @@
 | Spring AI | 1.1.2 |
 | Spring AI Alibaba | 1.1.2.2 |
 | Maven Wrapper 下载的 Maven | 3.9.11 |
-| 模型 | qwen-plus |
+| 聊天模型 | qwen-plus |
+| 向量模型 | text-embedding-v4，1024 维，document |
 
 默认端口为 **18080**（本机 8080 和 8081 已被其他服务占用）。
 
@@ -38,7 +40,7 @@
 1. 选择 **File → Open**，打开本目录中的 `pom.xml`，选择作为项目打开，等待 Maven 依赖同步完成。也可以直接打开 `cloud-customer-service` 文件夹。
 2. 在 **File → Project Structure → Project SDK** 中选择 **JDK 17**，Language Level 选择 **17**。Maven 的 Importer / Runner JDK 也选择 Project SDK。
 3. 如果 IDEA 需要选择 Maven，在 **Settings → Build, Execution, Deployment → Build Tools → Maven** 中选择 **Use Maven wrapper**。第一次下载依赖需要联网。
-4. 项目已附带 `CloudCustomerServiceApplication` 运行配置，导入后选择它并点击运行。也可通过启动类的 `main` 方法创建配置；使用普通 **Application** 配置即可，无需 IDEA Ultimate。
+4. 项目已附带 `CloudCustomerServiceApplication` 运行配置，导入后选择它并点击运行。此配置已开启 `local` 环境供第六章实验使用。也可通过启动类的 `main` 方法创建配置；使用普通 **Application** 配置即可，无需 IDEA Ultimate。
 5. 应用读取已有环境变量 `DASHSCOPE_API_KEY`。本机已验证 IDEA 可以继承此变量，直接运行即可；若其他电脑未配置该变量，再在 **Run → Edit Configurations → Environment variables** 中添加。
 6. 看到 `Started CloudCustomerServiceApplication` 后，访问：
 
@@ -89,7 +91,7 @@ curl --get 'http://localhost:18080/api/chat' \
 java -jar target/cloud-customer-service-0.0.1-SNAPSHOT.jar
 ```
 
-自动测试替换了 ChatModel，不访问百炼、不需要真实 Key，覆盖聊天回归、结构化转换、非法字段、异常兜底、角色隔离和日志。当前共 56 项测试，包含真实 Spring AI 工具执行器的回调验证、订单归属、身份隔离和异常兜底。启动应用和运行 JAR 仍需真实 `DASHSCOPE_API_KEY`。
+自动测试在需要调用的路径替换 ChatModel / EmbeddingModel，不访问百炼、不需要真实 Key，覆盖聊天回归、结构化转换、非法字段、异常兜底、角色隔离和日志。当前共 71 项测试，包含工具执行、会话隔离、向量数学、语义排序、批次边界、异常兜底，以及实验接口的 local 环境限制。启动应用和运行 JAR 仍需真实 `DASHSCOPE_API_KEY`。
 
 ## 目录与章节对应
 
@@ -107,7 +109,7 @@ cloud-customer-service/
 └── docs/chapters/                   # 各章改动与验收记录
 ```
 
-第二章使用 `AiConfig.defaultSystem(...)` 给每次请求添加客服身份和规则，Controller 仍只通过 `.user(message)` 传入当前问题。第三章新增独立的 `intentChatClient` 和 `POST /api/intents/recognize`，使用 `.entity(outputConverter)` 返回 Java 对象。第四章增加会话记忆和统一会话接口；第五章在 `order/`、`tool/` 下增加模拟订单服务和只读 Tool Calling。RAG 等等待后续章节。
+第二章使用 `AiConfig.defaultSystem(...)` 给每次请求添加客服身份和规则，Controller 仍只通过 `.user(message)` 传入当前问题。第三章新增独立的 `intentChatClient` 和 `POST /api/intents/recognize`，使用 `.entity(outputConverter)` 返回 Java 对象。第四章增加会话记忆和统一会话接口；第五章在 `order/`、`tool/` 下增加模拟订单服务和只读 Tool Calling。第六章在 `embedding/` 下增加向量生成、余弦计算和语义排序；VectorStore 与 RAG 等等待后续章节。
 
 打开 `requests.http` 可逐组运行本章实验：身份、无关请求、退款状态、连续对话和提示词注入。Prompt 是行为指导，不能代替真实订单数据或后端权限；模型措辞和遵循程度可能随调用变化。真实回复仍可能出现未经验证的商城入口建议，详见第二章验收记录。
 
@@ -194,3 +196,24 @@ IDEA 启动后打开 <http://localhost:18080/>。页面随 Spring Boot 提供，
 IDEA 控制台除原日志外，可搜索 `[TOOL DEFINITION]`（实际名称、说明、输入 Schema）、`[TOOL REQUEST]`、`[TOOL RESULT]`。沿用 `app.ai.log-payload` 开关。DashScope 在内部完成多轮工具调用，当前装饰器记录初始完整 Prompt 和最终文本，**不包含每一次中间 HTTP 报文**；工具执行输入和输出由 Java 单独记录，不打印 ToolContext 或请求头。
 
 详见 [第五章实现与验收](docs/chapters/05-tool-calling.md)，接口实验在 `requests.http`。
+
+
+## 第六章：语义实验室
+
+IDEA 使用共享运行配置启动后，点击工作台顶部的“语义实验室”，或打开 <http://localhost:18080/internal/embedding-lab>。不需要新增依赖、前端构建或数据库。
+
+- **两句话比较**：输入两段文本，返回实际维度和 −1 到 1 的余弦相似度；内置相近表达、无关话题、相反结论、不同订单号四组样例。
+- **候选文本排序**：输入查询和 1–20 条候选，按分数降序展示全部候选；同分时保持输入顺序。
+- 每段最多 2000 个 Java 字符单位。只返回摘要与候选文本，不返回完整向量，也不把实验政策写入客服对话。
+
+接口：`POST /internal/embedding-lab/compare` 接收 `{"left":"我要退货","right":"东西不想要了"}`；`POST /internal/embedding-lab/rank` 接收 `{"query":"想寄回去","candidates":["退货申请流程","物流异常处理"]}`。
+
+实验页面和两个接口仅在 `local` profile 注册。共享 IDEA 参数已增加 `--spring.profiles.active=local`；终端运行可使用 `SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run`。普通启动未启用 local 时，实验页面与 API 返回 404，客服接口仍可用。Profile 是环境开关，不是身份认证。
+
+向量服务仍读取 `DASHSCOPE_API_KEY`。单次比较通常一批；20 条候选加查询分为 10 + 10 + 1 条，避免超出 v4 单批限制。每次排序重新向量化所有候选，不保存向量；下一章再处理 VectorStore。
+
+IDEA 搜索 `[EMBEDDING RESULT]` 可看输入数量、批数、实际维度和耗时；失败记录 `[EMBEDDING ERROR]` 的异常类型。此日志不包含原文或向量，独立于聊天的完整提示词日志开关。非法业务输入返回 400，上游异常或非法向量返回稳定 502。
+
+本次真实模型观察：相近表达约 **0.6130**，无关天气约 **0.2998**；相反结论约 **0.8672**，不同订单号约 **0.9711**。分数不是概率或业务结论，不设置未经评测的匹配阈值。
+
+详见 [第六章实现与验收](docs/chapters/06-embedding-lab.md) 和 [真实实验记录](docs/chapters/06-live-observations.json)。

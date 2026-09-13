@@ -309,3 +309,66 @@ X-Demo-User-Id: -1
 
 ### 第五章：业务服务异常通过 CustomerOrderToolsTest / OrderToolConversationTest 注入验证
 # 正常应用固定模拟服务没有故障开关，不在运行接口中提供人为触发异常入口。
+
+### 第六章：语义实验室，需要 IDEA 参数 --spring.profiles.active=local
+# 页面 http://localhost:18080/internal/embedding-lab
+# 向量模型 text-embedding-v4 / 1024 / document；每次真实运行消耗额度。
+
+### 第六章：相近表达，记录实际分数，不要求等于文章示例
+POST http://localhost:18080/internal/embedding-lab/compare
+Content-Type: application/json
+
+{"left":"我要申请退货","right":"东西买错了，我不想要了"}
+
+### 第六章：无关表达，与上一组比较相对高低
+POST http://localhost:18080/internal/embedding-lab/compare
+Content-Type: application/json
+
+{"left":"我要申请退货","right":"今天天气怎么样"}
+
+### 第六章：相似主题、相反结论；高分不等于同一政策结论
+POST http://localhost:18080/internal/embedding-lab/compare
+Content-Type: application/json
+
+{"left":"商品支持七日无理由退货","right":"商品不支持七日无理由退货"}
+
+### 第六章：不同订单号；业务上仍须精确匹配
+POST http://localhost:18080/internal/embedding-lab/compare
+Content-Type: application/json
+
+{"left":"订单 A10001","right":"订单 A10002"}
+
+### 第六章：相同文本和实际维度检查，应为1024
+POST http://localhost:18080/internal/embedding-lab/compare
+Content-Type: application/json
+
+{"left":"测试文本","right":"测试文本"}
+
+### 第六章：语义排序，样例政策不等于真实商城规则
+POST http://localhost:18080/internal/embedding-lab/rank
+Content-Type: application/json
+
+{
+  "query":"衣服尺寸不对，想寄回去",
+  "candidates":[
+    "商品签收后七日内，符合条件的可以申请无理由退货",
+    "订单发货后可以在订单详情中查看物流进度",
+    "电子发票将在订单完成后发送至用户邮箱",
+    "会员积分可以用于兑换指定优惠券"
+  ]
+}
+
+### 第六章：空输入应400，不访问模型
+POST http://localhost:18080/internal/embedding-lab/compare
+Content-Type: application/json
+
+{"left":" ","right":"我要退货"}
+
+### 第六章：空候选应400，不访问模型
+POST http://localhost:18080/internal/embedding-lab/rank
+Content-Type: application/json
+
+{"query":"我要退货","candidates":[]}
+
+### 第六章：非local环境应404；模型异常/非法向量的502由离线测试注入验证
+# 修改维度后需要重新生成向量；本章不新增修改配置或故障注入的HTTP接口。
