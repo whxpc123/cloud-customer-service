@@ -544,3 +544,24 @@ POST http://localhost:18080/internal/knowledge/search
 Content-Type: application/json
 
 {"query":"软件激活后能退吗","topK":3,"threshold":0.60}
+
+### 第九章：知识问答页面（local,knowledge）
+GET http://localhost:18080/internal/rag
+
+### 第九章：手动 RAG，根据当前知识块回答并返回 Java 来源
+POST http://localhost:18080/internal/rag/answer
+Content-Type: application/json
+
+{"question":"收到商品十天了，还能申请无理由退货吗？"}
+
+### 第九章：无命中时 Java 拒答，不调用聊天模型
+POST http://localhost:18080/internal/rag/answer
+Content-Type: application/json
+
+{"question":"你们老板最喜欢喝什么咖啡？"}
+
+### 第九章：通用政策不能确认订单状态
+POST http://localhost:18080/internal/rag/answer
+Content-Type: application/json
+
+{"question":"我的订单 A10001 已经签收十天，现在还能退吗？"}

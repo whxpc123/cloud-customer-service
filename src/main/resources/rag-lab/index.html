@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>知识问答 · 云杉客服</title><link rel="stylesheet" href="/embedding-lab.css"><link rel="stylesheet" href="/rag-lab.css"><script defer src="/rag-lab.js"></script></head>
+<body>
+<header><a href="/" class="brand">杉 <span>云杉客服</span></a><a href="/internal/knowledge">管理 / 检索知识 ↗</a><a href="/">对话工作台 ↗</a></header>
+<main>
+<div class="eyebrow">第九章 / RAG</div>
+<h1>回答之前，<br><span>先把依据摆出来。</span></h1>
+<p class="intro">从已导入的资料中查找相关知识，再依据本次证据回答。没有命中时直接说明，不让模型猜公司制度。</p>
+<div class="model-note">Qwen Plus <span>已发布的中文售后知识</span><span>最多 5 块 · 最低相似度 0.60</span></div>
+<div class="lab-grid">
+<section class="inputs" aria-label="知识提问">
+<h2>问一个完整的问题</h2>
+<form id="rag-form">
+<label for="question">你想了解什么？</label>
+<textarea id="question" rows="5" required maxlength="2000">收到商品十天了，还能申请无理由退货吗？</textarea>
+<p class="fine">每次独立回答，不读取对话历史。“那运费呢？”请补充为完整的问题。</p>
+<div class="examples" role="group" aria-label="问题样例">
+<button type="button" data-question="收到商品十天了，还能申请无理由退货吗？">退货期限</button>
+<button type="button" data-question="因为尺寸不合适退货，运费谁承担？">个人原因运费</button>
+<button type="button" data-question="商品坏了，我退货还要自己出邮费吗？">质量问题运费</button>
+<button type="button" data-question="你们老板最喜欢喝什么咖啡？">没有资料的问题</button>
+</div>
+<div class="submit-row"><small>最多 2000 字符</small><button id="ask" type="submit" class="primary">查资料并回答 →</button></div>
+</form>
+<p id="feedback" role="status" aria-live="polite"></p>
+<details><summary>开始前：准备好知识资料</summary><p class="fine">前往“管理 / 检索知识”上传自己的文件，或预览第八章售后制度样例并确认导入。这里使用同一知识库，不会自动写入样例。</p><a href="/internal/knowledge">打开知识库 →</a></details>
+</section>
+<section class="output" id="rag-output" aria-label="回答与证据" aria-busy="false">
+<div class="section-heading"><h2>依据资料的回答</h2><span id="answer-status" role="status">等待提问</span></div>
+<p id="answered-question" hidden></p>
+<p id="answer" class="result-text">提交问题后，在这里查看回答和本次提供给模型的知识块。</p>
+<div id="evidence-panel" hidden><h3>本次提供给模型的证据 <span id="evidence-count"></span></h3><p class="fine">可展开查看完整的命中块；这不是原文件全文，也不是逐句引用校验。相似度不等于答案正确率。</p><div id="references"></div></div>
+<details id="raw-details" hidden><summary>查看完整响应 JSON</summary><pre id="raw-result"></pre></details>
+</section>
+</div>
+<aside class="reading-note"><strong>解释制度，具体订单仍需核实。</strong><p>这页不查询实时订单，也不能办理退款。有命中仍可能缺少条件、例外或发生版本冲突，请核对来源。课程样例不代表真实商城政策。</p></aside>
+<footer>找不到答案不代表文件未导入：阈值和分块都会影响召回。可到知识检索页检查命中内容；每次问答会调用向量服务，有证据时再调用聊天模型。</footer>
+</main></body></html>
