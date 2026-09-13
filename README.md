@@ -2,9 +2,9 @@
 
 根据《第一章：老板下午要看的 AI 客服》实现的 Java 学习项目。后续章节在这个项目上逐步增加能力，每章的改动与验收方式记录在 `docs/chapters/`。
 
-当前进度：**第七章——PgVectorStore、知识持久化、真实文件导入与过滤检索**。
+当前进度：**第八章——文档 ETL、Token 切分、预览确认与后台导入**。
 
-章节记录：[第一章](docs/chapters/01-first-chat.md) · [第二章](docs/chapters/02-system-prompt.md) · [第三章](docs/chapters/03-structured-output.md) · [第四章](docs/chapters/04-chat-memory.md) · [第五章](docs/chapters/05-tool-calling.md) · [第六章](docs/chapters/06-embedding-lab.md) · [第七章](docs/chapters/07-pgvector-knowledge.md)。
+章节记录：[第一章](docs/chapters/01-first-chat.md) · [第二章](docs/chapters/02-system-prompt.md) · [第三章](docs/chapters/03-structured-output.md) · [第四章](docs/chapters/04-chat-memory.md) · [第五章](docs/chapters/05-tool-calling.md) · [第六章](docs/chapters/06-embedding-lab.md) · [第七章](docs/chapters/07-pgvector-knowledge.md) · [第八章](docs/chapters/08-document-etl.md)。
 
 每章对应独立 Git 提交和 `chapter-NN` 标签，具体变化见 [CHANGELOG](CHANGELOG.md)。第 1～3 章历史根据已实现代码于 2026-09-12 补建；后续每章验收完成后提交并推送。
 
@@ -17,6 +17,8 @@
 | [chapter-05](https://github.com/whxpc123/cloud-customer-service/tree/chapter-05) | Tool Calling、订单归属查询、页面实际工具结果 | [与第四章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-04...chapter-05) |
 | [chapter-06](https://github.com/whxpc123/cloud-customer-service/tree/chapter-06) | Embedding、余弦相似度、语义实验室 | [与第五章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-05...chapter-06) |
 | [chapter-07](https://github.com/whxpc123/cloud-customer-service/tree/chapter-07) | PgVectorStore、Flyway、持久化知识检索与页面 | [与第六章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-06...chapter-07) |
+
+| [chapter-08](https://github.com/whxpc123/cloud-customer-service/tree/chapter-08) | DocumentReader、Token 切分、预览确认与后台导入 | [与第七章导入补充比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-07-import...chapter-08) |
 
 在 GitHub 选择对应标签查看该章完整代码，在 Compare 页面选择相邻标签查看改动。阅读历史版本可以使用独立工作目录，例如 `git worktree add ../chapter-01-view chapter-01`，避免覆盖当前开发目录。
 
@@ -93,7 +95,7 @@ curl --get 'http://localhost:18080/api/chat' \
 java -jar target/cloud-customer-service-0.0.1-SNAPSHOT.jar
 ```
 
-自动测试在需要调用的路径替换 ChatModel / EmbeddingModel，不访问百炼、不需要真实 Key，覆盖聊天回归、结构化转换、非法字段、异常兜底、角色隔离和日志。当前共有 92 项测试：普通运行通过 85 项、跳过 7 项需真实 pgvector 的集成测试；启用专用测试库后 92 项全部通过。覆盖工具执行、会话隔离、向量数学、批次边界、知识过滤、重复导入及异常保护。集成测试步骤见第七章文档。启动应用和运行 JAR 仍需真实 `DASHSCOPE_API_KEY`。
+自动测试在需要调用的路径替换 ChatModel / EmbeddingModel，不访问百炼、不需要真实 Key，覆盖聊天回归、结构化转换、非法字段、异常兜底、角色隔离和日志。当前共有 100 项测试：普通运行通过 93 项、跳过 7 项需真实 pgvector 的集成测试；启用专用测试库后 100 项全部通过。覆盖工具执行、会话隔离、向量数学、批次边界、知识过滤、重复导入及异常保护。集成测试步骤见第七章文档。启动应用和运行 JAR 仍需真实 `DASHSCOPE_API_KEY`。
 
 ## 目录与章节对应
 
@@ -111,7 +113,7 @@ cloud-customer-service/
 └── docs/chapters/                   # 各章改动与验收记录
 ```
 
-第二章使用 `AiConfig.defaultSystem(...)` 给每次请求添加客服身份和规则，Controller 仍只通过 `.user(message)` 传入当前问题。第三章新增独立的 `intentChatClient` 和 `POST /api/intents/recognize`，使用 `.entity(outputConverter)` 返回 Java 对象。第四章增加会话记忆和统一会话接口；第五章在 `order/`、`tool/` 下增加模拟订单服务和只读 Tool Calling。第六章在 `embedding/` 下增加向量生成、余弦计算和语义排序；第七章在 `knowledge/` 下增加 PgVectorStore 持久化、过滤检索和独立实验页面；文档 ETL 与 RAG 等待后续章节。
+第二章使用 `AiConfig.defaultSystem(...)` 给每次请求添加客服身份和规则，Controller 仍只通过 `.user(message)` 传入当前问题。第三章新增独立的 `intentChatClient` 和 `POST /api/intents/recognize`，使用 `.entity(outputConverter)` 返回 Java 对象。第四章增加会话记忆和统一会话接口；第五章在 `order/`、`tool/` 下增加模拟订单服务和只读 Tool Calling。第六章在 `embedding/` 下增加向量生成、余弦计算和语义排序；第七章在 `knowledge/` 下增加 PgVectorStore 持久化、过滤检索和独立实验页面；第八章在 `knowledge/ingestion/` 下增加文档 ETL、Token 切分与预览确认，RAG 等待后续章节。
 
 打开 `requests.http` 可逐组运行本章实验：身份、无关请求、退款状态、连续对话和提示词注入。Prompt 是行为指导，不能代替真实订单数据或后端权限；模型措辞和遵循程度可能随调用变化。真实回复仍可能出现未经验证的商城入口建议，详见第二章验收记录。
 
@@ -223,7 +225,7 @@ IDEA 搜索 `[EMBEDDING RESULT]` 可看输入数量、批数、实际维度和�
 
 ## 第七章：持久化知识库
 
-先启动 Docker，在项目目录执行 `./scripts/start-knowledge-db.sh`，再运行 IDEA 的共享配置。打开 <http://localhost:18080/internal/knowledge>，在“导入自己的资料”中上传 TXT / Markdown / PDF，或粘贴正文，完成后即可搜索、调整 Top K / 阈值、查看来源与 JSON。四条课程样例移到可选折叠区。
+先启动 Docker，在项目目录执行 `./scripts/start-knowledge-db.sh`，再运行 IDEA 的共享配置。打开 <http://localhost:18080/internal/knowledge>，在“导入自己的资料”中上传 TXT / Markdown / PDF / DOCX / PPTX，或粘贴正文，预览并确认导入后即可搜索、调整 Top K / 阈值、查看来源与 JSON。四条课程样例移到可选折叠区。
 
 数据库绑定 `127.0.0.1:15432`，随机密码只保存于被忽略的 `.local/`；命名卷保存知识与向量。保留数据卷时也须保留原密码文件。重启数据库和 IDEA 后无需重新导入，聊天的内存历史仍会清空。
 
@@ -242,3 +244,12 @@ IDEA 已配置同一 JVM 参数，确保本机 SOCKS 代理环境下 PostgreSQL 
 这一步返回知识片段与来源，尚未将知识加入客服 Prompt；RAG 留待后续章节。详见 [第七章实现、测试及限制](docs/chapters/07-pgvector-knowledge.md)。
 
 第七章补充已支持真实文件导入：文件最多 5 MB，PDF 最多 100 页，正文最多 50000 字符；扫描版 PDF 需先做 OCR。同名资料替换采用数据库事务，失败时保留旧内容。详细使用及验收见 [真实导入说明](docs/chapters/07-real-document-import.md)，[GitHub 改动](https://github.com/whxpc123/cloud-customer-service/compare/chapter-07...chapter-07-import)。原 `chapter-07` 标签保留，新版本标签为 `chapter-07-import`。
+
+
+## 第八章：先预览怎么切，再导入知识
+
+访问 <http://localhost:18080/internal/knowledge>，选择文件或粘贴正文，填写资料名称与版本，切换 200 / 500 / 1000 Token。点击“清理并预览切分”，逐块查看正文、页码、标题、来源和 Hash，再点击“确认这些知识块并导入”。可直接预览内置第八章售后制度。
+
+预览不调用模型、不写库；确认后后台生成向量，成功再在短事务内整体替换同名旧资料。改动输入后需重新预览。任务与预览保存在有界内存中，重启会失效，已入库知识保留。当前只检索资料，尚未接入客服 RAG。
+
+实现、限制和实验步骤见 [第八章说明](docs/chapters/08-document-etl.md)，API 示例在 `requests.http`。

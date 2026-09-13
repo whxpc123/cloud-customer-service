@@ -38,17 +38,24 @@ class KnowledgeDocumentReaderTest {
         assertThatIllegalArgumentException().isThrownBy(() -> KnowledgeDocumentReader.normalize("x".repeat(50001)));
     }
     @Test void uploadEndpointPassesExtractedTextAndSafeNameAndReportsErrors() throws Exception {
-        var service = mock(CustomKnowledgeImportService.class);
-        var mvc = MockMvcBuilders.standaloneSetup(new CustomKnowledgeImportController(service, reader))
+        var preparation = new com.example.cloudcustomerservice.knowledge.ingestion.KnowledgePreparationService(
+                new com.example.cloudcustomerservice.knowledge.ingestion.KnowledgeDocumentReaderFactory());
+        var writer=mock(com.example.cloudcustomerservice.knowledge.ingestion.KnowledgeBatchWriter.class);
+        var model=mock(org.springframework.ai.embedding.EmbeddingModel.class);
+        when(model.call(any())).thenAnswer(inv->{float[] vector=new float[1024];vector[0]=1;
+            return new org.springframework.ai.embedding.EmbeddingResponse(java.util.List.of(new org.springframework.ai.embedding.Embedding(vector,0)));});
+        var service = new CustomKnowledgeImportService(preparation,model,writer);
+        var mvc = MockMvcBuilders.standaloneSetup(new CustomKnowledgeImportController(service))
                 .setControllerAdvice(new KnowledgeErrors()).build();
-        when(service.importText("rules.pdf", "A real PDF policy.")).thenReturn(new CustomKnowledgeImportResult("id","rules.pdf","v",1,18));
         mvc.perform(multipart("/internal/knowledge/import/file").file(file("C:\\fakepath\\rules.pdf",pdf("A real PDF policy."))))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.importedDocuments").value(1));
-        verify(service).importText("rules.pdf", "A real PDF policy.");
+                .andExpect(status().isOk()).andExpect(jsonPath("$.importedDocuments").value(1)).andExpect(jsonPath("$.sourceName").value("rules.pdf"));
+        verify(writer).replace(argThat(p->p.chunks().get(0).getText().contains("A real PDF policy.")),anyList());
+        clearInvocations(writer,model);
         mvc.perform(multipart("/internal/knowledge/import/file").file(file("bad.pdf",new byte[]{1})))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_INPUT"));
-        verifyNoMoreInteractions(service);
+        verifyNoInteractions(writer,model);
     }
+
     private static MockMultipartFile file(String name, byte[] content) {
         return new MockMultipartFile("file", name, "application/octet-stream", content);
     }

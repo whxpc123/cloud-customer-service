@@ -19,6 +19,9 @@ class EmbeddingLabProfileTest {
         mvc.perform(post("/internal/knowledge/search").contentType("application/json").content("{}")).andExpect(status().isNotFound());
         mvc.perform(post("/internal/knowledge/import").contentType("application/json").content("{}")).andExpect(status().isNotFound());
         mvc.perform(multipart("/internal/knowledge/import/file").file("file",new byte[]{1})).andExpect(status().isNotFound());
+        mvc.perform(post("/internal/knowledge/preview").contentType("application/json").content("{}")).andExpect(status().isNotFound());
+        mvc.perform(get("/internal/knowledge/files/refund-policy/preview")).andExpect(status().isNotFound());
+        mvc.perform(post("/internal/knowledge/previews/fake/import")).andExpect(status().isNotFound());
         for(String path:new String[]{"compare","rank"}) {
             mvc.perform(post("/internal/embedding-lab/"+path).contentType("application/json").content("{}"))
                     .andExpect(status().isNotFound());

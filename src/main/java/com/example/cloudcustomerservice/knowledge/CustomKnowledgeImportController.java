@@ -9,11 +9,9 @@ import org.springframework.web.multipart.MultipartFile;
 @Profile("local & knowledge")
 public class CustomKnowledgeImportController {
     private final CustomKnowledgeImportService importer;
-    private final KnowledgeDocumentReader reader;
 
-    public CustomKnowledgeImportController(CustomKnowledgeImportService importer, KnowledgeDocumentReader reader) {
+    public CustomKnowledgeImportController(CustomKnowledgeImportService importer) {
         this.importer = importer;
-        this.reader = reader;
     }
     @PostMapping(consumes = "application/json")
     public CustomKnowledgeImportResult text(@RequestBody CustomKnowledgeImportRequest request) {
@@ -27,6 +25,6 @@ public class CustomKnowledgeImportController {
             name = file.getOriginalFilename();
             if (name != null) name = name.replace('\\', '/').substring(name.replace('\\', '/').lastIndexOf('/') + 1);
         }
-        return importer.importText(name, reader.read(file));
+        return importer.importFile(name, file);
     }
 }

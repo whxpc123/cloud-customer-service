@@ -25,6 +25,8 @@ class PgVectorPersistenceTest {
     @Autowired CustomKnowledgeImportService customImporter;
     @org.springframework.test.context.bean.override.mockito.MockitoSpyBean(name="vectorStore")
     org.springframework.ai.vectorstore.pgvector.PgVectorStore vectorStore;
+    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean
+    com.example.cloudcustomerservice.knowledge.ingestion.KnowledgeBatchWriter batchWriter;
     @MockitoBean EmbeddingModel model;
     @BeforeEach void prepare() {
         assertThat(jdbc.queryForObject("select current_database()",String.class)).isEqualTo("cloud_customer_service_test");
@@ -35,8 +37,8 @@ class PgVectorPersistenceTest {
     float[] vector(String text) {var v=new float[1024];v[0]=1;v[1]=text.contains("物流")?1:0;return v;}
     @Test void customImportReplacesShortenedContentAndKeepsOtherSources() {
         importer.importDocuments();
-        var first = customImporter.importText("会员说明.md", "甲".repeat(1100));
-        assertThat(first.importedDocuments()).isEqualTo(2);
+        var first = customImporter.importText("会员说明.md", "会员规则。".repeat(150));
+        assertThat(first.importedDocuments()).isGreaterThan(1);
         customImporter.importText("另一份资料", "其他来源的正文");
         var second = customImporter.importText("会员说明.md", "新版会员规则");
         customImporter.importText("会员说明.md", "新版会员规则");
@@ -48,12 +50,12 @@ class PgVectorPersistenceTest {
     }
     @Test void customReplacementRollsBackIfCleanupFailsAfterDatabaseWrite() {
         var original = customImporter.importText("回滚资料", "原版".repeat(600));
-        doThrow(new RuntimeException("SIMULATED_CLEANUP_FAILURE")).when(vectorStore)
-                .delete(any(org.springframework.ai.vectorstore.filter.Filter.Expression.class));
+        doThrow(new RuntimeException("SIMULATED_CLEANUP_FAILURE")).when(batchWriter)
+                .removeOldChunks(any());
         assertThatThrownBy(() -> customImporter.importText("回滚资料", "新版"))
                 .isInstanceOf(KnowledgeUnavailableException.class);
         assertThat(jdbc.queryForObject("select count(*) from ai.knowledge_vector_store where metadata->>'sourceId'=? and metadata->>'sourceVersion'=?",
-                Integer.class, original.sourceId(), original.sourceVersion())).isEqualTo(2);
+                Integer.class, original.sourceId(), original.sourceVersion())).isEqualTo(original.importedDocuments());
         assertThat(jdbc.queryForObject("select count(*) from ai.knowledge_vector_store where content='新版'", Integer.class)).isZero();
     }
     @Test void invalidCustomTextNeverCallsModelAndEmbeddingFailureKeepsOldContent() {
@@ -62,6 +64,11 @@ class PgVectorPersistenceTest {
         }
         assertThatIllegalArgumentException().isThrownBy(() -> customImporter.importText("资料", "x".repeat(50001)));
         verifyNoInteractions(model);
+        doAnswer(inv -> {
+            assertThat(org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
+            EmbeddingRequest req=inv.getArgument(0);
+            return new EmbeddingResponse(IntStream.range(0,req.getInstructions().size()).mapToObj(i->new Embedding(vector(req.getInstructions().get(i)),i)).toList());
+        }).when(model).call(any());
         customImporter.importText("资料", "旧正文");
         doThrow(new RuntimeException("MOCK_EMBEDDING_FAILURE")).when(model).call(any());
         assertThatThrownBy(() -> customImporter.importText("资料", "新正文")).isInstanceOf(KnowledgeUnavailableException.class);

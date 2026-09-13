@@ -1,0 +1,325 @@
+{
+  "date": "2026-09-13",
+  "idea": {
+    "pid": 26853,
+    "java": "17.0.20.1",
+    "profiles": [
+      "local",
+      "knowledge"
+    ],
+    "port": 18080,
+    "state": "Chapter 8 started in IDEA at 23:00; later rerun dialog could not be controlled; process was stopped."
+  },
+  "embedding": {
+    "model": "text-embedding-v4",
+    "dimensions": 1024
+  },
+  "rowsBeforePreview": 8,
+  "rowsAfterPreview": 8,
+  "samplePreview": {
+    "sourceId": "upload-34f10ae8-8022-3ce4-a934-4df262a40852",
+    "sourceName": "云杉商城售后服务规范",
+    "sourceVersion": "3.2",
+    "fileName": "refund-policy-v3.2.md",
+    "chunkingVersion": "token-500-v1-top0-bottom0",
+    "extractedDocuments": 4,
+    "normalizedDocuments": 4,
+    "rawCharacters": 265,
+    "chunks": 4,
+    "totalCharacters": 288,
+    "shortestChunk": 50,
+    "longestChunk": 108,
+    "warnings": [],
+    "previews": [
+      {
+        "chunkIndex": 1,
+        "characters": 108,
+        "text": "七日无理由退货\n除特殊商品外，消费者自签收商品次日起七日内， 在商品保持完好且不影响二次销售的情况下， 可以申请无理由退货。超过七日期限的，原则上不支持无理由退货； 商品存在质量问题的，可以按照质量问题售后流程处理。",
+        "documentId": "7666e772-f3f4-3bb0-81a0-d5e4bde41153",
+        "metadata": {
+          "chunkingVersion": "token-500-v1-top0-bottom0",
+          "chunkIndex": 1,
+          "sourceId": "upload-34f10ae8-8022-3ce4-a934-4df262a40852",
+          "language": "zh-CN",
+          "title": "七日无理由退货",
+          "sourceTitle": "云杉商城售后服务规范",
+          "embeddingDimensions": 1024,
+          "chunkHash": "41189cd2f0ef608c6742f28110a58ea3cb982988d8d47651038593dcee83bd97",
+          "embeddingProfile": "dashscope-text-embedding-v4-1024",
+          "rawDocumentIndex": 0,
+          "sourceFileName": "refund-policy-v3.2.md",
+          "sourceVersion": "3.2",
+          "sourceName": "云杉商城售后服务规范",
+          "tenantId": "tenant-yunshan",
+          "embeddingModel": "text-embedding-v4",
+          "knowledgeBase": "after-sales",
+          "fileType": "MARKDOWN",
+          "status": "PUBLISHED",
+          "category": "UPLOADED_DOCUMENT"
+        }
+      },
+      {
+        "chunkIndex": 2,
+        "characters": 61,
+        "text": "退货运费\n因商品质量问题产生的退货运费， 由云杉商城承担。因消费者个人原因申请无理由退货的， 退货运费原则上由消费者承担。",
+        "documentId": "c6489498-8aec-350c-aeda-4d625e2628a9",
+        "metadata": {
+          "chunkingVersion": "token-500-v1-top0-bottom0",
+          "chunkIndex": 2,
+          "sourceId": "upload-34f10ae8-8022-3ce4-a934-4df262a40852",
+          "language": "zh-CN",
+          "title": "退货运费",
+          "sourceTitle": "云杉商城售后服务规范",
+          "embeddingDimensions": 1024,
+          "chunkHash": "500d8cc29d384301206b3109c9e2b679d71fe3c086b1ee492e4f65aa415fdbdb",
+          "embeddingProfile": "dashscope-text-embedding-v4-1024",
+          "rawDocumentIndex": 1,
+          "sourceFileName": "refund-policy-v3.2.md",
+          "sourceVersion": "3.2",
+          "sourceName": "云杉商城售后服务规范",
+          "tenantId": "tenant-yunshan",
+          "embeddingModel": "text-embedding-v4",
+          "knowledgeBase": "after-sales",
+          "fileType": "MARKDOWN",
+          "status": "PUBLISHED",
+          "category": "UPLOADED_DOCUMENT"
+        }
+      },
+      {
+        "chunkIndex": 3,
+        "characters": 69,
+        "text": "特殊商品\n已激活的软件、定制商品、鲜活易腐商品， 以及其他依法不适用无理由退货的商品， 不支持七日无理由退货。商品本身存在质量问题的除外。",
+        "documentId": "6ce7256f-1dee-328c-a147-37e02dca5028",
+        "metadata": {
+          "chunkingVersion": "token-500-v1-top0-bottom0",
+          "chunkIndex": 3,
+          "sourceId": "upload-34f10ae8-8022-3ce4-a934-4df262a40852",
+          "language": "zh-CN",
+          "title": "特殊商品",
+          "sourceTitle": "云杉商城售后服务规范",
+          "embeddingDimensions": 1024,
+          "chunkHash": "46f0646830e7904beb5095fae0ed2b4abbbc3b689922a34da8796d1fa82743ff",
+          "embeddingProfile": "dashscope-text-embedding-v4-1024",
+          "rawDocumentIndex": 2,
+          "sourceFileName": "refund-policy-v3.2.md",
+          "sourceVersion": "3.2",
+          "sourceName": "云杉商城售后服务规范",
+          "tenantId": "tenant-yunshan",
+          "embeddingModel": "text-embedding-v4",
+          "knowledgeBase": "after-sales",
+          "fileType": "MARKDOWN",
+          "status": "PUBLISHED",
+          "category": "UPLOADED_DOCUMENT"
+        }
+      },
+      {
+        "chunkIndex": 4,
+        "characters": 50,
+        "text": "退款时效\n退货商品验收通过后， 退款将在三个工作日内提交。实际到账时间以支付机构和银行处理时间为准。",
+        "documentId": "59200732-e553-3ad5-8377-7b1c28c7eb33",
+        "metadata": {
+          "chunkingVersion": "token-500-v1-top0-bottom0",
+          "chunkIndex": 4,
+          "sourceId": "upload-34f10ae8-8022-3ce4-a934-4df262a40852",
+          "language": "zh-CN",
+          "title": "退款时效",
+          "sourceTitle": "云杉商城售后服务规范",
+          "embeddingDimensions": 1024,
+          "chunkHash": "0a795f2809cb47065c2bdce16889b389c796bf190e1bd78e0d43f4ba7936a539",
+          "embeddingProfile": "dashscope-text-embedding-v4-1024",
+          "rawDocumentIndex": 3,
+          "sourceFileName": "refund-policy-v3.2.md",
+          "sourceVersion": "3.2",
+          "sourceName": "云杉商城售后服务规范",
+          "tenantId": "tenant-yunshan",
+          "embeddingModel": "text-embedding-v4",
+          "knowledgeBase": "after-sales",
+          "fileType": "MARKDOWN",
+          "status": "PUBLISHED",
+          "category": "UPLOADED_DOCUMENT"
+        }
+      }
+    ]
+  },
+  "import": {
+    "status": "PUBLISHED",
+    "storedChunks": 4,
+    "matchesPreview": true,
+    "reimportIdsAndMetadataStable": true,
+    "dimensions": [
+      1024
+    ]
+  },
+  "retrieval": [
+    {
+      "query": "收到十天了还能无理由退吗",
+      "threshold": 0.6,
+      "hits": [
+        {
+          "sourceName": "云杉商城售后服务规范",
+          "title": "七日无理由退货",
+          "score": 0.7580101788043976,
+          "content": "七日无理由退货\n除特殊商品外，消费者自签收商品次日起七日内， 在商品保持完好且不影响二次销售的情况下， 可以申请无理由退货。超过七日期限的，原则上不支持无理由退货； 商品存在质量问题的，可以按照质量问题售后流程处理。"
+        },
+        {
+          "sourceName": "refund-policy",
+          "title": null,
+          "score": 0.7297596037387848,
+          "content": "除特殊商品外，消费者自签收商品次日起七日内，在商品保持完好且不影响二次销售的情况下，可以申请无理由退货。"
+        },
+        {
+          "sourceName": "云杉商城售后服务规范",
+          "title": "特殊商品",
+          "score": 0.6922579407691956,
+          "content": "特殊商品\n已激活的软件、定制商品、鲜活易腐商品， 以及其他依法不适用无理由退货的商品， 不支持七日无理由退货。商品本身存在质量问题的除外。"
+        }
+      ]
+    },
+    {
+      "query": "商品坏了退货邮费谁出",
+      "threshold": 0.6,
+      "hits": [
+        {
+          "sourceName": "云杉商城售后服务规范",
+          "title": "退货运费",
+          "score": 0.6876293122768402,
+          "content": "退货运费\n因商品质量问题产生的退货运费， 由云杉商城承担。因消费者个人原因申请无理由退货的， 退货运费原则上由消费者承担。"
+        },
+        {
+          "sourceName": "refund-policy",
+          "title": null,
+          "score": 0.6787047386169434,
+          "content": "因商品质量问题产生的退货运费，由云杉商城承担；因消费者个人原因申请无理由退货的，退货运费原则上由消费者承担。"
+        }
+      ]
+    },
+    {
+      "query": "软件激活后能退吗",
+      "threshold": 0.6,
+      "hits": []
+    },
+    {
+      "query": "软件激活后能退吗",
+      "threshold": 0,
+      "hits": [
+        {
+          "sourceName": "云杉商城售后服务规范",
+          "title": "特殊商品",
+          "score": 0.5785707831382751,
+          "content": "特殊商品\n已激活的软件、定制商品、鲜活易腐商品， 以及其他依法不适用无理由退货的商品， 不支持七日无理由退货。商品本身存在质量问题的除外。"
+        },
+        {
+          "sourceName": "云杉商城售后服务规范",
+          "title": "七日无理由退货",
+          "score": 0.4847390651702881,
+          "content": "七日无理由退货\n除特殊商品外，消费者自签收商品次日起七日内， 在商品保持完好且不影响二次销售的情况下， 可以申请无理由退货。超过七日期限的，原则上不支持无理由退货； 商品存在质量问题的，可以按照质量问题售后流程处理。"
+        },
+        {
+          "sourceName": "refund-policy",
+          "title": null,
+          "score": 0.4682076573371887,
+          "content": "除特殊商品外，消费者自签收商品次日起七日内，在商品保持完好且不影响二次销售的情况下，可以申请无理由退货。"
+        }
+      ]
+    },
+    {
+      "query": "退款一般多久提交",
+      "threshold": 0.6,
+      "hits": [
+        {
+          "sourceName": "云杉商城售后服务规范",
+          "title": "退款时效",
+          "score": 0.7567697614431381,
+          "content": "退款时效\n退货商品验收通过后， 退款将在三个工作日内提交。实际到账时间以支付机构和银行处理时间为准。"
+        }
+      ]
+    },
+    {
+      "query": "衣服不合适退货谁出运费",
+      "threshold": 0.6,
+      "hits": [
+        {
+          "sourceName": "refund-policy",
+          "title": null,
+          "score": 0.7047348618507385,
+          "content": "因商品质量问题产生的退货运费，由云杉商城承担；因消费者个人原因申请无理由退货的，退货运费原则上由消费者承担。"
+        },
+        {
+          "sourceName": "云杉商城售后服务规范",
+          "title": "退货运费",
+          "score": 0.702707827091217,
+          "content": "退货运费\n因商品质量问题产生的退货运费， 由云杉商城承担。因消费者个人原因申请无理由退货的， 退货运费原则上由消费者承担。"
+        },
+        {
+          "sourceName": "云杉商城售后服务规范",
+          "title": "七日无理由退货",
+          "score": 0.6162986755371094,
+          "content": "七日无理由退货\n除特殊商品外，消费者自签收商品次日起七日内， 在商品保持完好且不影响二次销售的情况下， 可以申请无理由退货。超过七日期限的，原则上不支持无理由退货； 商品存在质量问题的，可以按照质量问题售后流程处理。"
+        }
+      ]
+    }
+  ],
+  "sizeComparison": [
+    {
+      "tokens": 200,
+      "chunks": 18,
+      "shortestCharacters": 130,
+      "longestCharacters": 196,
+      "nonWhitespacePreserved": true
+    },
+    {
+      "tokens": 500,
+      "chunks": 8,
+      "shortestCharacters": 75,
+      "longestCharacters": 475,
+      "nonWhitespacePreserved": true
+    },
+    {
+      "tokens": 1000,
+      "chunks": 4,
+      "shortestCharacters": 449,
+      "longestCharacters": 985,
+      "nonWhitespacePreserved": true
+    }
+  ],
+  "replacement": {
+    "oldVersion": "1",
+    "newVersion": "2",
+    "hashChanged": true,
+    "oldIdRemoved": true,
+    "newRows": 1
+  },
+  "finalRuntime": {
+    "launcher": "terminal Java jar",
+    "pid": 30565,
+    "java": "17.0.20.1",
+    "port": 18080,
+    "profiles": [
+      "local",
+      "knowledge"
+    ],
+    "started": true,
+    "finalAssetsServed": true
+  },
+  "browser": {
+    "docxPreviewCharacters": 29,
+    "pptxPreviewCharacters": 25,
+    "blankPdfRejectedWithOcrHint": true,
+    "sampleConfirmedImportChunks": 4,
+    "searchQuery": "退款一般多久提交",
+    "searchHitScore": 0.7568,
+    "metadataExpand": true,
+    "changedOptionsInvalidatePreview": true,
+    "widthChecks": [
+      {
+        "viewport": 390,
+        "scrollWidth": 390
+      },
+      {
+        "viewport": 320,
+        "scrollWidth": 320
+      }
+    ],
+    "pageConsoleErrors": 0
+  }
+}
