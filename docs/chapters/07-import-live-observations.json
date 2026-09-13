@@ -1,0 +1,127 @@
+{
+  "date": "2026-09-13",
+  "fixturesOnly": true,
+  "environment": "IDEA Java 17, local + knowledge, port 18080",
+  "automatedTests": {
+    "tests": 92,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "experiments": [
+    {
+      "case": "会员积分测试.md",
+      "status": 200,
+      "response": {
+        "sourceId": "upload-e24aec3a-f346-3a97-b329-3c2a28846864",
+        "sourceName": "会员积分测试.md",
+        "sourceVersion": "c6d71261ea0e178315277ab4f3cc1e125f064574160a922fb884ae36803cf48a",
+        "importedDocuments": 1,
+        "characters": 40
+      }
+    },
+    {
+      "case": "自提测试.txt",
+      "status": 200,
+      "response": {
+        "sourceId": "upload-65e4d0b8-65e8-3876-9253-3faa34246d28",
+        "sourceName": "自提测试.txt",
+        "sourceVersion": "97c1a82da93bfbc9541fa66367006b08fd332fb25acc4de41a1171882cf0bef2",
+        "importedDocuments": 1,
+        "characters": 34
+      }
+    },
+    {
+      "case": "sample.pdf",
+      "status": 200,
+      "response": {
+        "sourceId": "upload-c71ce694-3375-36ab-8229-913e00125138",
+        "sourceName": "sample.pdf",
+        "sourceVersion": "ce9cf100a0ffcaea5ba48ffd6734eaec244842965a997ef1d383cb7843ff4a79",
+        "importedDocuments": 1,
+        "characters": 71
+      }
+    },
+    {
+      "case": "scan.pdf",
+      "status": 400,
+      "response": {
+        "code": "INVALID_INPUT",
+        "message": "PDF 未提取到文字，扫描版请先进行 OCR，再上传文字版 PDF 或 TXT"
+      }
+    },
+    {
+      "case": "search",
+      "query": "星河会员什么时候可以领取蓝莓礼盒？",
+      "topHit": {
+        "documentId": "c3054c05-d221-3231-990f-27ea0e364756",
+        "content": "# 演示资料，非真实政策\n星河会员每周四可兑换一次蓝莓礼盒，兑换口令为蓝鲸松树。",
+        "score": 0.8187570571899414,
+        "sourceId": "upload-e24aec3a-f346-3a97-b329-3c2a28846864",
+        "sourceName": "会员积分测试.md",
+        "sourceVersion": "c6d71261ea0e178315277ab4f3cc1e125f064574160a922fb884ae36803cf48a",
+        "chunkIndex": 1,
+        "category": "UPLOADED_DOCUMENT"
+      }
+    },
+    {
+      "case": "search",
+      "query": "When can Moonlight members collect a blueberry gift?",
+      "topHit": {
+        "documentId": "bf3af4e4-cb78-3e60-a181-21a9bdc11505",
+        "content": "Demo policy: Moonlight members collect a blueberry gift every Thursday.",
+        "score": 0.8116658627986908,
+        "sourceId": "upload-c71ce694-3375-36ab-8229-913e00125138",
+        "sourceName": "sample.pdf",
+        "sourceVersion": "ce9cf100a0ffcaea5ba48ffd6734eaec244842965a997ef1d383cb7843ff4a79",
+        "chunkIndex": 1,
+        "category": "UPLOADED_DOCUMENT"
+      }
+    },
+    {
+      "case": "search",
+      "query": "松果自提点什么时候开放？",
+      "topHit": {
+        "documentId": "62106b2e-3779-3c40-a371-4643e563e7ea",
+        "content": "演示资料，非真实政策。松果自提点每周五下午三点开放，仅支持到店领取。",
+        "score": 0.8705355226993561,
+        "sourceId": "upload-65e4d0b8-65e8-3876-9253-3faa34246d28",
+        "sourceName": "自提测试.txt",
+        "sourceVersion": "97c1a82da93bfbc9541fa66367006b08fd332fb25acc4de41a1171882cf0bef2",
+        "chunkIndex": 1,
+        "category": "UPLOADED_DOCUMENT"
+      }
+    },
+    {
+      "case": "search",
+      "query": "北极星会员积分什么时候结算？",
+      "topHit": {
+        "documentId": "83b9fbcc-9c25-36b1-83fa-d4c6cfc47318",
+        "content": "演示测试资料。北极星会员积分改为每月十五号结算。",
+        "score": 0.8144493401050568,
+        "sourceId": "upload-edf882c1-2b76-3122-a24b-5eb4db512dc1",
+        "sourceName": "粘贴验收资料",
+        "sourceVersion": "6a0b1823c15b2c249525f7301aa32488fa8349e77bd3e0689726a935894453e7",
+        "chunkIndex": 1,
+        "category": "UPLOADED_DOCUMENT"
+      }
+    }
+  ],
+  "databaseChecks": {
+    "eachSyntheticSourceRows": 1,
+    "dimensions": 1024
+  },
+  "browserChecks": {
+    "markdownFile": true,
+    "txtFile": true,
+    "pdfFile": true,
+    "pasteAndReplace": true,
+    "noTextPdfMessage": true,
+    "viewportWidthsWithoutOverflow": [
+      390,
+      320
+    ],
+    "consoleErrors": 0
+  },
+  "oversizeMultipartStatus": 413
+}

@@ -441,3 +441,26 @@ POST http://localhost:18080/internal/knowledge/search
 Content-Type: application/json
 
 {"query":"发票","topK":5,"threshold":1.1}
+
+### 第七章补充：真正导入自定义正文，同名资料会整体替换；真实调用向量模型
+POST http://localhost:18080/internal/knowledge/import
+Content-Type: application/json
+
+{"sourceName":"演示积分规则","text":"这是一条演示规则：北极星会员积分每月十五号结算。"}
+
+### 第七章补充：检索刚导入的资料
+POST http://localhost:18080/internal/knowledge/search
+Content-Type: application/json
+
+{"query":"北极星会员积分什么时候结算？","topK":5,"threshold":0.5}
+
+### 第七章补充：文件上传，在页面选择 TXT / Markdown / PDF 最方便
+# POST /internal/knowledge/import/file，multipart 的 file 字段，sourceName 可选。
+# curl http://localhost:18080/internal/knowledge/import/file -F 'file=@/绝对路径/政策.pdf'
+# 文件最多5MB，PDF最多100页，正文最多50000字符。扫描版PDF不含OCR。
+
+### 第七章补充：空正文应400，不调用向量模型
+POST http://localhost:18080/internal/knowledge/import
+Content-Type: application/json
+
+{"sourceName":"无效输入","text":" "}

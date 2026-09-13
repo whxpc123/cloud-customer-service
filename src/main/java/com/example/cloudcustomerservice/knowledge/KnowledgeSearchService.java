@@ -48,7 +48,7 @@ public class KnowledgeSearchService {
         if (d.getScore() == null || !Double.isFinite(d.getScore())) throw new IllegalStateException("Invalid score");
         var m = d.getMetadata();
         return new KnowledgeHit(d.getId(), d.getText(), d.getScore(), String.valueOf(m.getOrDefault("sourceId", "")),
-                String.valueOf(m.getOrDefault("sourceVersion", "")), m.get("chunkIndex") instanceof Number n ? n.intValue() : 0,
+                String.valueOf(m.getOrDefault("sourceName", m.getOrDefault("sourceId", ""))), String.valueOf(m.getOrDefault("sourceVersion", "")), m.get("chunkIndex") instanceof Number n ? n.intValue() : 0,
                 String.valueOf(m.getOrDefault("category", "")));
     }
 }

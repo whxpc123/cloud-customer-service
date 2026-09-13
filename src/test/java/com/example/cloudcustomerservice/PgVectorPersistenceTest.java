@@ -22,6 +22,9 @@ class PgVectorPersistenceTest {
     @Autowired JdbcTemplate jdbc;
     @Autowired LocalKnowledgeImportService importer;
     @Autowired KnowledgeSearchService search;
+    @Autowired CustomKnowledgeImportService customImporter;
+    @org.springframework.test.context.bean.override.mockito.MockitoSpyBean(name="vectorStore")
+    org.springframework.ai.vectorstore.pgvector.PgVectorStore vectorStore;
     @MockitoBean EmbeddingModel model;
     @BeforeEach void prepare() {
         assertThat(jdbc.queryForObject("select current_database()",String.class)).isEqualTo("cloud_customer_service_test");
@@ -30,6 +33,40 @@ class PgVectorPersistenceTest {
     }
     @AfterEach void cleanup(){jdbc.update("delete from ai.knowledge_vector_store");}
     float[] vector(String text) {var v=new float[1024];v[0]=1;v[1]=text.contains("物流")?1:0;return v;}
+    @Test void customImportReplacesShortenedContentAndKeepsOtherSources() {
+        importer.importDocuments();
+        var first = customImporter.importText("会员说明.md", "甲".repeat(1100));
+        assertThat(first.importedDocuments()).isEqualTo(2);
+        customImporter.importText("另一份资料", "其他来源的正文");
+        var second = customImporter.importText("会员说明.md", "新版会员规则");
+        customImporter.importText("会员说明.md", "新版会员规则");
+        assertThat(second.sourceId()).isEqualTo(first.sourceId());
+        assertThat(jdbc.queryForObject("select count(*) from ai.knowledge_vector_store", Integer.class)).isEqualTo(6);
+        assertThat(jdbc.queryForList("select content from ai.knowledge_vector_store where metadata->>'sourceId'=?", String.class, first.sourceId()))
+                .containsExactly("新版会员规则");
+        assertThat(search.search("tenant-yunshan", "问题", 10, 0.0).hits()).extracting(KnowledgeHit::sourceName).contains("会员说明.md");
+    }
+    @Test void customReplacementRollsBackIfCleanupFailsAfterDatabaseWrite() {
+        var original = customImporter.importText("回滚资料", "原版".repeat(600));
+        doThrow(new RuntimeException("SIMULATED_CLEANUP_FAILURE")).when(vectorStore)
+                .delete(any(org.springframework.ai.vectorstore.filter.Filter.Expression.class));
+        assertThatThrownBy(() -> customImporter.importText("回滚资料", "新版"))
+                .isInstanceOf(KnowledgeUnavailableException.class);
+        assertThat(jdbc.queryForObject("select count(*) from ai.knowledge_vector_store where metadata->>'sourceId'=? and metadata->>'sourceVersion'=?",
+                Integer.class, original.sourceId(), original.sourceVersion())).isEqualTo(2);
+        assertThat(jdbc.queryForObject("select count(*) from ai.knowledge_vector_store where content='新版'", Integer.class)).isZero();
+    }
+    @Test void invalidCustomTextNeverCallsModelAndEmbeddingFailureKeepsOldContent() {
+        for (String name : Arrays.asList(null, " ", "x".repeat(121))) {
+            assertThatIllegalArgumentException().isThrownBy(() -> customImporter.importText(name, "正文"));
+        }
+        assertThatIllegalArgumentException().isThrownBy(() -> customImporter.importText("资料", "x".repeat(50001)));
+        verifyNoInteractions(model);
+        customImporter.importText("资料", "旧正文");
+        doThrow(new RuntimeException("MOCK_EMBEDDING_FAILURE")).when(model).call(any());
+        assertThatThrownBy(() -> customImporter.importText("资料", "新正文")).isInstanceOf(KnowledgeUnavailableException.class);
+        assertThat(jdbc.queryForList("select content from ai.knowledge_vector_store",String.class)).containsExactly("旧正文");
+    }
     @Test void flywayCreatesRealVectorColumnAndHnswIndexAndUpserts() {
         importer.importDocuments();importer.importDocuments();
         assertThat(jdbc.queryForObject("select count(*) from ai.knowledge_vector_store",Integer.class)).isEqualTo(4);

@@ -2,6 +2,8 @@
 
 本章根据用户提供的《第七章：八万条知识，该把这些向量放在哪里？》实现。版本标签 `chapter-07`，上一版本 `chapter-06`。继续使用 Java 17、Spring AI 1.1.2 和环境变量 `DASHSCOPE_API_KEY`。
 
+> 后续补充：自有 TXT / Markdown / PDF 上传与正文导入已实现，见 [真实导入说明](07-real-document-import.md)。下文保留原 chapter-07 的验收记录。
+
 ## 现在可以做什么
 
 打开 <http://localhost:18080/internal/knowledge>，手动导入四条课程知识，输入问题，查看按分数排列的正文、类别、来源文件 ID、版本、块编号和原始 JSON。可以调整 Top K 和阈值；没有满足条件的知识时真实返回空列表。聊天工作台、语义实验室与知识库页面可以相互跳转。

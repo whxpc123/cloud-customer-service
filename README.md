@@ -2,7 +2,7 @@
 
 根据《第一章：老板下午要看的 AI 客服》实现的 Java 学习项目。后续章节在这个项目上逐步增加能力，每章的改动与验收方式记录在 `docs/chapters/`。
 
-当前进度：**第七章——PgVectorStore、知识持久化与元数据过滤检索**。
+当前进度：**第七章——PgVectorStore、知识持久化、真实文件导入与过滤检索**。
 
 章节记录：[第一章](docs/chapters/01-first-chat.md) · [第二章](docs/chapters/02-system-prompt.md) · [第三章](docs/chapters/03-structured-output.md) · [第四章](docs/chapters/04-chat-memory.md) · [第五章](docs/chapters/05-tool-calling.md) · [第六章](docs/chapters/06-embedding-lab.md) · [第七章](docs/chapters/07-pgvector-knowledge.md)。
 
@@ -93,7 +93,7 @@ curl --get 'http://localhost:18080/api/chat' \
 java -jar target/cloud-customer-service-0.0.1-SNAPSHOT.jar
 ```
 
-自动测试在需要调用的路径替换 ChatModel / EmbeddingModel，不访问百炼、不需要真实 Key，覆盖聊天回归、结构化转换、非法字段、异常兜底、角色隔离和日志。当前共有 85 项测试：普通运行通过 81 项、跳过 4 项需真实 pgvector 的集成测试；启用专用测试库后 85 项全部通过。覆盖工具执行、会话隔离、向量数学、批次边界、知识过滤、重复导入及异常保护。集成测试步骤见第七章文档。启动应用和运行 JAR 仍需真实 `DASHSCOPE_API_KEY`。
+自动测试在需要调用的路径替换 ChatModel / EmbeddingModel，不访问百炼、不需要真实 Key，覆盖聊天回归、结构化转换、非法字段、异常兜底、角色隔离和日志。当前共有 92 项测试：普通运行通过 85 项、跳过 7 项需真实 pgvector 的集成测试；启用专用测试库后 92 项全部通过。覆盖工具执行、会话隔离、向量数学、批次边界、知识过滤、重复导入及异常保护。集成测试步骤见第七章文档。启动应用和运行 JAR 仍需真实 `DASHSCOPE_API_KEY`。
 
 ## 目录与章节对应
 
@@ -223,7 +223,7 @@ IDEA 搜索 `[EMBEDDING RESULT]` 可看输入数量、批数、实际维度和�
 
 ## 第七章：持久化知识库
 
-先启动 Docker，在项目目录执行 `./scripts/start-knowledge-db.sh`，再运行 IDEA 的共享配置。打开 <http://localhost:18080/internal/knowledge>，点击“导入 / 更新 4 条知识”，即可搜索课程示例政策、调整 Top K / 阈值、查看来源与 JSON。
+先启动 Docker，在项目目录执行 `./scripts/start-knowledge-db.sh`，再运行 IDEA 的共享配置。打开 <http://localhost:18080/internal/knowledge>，在“导入自己的资料”中上传 TXT / Markdown / PDF，或粘贴正文，完成后即可搜索、调整 Top K / 阈值、查看来源与 JSON。四条课程样例移到可选折叠区。
 
 数据库绑定 `127.0.0.1:15432`，随机密码只保存于被忽略的 `.local/`；命名卷保存知识与向量。保留数据卷时也须保留原密码文件。重启数据库和 IDEA 后无需重新导入，聊天的内存历史仍会清空。
 
@@ -240,3 +240,5 @@ IDEA 已配置同一 JVM 参数，确保本机 SOCKS 代理环境下 PostgreSQL 
 真实验收：重复导入仍为 4 行，1024 维；数据库和应用重启后内容、元数据、向量指纹一致。物流 / 发票在默认 0.60 阈值命中；“衣服买错了，想寄回去”默认无结果，降到 0.50 返回两条退货知识。阈值尚未校准，分数不是概率。
 
 这一步返回知识片段与来源，尚未将知识加入客服 Prompt；RAG 留待后续章节。详见 [第七章实现、测试及限制](docs/chapters/07-pgvector-knowledge.md)。
+
+第七章补充已支持真实文件导入：文件最多 5 MB，PDF 最多 100 页，正文最多 50000 字符；扫描版 PDF 需先做 OCR。同名资料替换采用数据库事务，失败时保留旧内容。详细使用及验收见 [真实导入说明](docs/chapters/07-real-document-import.md)，[GitHub 改动](https://github.com/whxpc123/cloud-customer-service/compare/chapter-07...chapter-07-import)。原 `chapter-07` 标签保留，新版本标签为 `chapter-07-import`。
