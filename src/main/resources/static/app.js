@@ -29,7 +29,7 @@ function restore() {
     // Only restore this application's plain-text records. Never render storage or model text as HTML.
     sessions = stored.sessions.filter(s => s && /^[a-zA-Z0-9_-]{1,100}$/.test(s.id)
       && typeof s.title === 'string' && Array.isArray(s.turns))
-      .map(s => ({ id: s.id, title: s.title.slice(0,80), createdAt: Number(s.createdAt) || Date.now(), draft: typeof s.draft === 'string' ? s.draft.slice(0,4000) : '',
+      .map(s => ({ id: s.id, title: s.title.slice(0,80), demoUserId: [1001,2002].includes(s.demoUserId) ? s.demoUserId : null, createdAt: Number(s.createdAt) || Date.now(), draft: typeof s.draft === 'string' ? s.draft.slice(0,4000) : '',
         turns: s.turns.filter(t => t && typeof t.text === 'string'
           && ['user','assistant','system','error'].includes(t.role)) }));
     activeId = sessions.some(s => s.id === stored.activeId) ? stored.activeId : sessions[0]?.id;
@@ -48,6 +48,7 @@ function icon(name) {
 }
 function updateControls() {
   $('new-session').disabled = busy;
+  $('demo-user').disabled = busy;
   $('clear-memory').disabled = busy || !current();
   $('message-input').disabled = !current();
   $('send-message').disabled = busy || !current() || !$('message-input').value.trim();
@@ -64,7 +65,7 @@ function renderSessions() {
     button.title = session.title;
     button.append(icon('chat'));
     const text = element('div');
-    text.append(element('strong', '', session.title), element('small', '', new Date(session.createdAt).toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'}) + ' · 独立会话'));
+    text.append(element('strong', '', session.title), element('small', '', new Date(session.createdAt).toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'}) + ' · ' + (session.demoUserId ? '用户 ' + session.demoUserId : '访客')));
     button.append(text);
     button.addEventListener('click', () => {
       if (busy || activeId === session.id) return;
@@ -136,11 +137,31 @@ function renderInsight() {
   $('missing-fields').textContent = !valid ? '等待识别' : fields.length ? fields.map(f => f === 'orderNo' ? '请补充订单号' : String(f)).join('、') : '暂无待补充字段';
   $('missing-fields').classList.toggle('needs-info', fields.length > 0);
   $('raw-json').textContent = valid ? JSON.stringify(result, null, 2) : '发送消息后查看';
+  renderToolResults(selectedTurn);
+}
+function renderToolResults(turn) {
+  const results = Array.isArray(turn?.orderLookups) ? turn.orderLookups : [];
+  $('tool-summary').textContent = !turn ? '发送消息后查看是否执行查询' : results.length ? `实际执行了 ${results.length} 次查询` : '本轮没有执行订单查询';
+  $('tool-results').replaceChildren();
+  const codes = {FOUND:'已查询',NOT_FOUND:'未找到可访问的订单',MISSING_ORDER_NO:'需要订单号',INVALID_ORDER_NO:'订单号格式有误',AUTHENTICATION_REQUIRED:'请先选择演示用户',TEMPORARILY_UNAVAILABLE:'订单服务暂不可用'};
+  const statuses = {CREATED:'已创建',PAID:'已支付',PACKING:'打包中',SHIPPED:'已发货',DELIVERED:'已送达',CANCELLED:'已取消',REFUNDING:'退款处理中',REFUNDED:'已退款'};
+  results.filter(result => result && typeof result === 'object').forEach(result => {
+    const card = element('div','tool-result');
+    card.append(element('strong','',codes[result.code] || '查询结果'));
+    if (result.code === 'FOUND') {
+      card.append(element('p','',`${result.orderNo} · ${statuses[result.status] || result.status}`));
+      card.append(element('small','',result.expectedDeliveryDate ? `样例预计送达：${result.expectedDeliveryDate}` : '未提供预计送达日期'));
+    } else { card.append(element('p','',result.message || '请根据查询结果继续操作。')); }
+    const details = element('details');
+    details.append(element('summary','','查看工具返回'),element('pre','',JSON.stringify(result,null,2)));
+    card.append(details); $('tool-results').append(card);
+  });
 }
 function render() {
   renderSessions(); renderMessages(); renderInsight();
+  if (current()) $('demo-user').value = current().demoUserId ? String(current().demoUserId) : 'guest';
   $('session-title').textContent = current()?.title || '开始一场对话';
-  $('session-meta').textContent = current() ? '会话 ' + activeId : '点击“新建会话”开始';
+  $('session-meta').textContent = current() ? (current().demoUserId ? '用户 ' + current().demoUserId : '访客') + ' · 会话 ' + activeId : '点击“新建会话”开始';
   updateControls();
 }
 async function request(path, options = {}) {
@@ -155,11 +176,12 @@ function errorMessage(error) {
 }
 async function newSession() {
   if (busy) return;
+  const demoUserId = $('demo-user').value === 'guest' ? null : Number($('demo-user').value);
   saveDraft(); busy = true; updateControls(); showNotice();
   try {
     const data = await request('/api/conversations', { method:'POST' });
     if (!data || !/^[A-Za-z0-9_-]{1,100}$/.test(data.conversationId)) throw new Error('服务返回了无效的会话编号。');
-    const session = { id:data.conversationId, title:'新会话', turns:[], createdAt:Date.now() };
+    const session = { id:data.conversationId, demoUserId, title:'新会话', turns:[], createdAt:Date.now() };
     sessions.unshift(session); activeId = session.id; selectedTurn = null; $('message-input').value = '';
     persist();
   } catch (error) { showNotice(errorMessage(error)); }
@@ -178,9 +200,9 @@ async function sendMessage(event) {
   pending.append(element('div','avatar','杉'), element('div','bubble','正在理解上下文并回复…'));
   $('messages').append(pending); $('messages').scrollTop = $('messages').scrollHeight;
   try {
-    const data = await request(`/api/conversations/${encodeURIComponent(session.id)}/messages`, { method:'POST', body:JSON.stringify({message}) });
+    const data = await request(`/api/conversations/${encodeURIComponent(session.id)}/messages`, { method:'POST', headers: demoHeaders(session), body:JSON.stringify({message}) });
     if (!data || typeof data.answer !== 'string' || !data.intent || data.conversationId !== session.id) throw new Error('回复格式异常，请稍后继续。');
-    const turn = { role:'assistant', text:data.answer, intent:data.intent, time:Date.now() };
+    const turn = { role:'assistant', text:data.answer, intent:data.intent, orderLookups:Array.isArray(data.orderLookups) ? data.orderLookups : [], time:Date.now() };
     session.turns.push(turn); selectedTurn = turn;
   } catch (error) {
     session.turns.push({ role:'error', text:errorMessage(error) + '\n本条消息可能已进入模型记忆，请避免重复发送。需要重新开始时可清空记忆。', time:Date.now() });
@@ -192,12 +214,17 @@ async function clearMemory() {
   if (busy || !current()) return;
   const session = current(); busy = true; updateControls(); showNotice();
   try {
-    await request(`/api/conversations/${encodeURIComponent(session.id)}/memory`, { method:'DELETE' });
+    await request(`/api/conversations/${encodeURIComponent(session.id)}/memory`, { method:'DELETE', headers: demoHeaders(session) });
     session.turns.push({role:'system',text:'记忆已清空 · 接下来的对话从这里重新开始',time:Date.now()});
     selectedTurn = null; persist();
   } catch (error) { showNotice(errorMessage(error)); }
   finally { busy = false; render(); }
 }
+function demoHeaders(session) {
+  // This header selects a local demo identity; it is not production authentication.
+  return session.demoUserId ? {'X-Demo-User-Id':String(session.demoUserId)} : {};
+}
+$('demo-user').addEventListener('change', newSession);
 $('chat-form').addEventListener('submit', sendMessage);
 $('message-input').addEventListener('input', () => { saveDraft(); updateControls(); });
 $('message-input').addEventListener('keydown', event => {

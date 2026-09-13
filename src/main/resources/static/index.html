@@ -21,6 +21,7 @@
   <div class="workspace">
     <aside class="sidebar" aria-label="会话导航">
       <a class="brand" href="/" aria-label="云杉客服首页"><span class="brand-mark"><svg><use href="#tree"/></svg></span><span>云杉客服<small>YUNSHAN SERVICE</small></span></a>
+      <div class="demo-account"><label for="demo-user">演示用户 <span>仅供本地测试</span></label><select id="demo-user"><option value="1001">用户 1001 · A10001</option><option value="2002">用户 2002 · A20002</option><option value="guest">访客 · 未登录</option></select><small>切换用户会开启独立会话</small></div>
       <button id="new-session" class="new-session"><svg><use href="#plus"/></svg>新建会话<span>＋</span></button>
       <div class="nav-caption">我的会话 <span id="session-count">0</span></div>
       <nav id="sessions" class="sessions" aria-label="选择会话"></nav>
@@ -40,7 +41,7 @@
               <textarea id="message-input" rows="2" maxlength="4000" placeholder="说说您的问题，我们接着聊。" disabled></textarea>
               <div class="composer-bottom"><span class="keyboard-tip">Enter 发送 <span>·</span> Shift + Enter 换行</span><span id="char-count" class="char-count">0 / 4000</span><button id="send-message" class="send-button" type="submit" aria-label="发送消息" disabled><svg><use href="#send"/></svg></button></div>
             </form>
-            <p class="composer-note">AI 回复仅供参考；当前暂不能查询真实订单或办理退款。</p>
+            <p class="composer-note">订单查询使用本地模拟数据；不能办理退款，AI 回复仅供参考。</p>
           </div>
         </section>
 
@@ -53,6 +54,7 @@
               <div class="order-card"><span>提到的订单</span><strong id="order-number">—</strong><small id="order-hint">当前尚无识别结果</small></div>
               <div class="confidence-heading"><span>模型自评置信度</span><strong id="confidence">—</strong></div><div class="confidence-track"><div id="confidence-bar"></div></div><p class="fine-print">这是模型的自评，不代表实际正确率。</p>
               <div class="missing-heading">还需要的信息</div><div id="missing-fields" class="missing-fields">等待识别</div>
+              <section class="tool-results-panel" aria-label="实际订单查询"><div class="tool-results-heading">订单查询 <span>演示数据</span></div><p id="tool-summary">发送消息后查看是否执行查询</p><div id="tool-results"></div></section>
               <details class="raw-result"><summary>查看结构化结果 <span>{ }</span></summary><pre id="raw-json">发送消息后查看</pre></details>
             </div>
           </details>

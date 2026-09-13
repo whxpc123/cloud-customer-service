@@ -39,7 +39,7 @@ public class CustomerIntentRecognizer {
     }
 
     public IntentRecognitionResult recognize(String conversationId, String message) {
-        if (conversationId == null || conversationId.isBlank() || conversationId.length() > 100) {
+        if (conversationId == null || conversationId.isBlank() || conversationId.length() > 160) {
             return IntentRecognitionResult.fallback();
         }
         return recognizeWithHistory(conversationId, message);

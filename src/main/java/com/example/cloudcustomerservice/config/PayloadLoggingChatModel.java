@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -64,6 +65,13 @@ public final class PayloadLoggingChatModel implements ChatModel {
     }
 
     private void logRequest(String id, Prompt prompt) {
+        if (prompt.getOptions() instanceof ToolCallingChatOptions options) {
+            for (var callback : options.getToolCallbacks()) {
+                var definition = callback.getToolDefinition();
+                log.info("[TOOL DEFINITION] client={} id={} name={}\n{}\n{}", clientName, id,
+                        definition.name(), definition.description(), definition.inputSchema());
+            }
+        }
         StringBuilder messages = new StringBuilder();
         for (var message : prompt.getInstructions()) {
             messages.append("\n--- ").append(message.getMessageType().name()).append(" ---\n")

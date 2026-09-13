@@ -20,13 +20,16 @@ public class CustomerConversationController {
     }
 
     @PostMapping("/{conversationId}/messages")
-    public ChatTurnResponse sendMessage(@PathVariable String conversationId, @RequestBody SendMessageRequest request) {
-        return service.chat(conversationId, request.message());
+    public ChatTurnResponse sendMessage(@PathVariable String conversationId,
+            @RequestHeader(value = "X-Demo-User-Id", required = false) Long currentUserId,
+            @RequestBody SendMessageRequest request) {
+        return service.chat(conversationId, currentUserId, request.message());
     }
 
     @DeleteMapping("/{conversationId}/memory")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void clearMemory(@PathVariable String conversationId) {
-        service.clearMemory(conversationId);
+    public void clearMemory(@PathVariable String conversationId,
+            @RequestHeader(value = "X-Demo-User-Id", required = false) Long currentUserId) {
+        service.clearMemory(conversationId, currentUserId);
     }
 }
