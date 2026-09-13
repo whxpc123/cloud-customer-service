@@ -1,0 +1,27 @@
+spring:
+  autoconfigure:
+    exclude: []
+  config:
+    import: optional:file:.local/database.properties
+  datasource:
+    url: ${KNOWLEDGE_DB_URL:jdbc:postgresql://127.0.0.1:15432/cloud_customer_service}
+    username: ${KNOWLEDGE_DB_USER:cloud_ai}
+    # start-knowledge-db.sh 将随机本地密码写入上面的被忽略文件；也支持环境变量覆盖。
+    password: ${KNOWLEDGE_DB_PASSWORD:}
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+      connection-timeout: 3000
+  flyway:
+    enabled: true
+  ai:
+    vectorstore:
+      pgvector:
+        initialize-schema: false
+        schema-name: ai
+        table-name: knowledge_vector_store
+        schema-validation: true
+        dimensions: 1024
+        distance-type: COSINE_DISTANCE
+        index-type: HNSW
+        max-document-batch-size: 10

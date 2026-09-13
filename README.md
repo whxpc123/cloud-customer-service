@@ -2,9 +2,9 @@
 
 根据《第一章：老板下午要看的 AI 客服》实现的 Java 学习项目。后续章节在这个项目上逐步增加能力，每章的改动与验收方式记录在 `docs/chapters/`。
 
-当前进度：**第六章——EmbeddingModel、余弦相似度与候选文本语义排序**。
+当前进度：**第七章——PgVectorStore、知识持久化与元数据过滤检索**。
 
-章节记录：[第一章](docs/chapters/01-first-chat.md) · [第二章](docs/chapters/02-system-prompt.md) · [第三章](docs/chapters/03-structured-output.md) · [第四章](docs/chapters/04-chat-memory.md) · [第五章](docs/chapters/05-tool-calling.md) · [第六章](docs/chapters/06-embedding-lab.md)。
+章节记录：[第一章](docs/chapters/01-first-chat.md) · [第二章](docs/chapters/02-system-prompt.md) · [第三章](docs/chapters/03-structured-output.md) · [第四章](docs/chapters/04-chat-memory.md) · [第五章](docs/chapters/05-tool-calling.md) · [第六章](docs/chapters/06-embedding-lab.md) · [第七章](docs/chapters/07-pgvector-knowledge.md)。
 
 每章对应独立 Git 提交和 `chapter-NN` 标签，具体变化见 [CHANGELOG](CHANGELOG.md)。第 1～3 章历史根据已实现代码于 2026-09-12 补建；后续每章验收完成后提交并推送。
 
@@ -16,6 +16,7 @@
 | [chapter-04](https://github.com/whxpc123/cloud-customer-service/tree/chapter-04) | Chat Memory、会话接口、历史意图识别 | [与第三章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-03...chapter-04) |
 | [chapter-05](https://github.com/whxpc123/cloud-customer-service/tree/chapter-05) | Tool Calling、订单归属查询、页面实际工具结果 | [与第四章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-04...chapter-05) |
 | [chapter-06](https://github.com/whxpc123/cloud-customer-service/tree/chapter-06) | Embedding、余弦相似度、语义实验室 | [与第五章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-05...chapter-06) |
+| [chapter-07](https://github.com/whxpc123/cloud-customer-service/tree/chapter-07) | PgVectorStore、Flyway、持久化知识检索与页面 | [与第六章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-06...chapter-07) |
 
 在 GitHub 选择对应标签查看该章完整代码，在 Compare 页面选择相邻标签查看改动。阅读历史版本可以使用独立工作目录，例如 `git worktree add ../chapter-01-view chapter-01`，避免覆盖当前开发目录。
 
@@ -29,18 +30,19 @@
 | Spring AI Alibaba | 1.1.2.2 |
 | Maven Wrapper 下载的 Maven | 3.9.11 |
 | 聊天模型 | qwen-plus |
-| 向量模型 | text-embedding-v4，1024 维，document |
+| 向量模型 | text-embedding-v4，1024 维；第六章 document，第七章入库 document / 检索 query |
+| 知识库 | PostgreSQL 17.10 + pgvector 0.8.2，Docker 镜像摘要固定 |
 
 默认端口为 **18080**（本机 8080 和 8081 已被其他服务占用）。
 
-版本按章节锁定。项目不依赖 Lombok，也不需要数据库、Redis 或 Node.js。
+版本按章节锁定。项目不依赖 Lombok、Redis 或 Node.js。第七章需要 Docker 中的 PostgreSQL + pgvector；不启用 knowledge 时，前六章仍无需数据库。
 
 ## 在 IntelliJ IDEA 中启动
 
 1. 选择 **File → Open**，打开本目录中的 `pom.xml`，选择作为项目打开，等待 Maven 依赖同步完成。也可以直接打开 `cloud-customer-service` 文件夹。
 2. 在 **File → Project Structure → Project SDK** 中选择 **JDK 17**，Language Level 选择 **17**。Maven 的 Importer / Runner JDK 也选择 Project SDK。
 3. 如果 IDEA 需要选择 Maven，在 **Settings → Build, Execution, Deployment → Build Tools → Maven** 中选择 **Use Maven wrapper**。第一次下载依赖需要联网。
-4. 项目已附带 `CloudCustomerServiceApplication` 运行配置，导入后选择它并点击运行。此配置已开启 `local` 环境供第六章实验使用。也可通过启动类的 `main` 方法创建配置；使用普通 **Application** 配置即可，无需 IDEA Ultimate。
+4. 项目已附带 `CloudCustomerServiceApplication` 运行配置，导入后选择它并点击运行。此配置已开启 `local,knowledge`。**首次运行前先启动 Docker，再在项目终端执行 `./scripts/start-knowledge-db.sh`**，生成本地数据库配置并等待数据库就绪。只运行前六章可将 profiles 改为 `local`。也可通过启动类的 `main` 方法创建配置；使用普通 **Application** 配置即可，无需 IDEA Ultimate。
 5. 应用读取已有环境变量 `DASHSCOPE_API_KEY`。本机已验证 IDEA 可以继承此变量，直接运行即可；若其他电脑未配置该变量，再在 **Run → Edit Configurations → Environment variables** 中添加。
 6. 看到 `Started CloudCustomerServiceApplication` 后，访问：
 
@@ -91,7 +93,7 @@ curl --get 'http://localhost:18080/api/chat' \
 java -jar target/cloud-customer-service-0.0.1-SNAPSHOT.jar
 ```
 
-自动测试在需要调用的路径替换 ChatModel / EmbeddingModel，不访问百炼、不需要真实 Key，覆盖聊天回归、结构化转换、非法字段、异常兜底、角色隔离和日志。当前共 71 项测试，包含工具执行、会话隔离、向量数学、语义排序、批次边界、异常兜底，以及实验接口的 local 环境限制。启动应用和运行 JAR 仍需真实 `DASHSCOPE_API_KEY`。
+自动测试在需要调用的路径替换 ChatModel / EmbeddingModel，不访问百炼、不需要真实 Key，覆盖聊天回归、结构化转换、非法字段、异常兜底、角色隔离和日志。当前共有 85 项测试：普通运行通过 81 项、跳过 4 项需真实 pgvector 的集成测试；启用专用测试库后 85 项全部通过。覆盖工具执行、会话隔离、向量数学、批次边界、知识过滤、重复导入及异常保护。集成测试步骤见第七章文档。启动应用和运行 JAR 仍需真实 `DASHSCOPE_API_KEY`。
 
 ## 目录与章节对应
 
@@ -109,7 +111,7 @@ cloud-customer-service/
 └── docs/chapters/                   # 各章改动与验收记录
 ```
 
-第二章使用 `AiConfig.defaultSystem(...)` 给每次请求添加客服身份和规则，Controller 仍只通过 `.user(message)` 传入当前问题。第三章新增独立的 `intentChatClient` 和 `POST /api/intents/recognize`，使用 `.entity(outputConverter)` 返回 Java 对象。第四章增加会话记忆和统一会话接口；第五章在 `order/`、`tool/` 下增加模拟订单服务和只读 Tool Calling。第六章在 `embedding/` 下增加向量生成、余弦计算和语义排序；VectorStore 与 RAG 等等待后续章节。
+第二章使用 `AiConfig.defaultSystem(...)` 给每次请求添加客服身份和规则，Controller 仍只通过 `.user(message)` 传入当前问题。第三章新增独立的 `intentChatClient` 和 `POST /api/intents/recognize`，使用 `.entity(outputConverter)` 返回 Java 对象。第四章增加会话记忆和统一会话接口；第五章在 `order/`、`tool/` 下增加模拟订单服务和只读 Tool Calling。第六章在 `embedding/` 下增加向量生成、余弦计算和语义排序；第七章在 `knowledge/` 下增加 PgVectorStore 持久化、过滤检索和独立实验页面；文档 ETL 与 RAG 等待后续章节。
 
 打开 `requests.http` 可逐组运行本章实验：身份、无关请求、退款状态、连续对话和提示词注入。Prompt 是行为指导，不能代替真实订单数据或后端权限；模型措辞和遵循程度可能随调用变化。真实回复仍可能出现未经验证的商城入口建议，详见第二章验收记录。
 
@@ -208,12 +210,33 @@ IDEA 使用共享运行配置启动后，点击工作台顶部的“语义实验
 
 接口：`POST /internal/embedding-lab/compare` 接收 `{"left":"我要退货","right":"东西不想要了"}`；`POST /internal/embedding-lab/rank` 接收 `{"query":"想寄回去","candidates":["退货申请流程","物流异常处理"]}`。
 
-实验页面和两个接口仅在 `local` profile 注册。共享 IDEA 参数已增加 `--spring.profiles.active=local`；终端运行可使用 `SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run`。普通启动未启用 local 时，实验页面与 API 返回 404，客服接口仍可用。Profile 是环境开关，不是身份认证。
+实验页面和两个接口仅在 `local` profile 注册。当前共享 IDEA 参数为 `--spring.profiles.active=local,knowledge`；只使用第六章时可改为 `local`。终端运行可使用 `SPRING_PROFILES_ACTIVE=local ./mvnw spring-boot:run`。普通启动未启用 local 时，实验页面与 API 返回 404，客服接口仍可用。Profile 是环境开关，不是身份认证。
 
-向量服务仍读取 `DASHSCOPE_API_KEY`。单次比较通常一批；20 条候选加查询分为 10 + 10 + 1 条，避免超出 v4 单批限制。每次排序重新向量化所有候选，不保存向量；下一章再处理 VectorStore。
+向量服务仍读取 `DASHSCOPE_API_KEY`。单次比较通常一批；20 条候选加查询分为 10 + 10 + 1 条，避免超出 v4 单批限制。每次排序重新向量化所有候选，不保存向量；第七章的知识库页面则将文档向量持久化，搜索时只向量化问题。
 
 IDEA 搜索 `[EMBEDDING RESULT]` 可看输入数量、批数、实际维度和耗时；失败记录 `[EMBEDDING ERROR]` 的异常类型。此日志不包含原文或向量，独立于聊天的完整提示词日志开关。非法业务输入返回 400，上游异常或非法向量返回稳定 502。
 
 本次真实模型观察：相近表达约 **0.6130**，无关天气约 **0.2998**；相反结论约 **0.8672**，不同订单号约 **0.9711**。分数不是概率或业务结论，不设置未经评测的匹配阈值。
 
 详见 [第六章实现与验收](docs/chapters/06-embedding-lab.md) 和 [真实实验记录](docs/chapters/06-live-observations.json)。
+
+
+## 第七章：持久化知识库
+
+先启动 Docker，在项目目录执行 `./scripts/start-knowledge-db.sh`，再运行 IDEA 的共享配置。打开 <http://localhost:18080/internal/knowledge>，点击“导入 / 更新 4 条知识”，即可搜索课程示例政策、调整 Top K / 阈值、查看来源与 JSON。
+
+数据库绑定 `127.0.0.1:15432`，随机密码只保存于被忽略的 `.local/`；命名卷保存知识与向量。保留数据卷时也须保留原密码文件。重启数据库和 IDEA 后无需重新导入，聊天的内存历史仍会清空。
+
+终端启动第七章（先配置 Java 17 和已有的 `DASHSCOPE_API_KEY`）：
+
+```bash
+./scripts/start-knowledge-db.sh
+SPRING_PROFILES_ACTIVE=local,knowledge ./mvnw spring-boot:run \
+  -Dspring-boot.run.jvmArguments='-DsocksNonProxyHosts=localhost|127.*|[::1]'
+```
+
+IDEA 已配置同一 JVM 参数，确保本机 SOCKS 代理环境下 PostgreSQL 回环连接正常。普通终端启动未启用 knowledge 时仍不连接数据库。
+
+真实验收：重复导入仍为 4 行，1024 维；数据库和应用重启后内容、元数据、向量指纹一致。物流 / 发票在默认 0.60 阈值命中；“衣服买错了，想寄回去”默认无结果，降到 0.50 返回两条退货知识。阈值尚未校准，分数不是概率。
+
+这一步返回知识片段与来源，尚未将知识加入客服 Prompt；RAG 留待后续章节。详见 [第七章实现、测试及限制](docs/chapters/07-pgvector-knowledge.md)。

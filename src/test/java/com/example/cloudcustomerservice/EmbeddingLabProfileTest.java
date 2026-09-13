@@ -14,6 +14,9 @@ class EmbeddingLabProfileTest {
     @Autowired MockMvc mvc;
     @Test void labPageAndApisDoNotExistOutsideLocal() throws Exception {
         mvc.perform(get("/internal/embedding-lab")).andExpect(status().isNotFound());
+        mvc.perform(get("/internal/knowledge")).andExpect(status().isNotFound());
+        mvc.perform(post("/internal/knowledge/seed")).andExpect(status().isNotFound());
+        mvc.perform(post("/internal/knowledge/search").contentType("application/json").content("{}")).andExpect(status().isNotFound());
         for(String path:new String[]{"compare","rank"}) {
             mvc.perform(post("/internal/embedding-lab/"+path).contentType("application/json").content("{}"))
                     .andExpect(status().isNotFound());

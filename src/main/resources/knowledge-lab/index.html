@@ -1,0 +1,14 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>知识检索 · 云杉客服</title><link rel="stylesheet" href="/embedding-lab.css"><link rel="stylesheet" href="/knowledge-lab.css"><script defer src="/knowledge-lab.js"></script></head>
+<body><header><a href="/" class="brand">杉 <span>云杉客服</span></a><a href="/internal/embedding-lab">语义实验室 ↗</a><a href="/">返回对话工作台 ↗</a></header><main>
+<div class="eyebrow">第七章 / KNOWLEDGE LIBRARY</div><h1>把知识存下来，<br><span>每次只寻找答案的出处。</span></h1><p class="intro">正文、来源和向量保存在 PostgreSQL 中。搜索只生成问题的向量，从知识库找出相关片段。</p>
+<div class="model-note">PostgreSQL + pgvector <span>1024 维 · HNSW</span><span>tenant-yunshan</span><span>仅检索已发布的中文售后知识</span></div>
+<div class="lab-grid"><section class="inputs" aria-label="知识检索设置">
+<div class="seed-area"><div><h2>四条课程知识</h2><p>退货条件、退货运费、物流异常、电子发票。</p></div><button id="seed" type="button">导入 / 更新样例</button></div>
+<p class="fine">点击后会重新生成四条向量并按稳定 ID 更新。应用启动不会自动导入，重启保留数据库内容。</p><p id="seed-status" role="status"></p>
+<form id="search-form"><label for="query">想查找什么？</label><textarea id="query" rows="3" required maxlength="2000">衣服买错了，想寄回去</textarea>
+<div class="examples" role="group" aria-label="搜索样例"><button type="button" data-query="衣服买错了，想寄回去">退货</button><button type="button" data-query="快递两天都没有动静">物流异常</button><button type="button" data-query="电子发票去哪里申请？">电子发票</button></div>
+<div class="search-options"><label for="top-k">最多返回 <select id="top-k"><option value="1">1 条</option><option value="3">3 条</option><option value="5" selected>5 条</option><option value="10">10 条</option></select></label><label for="threshold">最低相似度 <input id="threshold" type="number" min="0" max="1" step="0.01" value="0.60" required></label></div>
+<p class="fine">0.60 是实验起点，不是已校准阈值；调低可观察更多结果。最多返回 10 条，每次搜索会调用向量服务。</p>
+<div class="submit-row"><small>每个问题最多 2000 字符</small><button type="submit" class="primary">检索知识 →</button></div></form><p id="feedback" role="status" aria-live="polite"></p></section>
+<section class="output" aria-label="知识搜索结果" aria-live="polite" aria-busy="false"><div class="section-heading"><h2>相关知识片段</h2><span id="result-count">等待搜索</span></div><div id="empty-result"><div class="vector-motif" aria-hidden="true">▤</div><h3>找到资料，保留出处。</h3><p>首次使用先导入样例。搜索结果会显示正文、版本和知识块编号，不生成客服回答。</p></div><div id="hits" hidden></div><details id="raw-details" hidden><summary>查看检索结果 JSON</summary><pre id="raw-result"></pre></details></section></div>
+<aside class="reading-note"><strong>相关资料，不等于已经得到业务结论。</strong><p>四条内容均为课程样例，不代表真实商城政策。租户和发布范围由服务端固定；本章尚未把检索内容交给 ChatModel，不能办理退款。</p></aside><footer>文档以 document 角色入库，问题以 query 角色检索。Top K 是结果上限；阈值或过滤可能让结果更少。HNSW 为近似索引，四条样例不能代表八万条知识的性能。</footer></main></body></html>

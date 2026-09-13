@@ -372,3 +372,72 @@ Content-Type: application/json
 
 ### 第六章：非local环境应404；模型异常/非法向量的502由离线测试注入验证
 # 修改维度后需要重新生成向量；本章不新增修改配置或故障注入的HTTP接口。
+
+### 第七章：先运行 scripts/start-knowledge-db.sh，IDEA 使用 local,knowledge
+# 页面 http://localhost:18080/internal/knowledge
+# 以下 seed/search 真实调用百炼向量服务。服务端固定 tenant-yunshan。
+
+### 第七章：导入或更新四条课程知识，重复执行不增加行数
+POST http://localhost:18080/internal/knowledge/seed
+
+### 第七章：默认 topK=5 / threshold=0.60；本机实测退款问题空结果
+POST http://localhost:18080/internal/knowledge/search
+Content-Type: application/json
+
+{"query":"衣服买错了，想寄回去"}
+
+### 第七章：降到0.50，实测两条退货知识；分数和顺序可能变化
+POST http://localhost:18080/internal/knowledge/search
+Content-Type: application/json
+
+{"query":"衣服买错了，想寄回去","topK":5,"threshold":0.5}
+
+### 第七章：物流规则
+POST http://localhost:18080/internal/knowledge/search
+Content-Type: application/json
+
+{"query":"快递两天都没有动静"}
+
+### 第七章：发票规则；数据库与IDEA重启后不重新导入也能查询
+POST http://localhost:18080/internal/knowledge/search
+Content-Type: application/json
+
+{"query":"电子发票去哪里申请？"}
+
+### 第七章：修改topK为1/3/10，阈值0时实测返回1/3/4条
+POST http://localhost:18080/internal/knowledge/search
+Content-Type: application/json
+
+{"query":"衣服买错了，想寄回去","topK":10,"threshold":0}
+
+### 第七章：修改threshold为0/0.5/0.7/0.9，观察召回与空结果
+POST http://localhost:18080/internal/knowledge/search
+Content-Type: application/json
+
+{"query":"衣服买错了，想寄回去","topK":10,"threshold":0.9}
+
+### 第七章：客户端声称的租户被忽略，仍只查询服务端云杉范围
+# 真正的跨租户/草稿隔离通过专用库 PgVectorPersistenceTest 验证。
+POST http://localhost:18080/internal/knowledge/search
+Content-Type: application/json
+X-Tenant-Id: tenant-songguo
+
+{"query":"退货","topK":10,"threshold":0,"tenantId":"tenant-songguo"}
+
+### 第七章：空问题应400
+POST http://localhost:18080/internal/knowledge/search
+Content-Type: application/json
+
+{"query":" "}
+
+### 第七章：越界topK应400
+POST http://localhost:18080/internal/knowledge/search
+Content-Type: application/json
+
+{"query":"发票","topK":11,"threshold":0.6}
+
+### 第七章：越界threshold应400
+POST http://localhost:18080/internal/knowledge/search
+Content-Type: application/json
+
+{"query":"发票","topK":5,"threshold":1.1}

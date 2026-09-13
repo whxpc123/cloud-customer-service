@@ -4,6 +4,17 @@
 
 **历史说明：**第 1～3 章最初在同一工作目录中递进开发，尚未使用 Git。以下三个版本于 2026-09-12 根据本任务中已实现的代码补建，提交时间是补建时间。各标签的代码已分别执行构建验证。
 
+## 第七章 · `chapter-07` · PgVectorStore 与持久化知识检索
+
+- 增加 PostgreSQL + pgvector Docker 配置、随机本地密码启动脚本和 Flyway 迁移，创建 vector(1024) 表及 HNSW 余弦索引。
+- 增加四条带稳定 UUID / 来源 / 版本的课程知识；通过 VectorStore.add upsert，重复导入不增行，向量化失败不预先删除旧数据。
+- 入库使用 document、搜索使用 query，最多十条一批；只嵌入正文并验证模型返回数量、索引、维度和数值。
+- 服务端固定演示租户，按租户 / 发布状态 / 知识库 / 语言过滤；支持 Top K、阈值、来源追踪及真实空结果。
+- 新增 local + knowledge 环境的可视化知识库页面，前六章无数据库启动路径保留。
+- 85 项测试及打包通过（其中 4 项使用专用 PostgreSQL 测试库）；IDEA Java 17 实际运行，真实百炼检索、重复导入、过滤与数据库/应用重启持久化通过，桌面及 390px / 320px 浏览器检查通过。
+- 退款查询默认阈值 0.60 无命中，降到 0.50 命中两条；四条数据未验证八万条性能、HNSW 召回或生产认证，尚未接入 RAG。
+- 详情：[第七章实现与验收](docs/chapters/07-pgvector-knowledge.md)。
+
 ## 第六章 · `chapter-06` · Embedding 与语义排序
 
 - 配置已有 Starter 的 text-embedding-v4 / 1024 / document，继续使用 DASHSCOPE_API_KEY。

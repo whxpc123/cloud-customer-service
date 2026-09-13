@@ -7,6 +7,12 @@ app:
     log-payload: ${AI_LOG_PAYLOAD:false}
 
 spring:
+  # 前六章与离线测试不依赖数据库；knowledge profile 显式启用以下自动配置。
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration
+      - org.springframework.ai.vectorstore.pgvector.autoconfigure.PgVectorStoreAutoConfiguration
   application:
     name: cloud-customer-service
   ai:

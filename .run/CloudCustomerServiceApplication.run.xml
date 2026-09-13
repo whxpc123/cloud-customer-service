@@ -2,7 +2,9 @@
   <configuration default="false" name="CloudCustomerServiceApplication" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="com.example.cloudcustomerservice.CloudCustomerServiceApplication" />
     <!-- 用户要求在 IDEA 查看完整提示词与原始返回；本地运行显式开启。 -->
-    <option name="PROGRAM_PARAMETERS" value="--app.ai.log-payload=true --spring.profiles.active=local" />
+    <option name="PROGRAM_PARAMETERS" value="--app.ai.log-payload=true --spring.profiles.active=local,knowledge" />
+    <!-- 本机代理环境下，PostgreSQL 的回环连接需要直接解析与连接。 -->
+    <option name="VM_PARAMETERS" value="-DsocksNonProxyHosts=localhost|127.*|[::1]" />
     <module name="cloud-customer-service" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
     <method v="2">

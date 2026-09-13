@@ -1,0 +1,20 @@
+name: cloud-customer-service
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.2-pg17@sha256:feb68f4f15446397d8cac7f4fe48fe4586de83160d1fc48b46283312d1a33966
+    environment:
+      POSTGRES_DB: cloud_customer_service
+      POSTGRES_USER: cloud_ai
+    env_file:
+      - .local/postgres.env
+    ports:
+      - "127.0.0.1:15432:5432"
+    volumes:
+      - cloud_customer_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cloud_ai -d cloud_customer_service"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+volumes:
+  cloud_customer_pgdata:

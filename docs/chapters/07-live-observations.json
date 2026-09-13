@@ -1,0 +1,486 @@
+{
+  "date": "2026-09-13",
+  "environment": "IDEA Java 17, local + knowledge, PostgreSQL 17.10 / pgvector 0.8.2",
+  "embeddingModel": "text-embedding-v4",
+  "dimensions": 1024,
+  "fixturesOnly": true,
+  "experiments": [
+    {
+      "experiment": "empty-store",
+      "request": {
+        "query": "衣服买错了，想寄回去"
+      },
+      "status": 200,
+      "elapsedMs": 375,
+      "response": {
+        "query": "衣服买错了，想寄回去",
+        "hits": []
+      }
+    },
+    {
+      "experiment": "seed-1",
+      "request": null,
+      "status": 200,
+      "elapsedMs": 265,
+      "response": {
+        "importedDocuments": 4
+      }
+    },
+    {
+      "experiment": "row-count-1",
+      "count": 4
+    },
+    {
+      "experiment": "seed-2",
+      "request": null,
+      "status": 200,
+      "elapsedMs": 406,
+      "response": {
+        "importedDocuments": 4
+      }
+    },
+    {
+      "experiment": "row-count-2",
+      "count": 4
+    },
+    {
+      "experiment": "refund",
+      "request": {
+        "query": "衣服买错了，想寄回去"
+      },
+      "status": 200,
+      "elapsedMs": 217,
+      "response": {
+        "query": "衣服买错了，想寄回去",
+        "hits": []
+      }
+    },
+    {
+      "experiment": "logistics",
+      "request": {
+        "query": "快递两天都没有动静"
+      },
+      "status": 200,
+      "elapsedMs": 145,
+      "response": {
+        "query": "快递两天都没有动静",
+        "hits": [
+          {
+            "documentId": "2ecc5e3a-b096-3b67-b937-2176c5245bda",
+            "content": "物流信息超过四十八小时没有更新时，用户可以联系在线客服申请物流核查。核查期间客服不得擅自承诺包裹已经丢失。",
+            "score": 0.665253072977066,
+            "sourceId": "logistics-policy",
+            "sourceVersion": "2.1",
+            "chunkIndex": 1,
+            "category": "LOGISTICS_EXCEPTION"
+          }
+        ]
+      }
+    },
+    {
+      "experiment": "invoice",
+      "request": {
+        "query": "电子发票去哪里申请？"
+      },
+      "status": 200,
+      "elapsedMs": 137,
+      "response": {
+        "query": "电子发票去哪里申请？",
+        "hits": [
+          {
+            "documentId": "a203c1c2-5ee6-3a7f-b403-33f57132c960",
+            "content": "订单完成后，用户可以在订单详情页申请电子发票。电子发票开具完成后，将发送至用户绑定的邮箱。",
+            "score": 0.6408554911613464,
+            "sourceId": "invoice-policy",
+            "sourceVersion": "1.4",
+            "chunkIndex": 1,
+            "category": "INVOICE_POLICY"
+          }
+        ]
+      }
+    },
+    {
+      "experiment": "topK-1",
+      "request": {
+        "query": "衣服买错了，想寄回去",
+        "topK": 1,
+        "threshold": 0.0
+      },
+      "status": 200,
+      "elapsedMs": 232,
+      "response": {
+        "query": "衣服买错了，想寄回去",
+        "hits": [
+          {
+            "documentId": "aa45d1bc-e4fa-3169-9e28-fa5c6d4c99f6",
+            "content": "因商品质量问题产生的退货运费，由云杉商城承担；因消费者个人原因申请无理由退货的，退货运费原则上由消费者承担。",
+            "score": 0.5606222748756409,
+            "sourceId": "refund-policy",
+            "sourceVersion": "3.2",
+            "chunkIndex": 2,
+            "category": "REFUND_FREIGHT"
+          }
+        ]
+      }
+    },
+    {
+      "experiment": "topK-3",
+      "request": {
+        "query": "衣服买错了，想寄回去",
+        "topK": 3,
+        "threshold": 0.0
+      },
+      "status": 200,
+      "elapsedMs": 155,
+      "response": {
+        "query": "衣服买错了，想寄回去",
+        "hits": [
+          {
+            "documentId": "aa45d1bc-e4fa-3169-9e28-fa5c6d4c99f6",
+            "content": "因商品质量问题产生的退货运费，由云杉商城承担；因消费者个人原因申请无理由退货的，退货运费原则上由消费者承担。",
+            "score": 0.5606222748756409,
+            "sourceId": "refund-policy",
+            "sourceVersion": "3.2",
+            "chunkIndex": 2,
+            "category": "REFUND_FREIGHT"
+          },
+          {
+            "documentId": "3706fa36-1653-377e-a6c1-c3704994aaf0",
+            "content": "除特殊商品外，消费者自签收商品次日起七日内，在商品保持完好且不影响二次销售的情况下，可以申请无理由退货。",
+            "score": 0.5602133572101593,
+            "sourceId": "refund-policy",
+            "sourceVersion": "3.2",
+            "chunkIndex": 1,
+            "category": "REFUND_POLICY"
+          },
+          {
+            "documentId": "2ecc5e3a-b096-3b67-b937-2176c5245bda",
+            "content": "物流信息超过四十八小时没有更新时，用户可以联系在线客服申请物流核查。核查期间客服不得擅自承诺包裹已经丢失。",
+            "score": 0.4936861991882324,
+            "sourceId": "logistics-policy",
+            "sourceVersion": "2.1",
+            "chunkIndex": 1,
+            "category": "LOGISTICS_EXCEPTION"
+          }
+        ]
+      }
+    },
+    {
+      "experiment": "topK-10",
+      "request": {
+        "query": "衣服买错了，想寄回去",
+        "topK": 10,
+        "threshold": 0.0
+      },
+      "status": 200,
+      "elapsedMs": 151,
+      "response": {
+        "query": "衣服买错了，想寄回去",
+        "hits": [
+          {
+            "documentId": "aa45d1bc-e4fa-3169-9e28-fa5c6d4c99f6",
+            "content": "因商品质量问题产生的退货运费，由云杉商城承担；因消费者个人原因申请无理由退货的，退货运费原则上由消费者承担。",
+            "score": 0.5606222748756409,
+            "sourceId": "refund-policy",
+            "sourceVersion": "3.2",
+            "chunkIndex": 2,
+            "category": "REFUND_FREIGHT"
+          },
+          {
+            "documentId": "3706fa36-1653-377e-a6c1-c3704994aaf0",
+            "content": "除特殊商品外，消费者自签收商品次日起七日内，在商品保持完好且不影响二次销售的情况下，可以申请无理由退货。",
+            "score": 0.5602133572101593,
+            "sourceId": "refund-policy",
+            "sourceVersion": "3.2",
+            "chunkIndex": 1,
+            "category": "REFUND_POLICY"
+          },
+          {
+            "documentId": "2ecc5e3a-b096-3b67-b937-2176c5245bda",
+            "content": "物流信息超过四十八小时没有更新时，用户可以联系在线客服申请物流核查。核查期间客服不得擅自承诺包裹已经丢失。",
+            "score": 0.4936861991882324,
+            "sourceId": "logistics-policy",
+            "sourceVersion": "2.1",
+            "chunkIndex": 1,
+            "category": "LOGISTICS_EXCEPTION"
+          },
+          {
+            "documentId": "a203c1c2-5ee6-3a7f-b403-33f57132c960",
+            "content": "订单完成后，用户可以在订单详情页申请电子发票。电子发票开具完成后，将发送至用户绑定的邮箱。",
+            "score": 0.43326038122177124,
+            "sourceId": "invoice-policy",
+            "sourceVersion": "1.4",
+            "chunkIndex": 1,
+            "category": "INVOICE_POLICY"
+          }
+        ]
+      }
+    },
+    {
+      "experiment": "threshold-0.0",
+      "request": {
+        "query": "衣服买错了，想寄回去",
+        "topK": 10,
+        "threshold": 0.0
+      },
+      "status": 200,
+      "elapsedMs": 228,
+      "response": {
+        "query": "衣服买错了，想寄回去",
+        "hits": [
+          {
+            "documentId": "aa45d1bc-e4fa-3169-9e28-fa5c6d4c99f6",
+            "content": "因商品质量问题产生的退货运费，由云杉商城承担；因消费者个人原因申请无理由退货的，退货运费原则上由消费者承担。",
+            "score": 0.5606222748756409,
+            "sourceId": "refund-policy",
+            "sourceVersion": "3.2",
+            "chunkIndex": 2,
+            "category": "REFUND_FREIGHT"
+          },
+          {
+            "documentId": "3706fa36-1653-377e-a6c1-c3704994aaf0",
+            "content": "除特殊商品外，消费者自签收商品次日起七日内，在商品保持完好且不影响二次销售的情况下，可以申请无理由退货。",
+            "score": 0.5602133572101593,
+            "sourceId": "refund-policy",
+            "sourceVersion": "3.2",
+            "chunkIndex": 1,
+            "category": "REFUND_POLICY"
+          },
+          {
+            "documentId": "2ecc5e3a-b096-3b67-b937-2176c5245bda",
+            "content": "物流信息超过四十八小时没有更新时，用户可以联系在线客服申请物流核查。核查期间客服不得擅自承诺包裹已经丢失。",
+            "score": 0.4936861991882324,
+            "sourceId": "logistics-policy",
+            "sourceVersion": "2.1",
+            "chunkIndex": 1,
+            "category": "LOGISTICS_EXCEPTION"
+          },
+          {
+            "documentId": "a203c1c2-5ee6-3a7f-b403-33f57132c960",
+            "content": "订单完成后，用户可以在订单详情页申请电子发票。电子发票开具完成后，将发送至用户绑定的邮箱。",
+            "score": 0.43326038122177124,
+            "sourceId": "invoice-policy",
+            "sourceVersion": "1.4",
+            "chunkIndex": 1,
+            "category": "INVOICE_POLICY"
+          }
+        ]
+      }
+    },
+    {
+      "experiment": "threshold-0.5",
+      "request": {
+        "query": "衣服买错了，想寄回去",
+        "topK": 10,
+        "threshold": 0.5
+      },
+      "status": 200,
+      "elapsedMs": 180,
+      "response": {
+        "query": "衣服买错了，想寄回去",
+        "hits": [
+          {
+            "documentId": "aa45d1bc-e4fa-3169-9e28-fa5c6d4c99f6",
+            "content": "因商品质量问题产生的退货运费，由云杉商城承担；因消费者个人原因申请无理由退货的，退货运费原则上由消费者承担。",
+            "score": 0.5606222748756409,
+            "sourceId": "refund-policy",
+            "sourceVersion": "3.2",
+            "chunkIndex": 2,
+            "category": "REFUND_FREIGHT"
+          },
+          {
+            "documentId": "3706fa36-1653-377e-a6c1-c3704994aaf0",
+            "content": "除特殊商品外，消费者自签收商品次日起七日内，在商品保持完好且不影响二次销售的情况下，可以申请无理由退货。",
+            "score": 0.5602133572101593,
+            "sourceId": "refund-policy",
+            "sourceVersion": "3.2",
+            "chunkIndex": 1,
+            "category": "REFUND_POLICY"
+          }
+        ]
+      }
+    },
+    {
+      "experiment": "threshold-0.7",
+      "request": {
+        "query": "衣服买错了，想寄回去",
+        "topK": 10,
+        "threshold": 0.7
+      },
+      "status": 200,
+      "elapsedMs": 150,
+      "response": {
+        "query": "衣服买错了，想寄回去",
+        "hits": []
+      }
+    },
+    {
+      "experiment": "threshold-0.9",
+      "request": {
+        "query": "衣服买错了，想寄回去",
+        "topK": 10,
+        "threshold": 0.9
+      },
+      "status": 200,
+      "elapsedMs": 185,
+      "response": {
+        "query": "衣服买错了，想寄回去",
+        "hits": []
+      }
+    },
+    {
+      "experiment": "foreign-tenant-excluded",
+      "request": {
+        "query": "衣服买错了，想寄回去",
+        "threshold": 0.0,
+        "topK": 10,
+        "tenantId": "tenant-songguo"
+      },
+      "status": 200,
+      "elapsedMs": 174,
+      "response": {
+        "query": "衣服买错了，想寄回去",
+        "hits": [
+          {
+            "documentId": "aa45d1bc-e4fa-3169-9e28-fa5c6d4c99f6",
+            "content": "因商品质量问题产生的退货运费，由云杉商城承担；因消费者个人原因申请无理由退货的，退货运费原则上由消费者承担。",
+            "score": 0.5606010556221008,
+            "sourceId": "refund-policy",
+            "sourceVersion": "3.2",
+            "chunkIndex": 2,
+            "category": "REFUND_FREIGHT"
+          },
+          {
+            "documentId": "2ecc5e3a-b096-3b67-b937-2176c5245bda",
+            "content": "物流信息超过四十八小时没有更新时，用户可以联系在线客服申请物流核查。核查期间客服不得擅自承诺包裹已经丢失。",
+            "score": 0.4935867190361023,
+            "sourceId": "logistics-policy",
+            "sourceVersion": "2.1",
+            "chunkIndex": 1,
+            "category": "LOGISTICS_EXCEPTION"
+          },
+          {
+            "documentId": "a203c1c2-5ee6-3a7f-b403-33f57132c960",
+            "content": "订单完成后，用户可以在订单详情页申请电子发票。电子发票开具完成后，将发送至用户绑定的邮箱。",
+            "score": 0.4333342909812927,
+            "sourceId": "invoice-policy",
+            "sourceVersion": "1.4",
+            "chunkIndex": 1,
+            "category": "INVOICE_POLICY"
+          }
+        ]
+      }
+    },
+    {
+      "experiment": "draft-excluded",
+      "request": {
+        "query": "电子发票去哪里申请？",
+        "threshold": 0.0,
+        "topK": 10
+      },
+      "status": 200,
+      "elapsedMs": 161,
+      "response": {
+        "query": "电子发票去哪里申请？",
+        "hits": [
+          {
+            "documentId": "2ecc5e3a-b096-3b67-b937-2176c5245bda",
+            "content": "物流信息超过四十八小时没有更新时，用户可以联系在线客服申请物流核查。核查期间客服不得擅自承诺包裹已经丢失。",
+            "score": 0.36331409215927124,
+            "sourceId": "logistics-policy",
+            "sourceVersion": "2.1",
+            "chunkIndex": 1,
+            "category": "LOGISTICS_EXCEPTION"
+          },
+          {
+            "documentId": "aa45d1bc-e4fa-3169-9e28-fa5c6d4c99f6",
+            "content": "因商品质量问题产生的退货运费，由云杉商城承担；因消费者个人原因申请无理由退货的，退货运费原则上由消费者承担。",
+            "score": 0.35832858085632324,
+            "sourceId": "refund-policy",
+            "sourceVersion": "3.2",
+            "chunkIndex": 2,
+            "category": "REFUND_FREIGHT"
+          },
+          {
+            "documentId": "3706fa36-1653-377e-a6c1-c3704994aaf0",
+            "content": "除特殊商品外，消费者自签收商品次日起七日内，在商品保持完好且不影响二次销售的情况下，可以申请无理由退货。",
+            "score": 0.34375476837158203,
+            "sourceId": "refund-policy",
+            "sourceVersion": "3.2",
+            "chunkIndex": 1,
+            "category": "REFUND_POLICY"
+          }
+        ]
+      }
+    },
+    {
+      "experiment": "blank",
+      "request": {
+        "query": " "
+      },
+      "status": 400,
+      "elapsedMs": 16,
+      "response": {
+        "message": "query must contain 1 to 2000 characters",
+        "code": "INVALID_INPUT"
+      }
+    },
+    {
+      "experiment": "embedding-regression",
+      "request": {
+        "left": "测试文本",
+        "right": "测试文本"
+      },
+      "status": 200,
+      "elapsedMs": 172,
+      "response": {
+        "dimensions": 1024,
+        "score": 1.0
+      }
+    },
+    {
+      "experiment": "chat-regression",
+      "request": {
+        "message": "你好，你是谁？"
+      },
+      "status": 200,
+      "elapsedMs": 2300,
+      "response": {
+        "conversationId": "chapter07-regression",
+        "intent": {
+          "intent": "OTHER",
+          "orderNo": null,
+          "confidence": 0.95,
+          "missingFields": []
+        },
+        "answer": "你好！我是云杉商城的智能客服助手，可以帮你查询订单、物流、售后等相关问题。有什么需要帮忙的吗？",
+        "orderLookups": []
+      }
+    }
+  ],
+  "persistenceAfterDatabaseAndIdeaRestart": {
+    "rows": 4,
+    "fingerprint": "95fc0451c21377acdac84d134132df67",
+    "matchesBeforeRestart": true,
+    "searchAfterRestart": {
+      "query": "电子发票去哪里申请？",
+      "hits": [
+        {
+          "documentId": "a203c1c2-5ee6-3a7f-b403-33f57132c960",
+          "content": "订单完成后，用户可以在订单详情页申请电子发票。电子发票开具完成后，将发送至用户绑定的邮箱。",
+          "score": 0.6408554911613464,
+          "sourceId": "invoice-policy",
+          "sourceVersion": "1.4",
+          "chunkIndex": 1,
+          "category": "INVOICE_POLICY"
+        }
+      ]
+    }
+  },
+  "limits": [
+    "Only four course fixtures; not an 82437-document benchmark.",
+    "Threshold 0.60 is uncalibrated. Scores may vary.",
+    "Fixed server demo tenant is not authenticated multi-tenancy.",
+    "No retrieval-augmented chat generation."
+  ]
+}

@@ -1217,3 +1217,6 @@ dialog p {
 
 .embedding-lab-link { font-size: 11px; color: var(--forest); text-decoration: none; margin-left: auto; margin-right: 16px; white-space: nowrap; }
 @media (max-width: 650px) { .embedding-lab-link { font-size: 10px; margin-right: 10px; } }
+
+.knowledge-link { color: var(--forest); font-size: 11px; white-space: nowrap; text-decoration: none; }
+@media(max-width:650px) { .knowledge-link { font-size: 10px; } }
