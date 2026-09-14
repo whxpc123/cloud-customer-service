@@ -1,31 +1,41 @@
+# 第七至九章的持久化知识配置；共享 IDEA 配置同时启用 local 与 knowledge。
 spring:
+  # 上传正文文件最多 5 MB，请求额外留 1 MB 给 multipart 字段及边界信息。
   servlet:
     multipart:
       max-file-size: 5MB
       max-request-size: 6MB
+  # 覆盖公共配置中的排除列表，恢复 JDBC、Flyway 与 PgVector 自动配置。
   autoconfigure:
     exclude: []
+  # 路径相对启动工作目录，IDEA 配置把它固定为项目根目录；此文件缺失不会在导入阶段报错。
   config:
     import: optional:file:.local/database.properties
+  # 连接本机 Docker 数据库，也支持通过环境变量切换地址与用户名。
   datasource:
     url: ${KNOWLEDGE_DB_URL:jdbc:postgresql://127.0.0.1:15432/cloud_customer_service}
     username: ${KNOWLEDGE_DB_USER:cloud_ai}
     # start-knowledge-db.sh 将随机本地密码写入上面的被忽略文件；也支持环境变量覆盖。
     password: ${KNOWLEDGE_DB_PASSWORD:}
+    # 本地小连接池限制并发资源占用；数据库不可达时最多等待 3 秒获取连接。
     hikari:
       maximum-pool-size: 5
       minimum-idle: 1
       connection-timeout: 3000
+  # 启动时迁移并校验 SQL 历史；已发布的 V1 文件连注释也保持原样，说明见 db/README.md。
   flyway:
     enabled: true
   ai:
     vectorstore:
       pgvector:
+        # 由 Flyway 管表结构，PgVectorStore 仅检查表与向量列，不自行重复建表。
         initialize-schema: false
         schema-name: ai
         table-name: knowledge_vector_store
         schema-validation: true
+        # 下列维度、距离类型和索引与 V1 表结构、KnowledgeEmbeddingModel 必须配套。
         dimensions: 1024
         distance-type: COSINE_DISTANCE
         index-type: HNSW
+        # 与 text-embedding-v4 每批最多 10 条的适配约定一致。
         max-document-batch-size: 10

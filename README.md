@@ -22,6 +22,14 @@
 
 在 GitHub 选择对应标签查看该章完整代码，在 Compare 页面选择相邻标签查看改动。阅读历史版本可以使用独立工作目录，例如 `git worktree add ../chapter-01-view chapter-01`，避免覆盖当前开发目录。
 
+## 中文注释阅读入口
+
+当前业务 Java、测试、前端 JS / CSS / HTML、构建与运行配置已补充中文说明。类注释说明职责，方法注释说明输入输出及异常边界，关键分支解释会话隔离、工具身份、向量批次、文档切分、事务和证据来源。在 IDEA 将光标放到类型或方法上查看快速文档（macOS 默认 `F1`，以个人快捷键配置为准）。
+
+建议按 `ChatController` → `AiConfig` → `CustomerIntentRecognizer` → `CustomerConversationService` → `CustomerOrderTools` → `SemanticSimilarityService` → `KnowledgeSearchService` → `KnowledgePreparationService` / `KnowledgePreviewService` → `CustomerKnowledgeAnswerService` 阅读，并对照同名测试中的中文场景说明。
+
+本次只增加说明和必要排版，不是第十章，不移动已有章节标签。Maven Wrapper 等第三方生成文件保持原样；已发布的 Flyway SQL 迁移保持原样以维持校验和，逐项中文说明见 [数据库迁移说明](src/main/resources/db/README.md)。
+
 ## 版本
 
 | 组件 | 版本 |

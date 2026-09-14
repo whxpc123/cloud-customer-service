@@ -1,12 +1,16 @@
+<!-- 可共享的 IDEA Application 运行配置；不包含个人凭证，JDK 使用项目配置。 -->
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="CloudCustomerServiceApplication" type="Application" factoryName="Application">
+    <!-- 普通 Java main 入口，无需依赖 IDEA Ultimate 的 Spring Boot 专用运行类型。 -->
     <option name="MAIN_CLASS_NAME" value="com.example.cloudcustomerservice.CloudCustomerServiceApplication" />
     <!-- 用户要求在 IDEA 查看完整提示词与原始返回；本地运行显式开启。 -->
     <option name="PROGRAM_PARAMETERS" value="--app.ai.log-payload=true --spring.profiles.active=local,knowledge" />
     <!-- 本机代理环境下，PostgreSQL 的回环连接需要直接解析与连接。 -->
     <option name="VM_PARAMETERS" value="-DsocksNonProxyHosts=localhost|127.*|[::1]" />
     <module name="cloud-customer-service" />
+    <!-- 固定工作目录，确保本地数据库配置文件能按相对路径被正确加载。 -->
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <!-- 启动前编译项目，避免修改源码后仍执行旧 class；密钥继承现有环境变量。 -->
     <method v="2">
       <option name="Make" enabled="true" />
     </method>

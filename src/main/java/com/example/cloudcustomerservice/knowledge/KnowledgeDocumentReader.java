@@ -13,13 +13,20 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
-/** 本地文件只解析为正文，不保存原文件，不执行 Markdown 中的链接或 HTML。 */
+/**
+ * 第七章的文件读取实现，保留供旧章节与读取测试使用；新 ETL 入口使用 ReaderFactory。
+ * 支持严格 UTF-8 文本及可提取文字的 PDF，设置文件大小、页数和正文长度边界。
+ */
 @Component
 @Profile("local & knowledge")
 public class KnowledgeDocumentReader {
     public static final int MAX_TEXT_LENGTH = 50_000;
     public static final int MAX_FILE_BYTES = 5 * 1024 * 1024;
 
+    /**
+     * 根据扩展名读取 UTF-8 或 PDF；先限制上传字节数，再限制解析页数和正文长度。
+     * PDF 使用 try-with-resources 释放文档，扫描件无文字时提示先 OCR，不假装导入成功。
+     */
     public String read(MultipartFile file) {
         if (file == null || file.isEmpty()) throw new IllegalArgumentException("请选择非空文件");
         if (file.getSize() > MAX_FILE_BYTES) throw new IllegalArgumentException("文件不能超过 5 MB");
@@ -56,6 +63,9 @@ public class KnowledgeDocumentReader {
         }
     }
 
+    /**
+     * 统一 BOM 与换行并去掉首尾空白；拒绝超长、空白以及含 NUL 的二进制内容。
+     */
     public static String normalize(String text) {
         if (text == null || text.length() > MAX_TEXT_LENGTH) throw new IllegalArgumentException("正文最多 50000 字符");
         String normalized = text.replace("\uFEFF", "").replace("\r\n", "\n").replace('\r', '\n').strip();
@@ -64,13 +74,26 @@ public class KnowledgeDocumentReader {
         return normalized;
     }
 
+    /**
+     * 有界的内存 Writer，在 PDF 提取过程中累计文本，超过上限立即停止。
+     * flush 和 close 无需操作：本对象只有 StringBuilder，没有需要关闭的文件句柄。
+     */
     private static final class LimitedTextWriter extends Writer {
         private final StringBuilder text = new StringBuilder();
+        /**
+         * 每次写入时累计字符数，超过正文上限立即终止 PDF 提取。
+         */
         @Override public void write(char[] chars, int offset, int length) {
             if (text.length() + length > MAX_TEXT_LENGTH) throw new IllegalArgumentException("提取后的正文超过 50000 字符，请拆分文件后上传");
             text.append(chars, offset, length);
         }
+        /**
+         * 只有内存缓冲或计数，没有外部流需要刷新。
+         */
         @Override public void flush() { }
+        /**
+         * Writer 不拥有 PDF 资源，真正的文档由外层 finally 或 try-with-resources 关闭。
+         */
         @Override public void close() { }
     }
 }

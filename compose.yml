@@ -1,16 +1,22 @@
+# 第七章本地知识库依赖，先运行 scripts/start-knowledge-db.sh 再从 IDEA 启动。
 name: cloud-customer-service
 services:
   postgres:
+    # 镜像固定 pgvector/PostgreSQL 版本及摘要，确保不同机器运行同一构建。
     image: pgvector/pgvector:0.8.2-pg17@sha256:feb68f4f15446397d8cac7f4fe48fe4586de83160d1fc48b46283312d1a33966
     environment:
       POSTGRES_DB: cloud_customer_service
       POSTGRES_USER: cloud_ai
+    # 脚本生成的数据库口令文件不入 Git；与 Spring 的本地连接配置成对保存。
     env_file:
       - .local/postgres.env
+    # 只监听本机回环地址；外部 15432 映射到容器标准 PostgreSQL 端口 5432。
     ports:
       - "127.0.0.1:15432:5432"
+    # 使用命名卷保存数据库；重启或重建容器不等于删除已导入的知识。
     volumes:
       - cloud_customer_pgdata:/var/lib/postgresql/data
+    # 启动脚本的 --wait 等待此健康检查通过，避免数据库尚未就绪就启动应用。
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U cloud_ai -d cloud_customer_service"]
       interval: 5s

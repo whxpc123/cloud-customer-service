@@ -26,7 +26,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** 真实启动 Spring 上下文，替换模型以避免测试消耗 API 额度。 */
+/**
+ * 第一、二章 Web 集成验证：通过 MockMvc 走真实控制器和 ChatClient，用模拟 ChatModel 捕获最终提示词。
+ * 离线占位密钥不会发往百炼；断言覆盖中文原文、系统角色及单次请求无历史串扰。
+ *
+ *
+ * 真实启动 Spring 上下文，替换模型以避免测试消耗 API 额度。
+ */
 @SpringBootTest(properties = "spring.ai.dashscope.api-key=offline-test-placeholder")
 @AutoConfigureMockMvc
 class CloudCustomerServiceApplicationTest {
@@ -37,6 +43,9 @@ class CloudCustomerServiceApplicationTest {
     @MockitoBean
     private ChatModel chatModel;
 
+    /**
+     * 发送中文消息并捕获最终 Prompt，验证原文经 ChatClient 传递且 HTTP 返回纯文本。
+     */
     @Test
     void chatPassesChineseMessageThroughChatClientAndReturnsPlainText() throws Exception {
         when(chatModel.call(any(Prompt.class))).thenReturn(new ChatResponse(
@@ -57,6 +66,9 @@ class CloudCustomerServiceApplicationTest {
                 .contains("云杉商城", "不得编造退款结果", "一般不超过 5 句话", "当前尚未接入", "当前无法查询或确认");
     }
 
+    /**
+     * 连续发两次单次请求，验证系统消息始终独立存在，第二次不携带前一次客户上下文。
+     */
     @Test
     void eachRequestKeepsDefaultSystemSeparateAndDoesNotCarryConversationHistory() throws Exception {
         when(chatModel.call(any(Prompt.class))).thenReturn(new ChatResponse(
@@ -81,6 +93,9 @@ class CloudCustomerServiceApplicationTest {
         // 验证消息角色和上下文组装，不表示 Prompt 能保证抵御所有提示词注入。
     }
 
+    /**
+     * 缺少必填 message 时由 Web 层返回 400，同时核对模型没有被调用。
+     */
     @Test
     void missingMessageReturnsBadRequestWithoutCallingModel() throws Exception {
         mockMvc.perform(get("/api/chat")).andExpect(status().isBadRequest());

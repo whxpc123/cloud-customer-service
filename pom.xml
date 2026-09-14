@@ -4,6 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <!-- Spring Boot 父 POM 统一管理依赖与插件的兼容版本，避免各模块自行选择冲突版本。 -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
@@ -17,12 +18,14 @@
     <name>cloud-customer-service</name>
     <description>Spring AI 学习项目：从第一章逐步构建 AI 客服</description>
 
+    <!-- 锁定章节所用 JDK 与两个 AI 依赖体系，后续升级需要一起验证接口兼容性。 -->
     <properties>
         <java.version>17</java.version>
         <spring-ai.version>1.1.2</spring-ai.version>
         <spring-ai-alibaba.version>1.1.2.2</spring-ai-alibaba.version>
     </properties>
 
+    <!-- BOM 只管理版本、不自动引入依赖；下面 dependencies 才声明实际使用的组件。 -->
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -42,6 +45,7 @@
         </dependencies>
     </dependencyManagement>
 
+    <!-- 第八章读取器支持 Office、PDF、Markdown；纯文本 Reader 由 Spring AI 基础模块提供。 -->
     <dependencies>
         <dependency>
             <groupId>org.springframework.ai</groupId>
@@ -55,21 +59,25 @@
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-markdown-document-reader</artifactId>
         </dependency>
+        <!-- 显式固定 PDFBox，受限 PDF 提取与文档资源释放直接使用其 API。 -->
         <dependency>
             <groupId>org.apache.pdfbox</groupId>
             <artifactId>pdfbox</artifactId>
             <version>3.0.6</version>
         </dependency>
+        <!-- 内嵌 Web 服务同时提供 REST 接口与静态页面，无需另起前端开发服务器。 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+        <!-- 百炼 Starter 自动配置聊天和向量模型，真实凭证从环境变量读取。 -->
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
             <!-- Alibaba 1.1.2.2 BOM 未管理此 Starter，必须显式指定版本。 -->
             <version>${spring-ai-alibaba.version}</version>
         </dependency>
+        <!-- 第七章起使用 pgvector 检索，JDBC 与 PostgreSQL 驱动提供持久化和事务能力。 -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-starter-vector-store-pgvector</artifactId>
@@ -83,6 +91,7 @@
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
+        <!-- Flyway 统一执行版本迁移；已应用迁移不可随意编辑，否则启动校验会失败。 -->
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
@@ -91,6 +100,7 @@
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-database-postgresql</artifactId>
         </dependency>
+        <!-- test 作用域不进入正式运行依赖，提供 JUnit、Mockito、AssertJ 与 MockMvc。 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -104,11 +114,13 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
+                    <!-- 本机 PostgreSQL 测试连接绕过 SOCKS 代理，防止 localhost 被代理远程解析。 -->
                     <systemPropertyVariables>
                         <socksNonProxyHosts>localhost|127.*|[::1]</socksNonProxyHosts>
                     </systemPropertyVariables>
                 </configuration>
             </plugin>
+            <!-- 打包为可执行 JAR，并支持 Maven spring-boot:run；IDEA 仍可直接运行 main。 -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

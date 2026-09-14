@@ -8,10 +8,17 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+/**
+ * 验证实验入口的 local 环境限制：未启用该环境时页面与 API 均不注册。
+ */
+
 @SpringBootTest(properties={"spring.ai.dashscope.api-key=offline-test-placeholder","spring.profiles.active=default"})
 @AutoConfigureMockMvc
 class EmbeddingLabProfileTest {
     @Autowired MockMvc mvc;
+    /**
+     * 在非 local 环境尝试实验页面与 API，验证调试入口不会被默认环境公开。
+     */
     @Test void labPageAndApisDoNotExistOutsideLocal() throws Exception {
         mvc.perform(get("/internal/embedding-lab")).andExpect(status().isNotFound());
         mvc.perform(get("/internal/rag")).andExpect(status().isNotFound());

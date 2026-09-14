@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="zh-CN">
+<!-- 客服会话页面：由同一个 Spring Boot 应用提供，交互逻辑位于关联 JS。 -->
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
   <title>云杉客服 · 对话工作台</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/app.css">
+  <!-- defer 等文档解析完成再执行，脚本可直接查询下方固定 ID 节点。 -->
   <script src="/app.js" defer></script>
 </head>
 <body>
@@ -21,22 +23,27 @@
   <div class="workspace">
     <aside class="sidebar" aria-label="会话导航">
       <a class="brand" href="/" aria-label="云杉客服首页"><span class="brand-mark"><svg><use href="#tree"/></svg></span><span>云杉客服<small>YUNSHAN SERVICE</small></span></a>
-      <div class="demo-account"><label for="demo-user">演示用户 <span>仅供本地测试</span></label><select id="demo-user"><option value="1001">用户 1001 · A10001</option><option value="2002">用户 2002 · A20002</option><option value="guest">访客 · 未登录</option></select><small>切换用户会开启独立会话</small></div>
+      <div class="demo-account"><label for="demo-user">演示用户 <span>仅供本地测试</span></label><!-- 本地演示身份选择；切换后新建会话，生产身份须由真实认证提供。 -->
+<select id="demo-user"><option value="1001">用户 1001 · A10001</option><option value="2002">用户 2002 · A20002</option><option value="guest">访客 · 未登录</option></select><small>切换用户会开启独立会话</small></div>
       <button id="new-session" class="new-session"><svg><use href="#plus"/></svg>新建会话<span>＋</span></button>
       <div class="nav-caption">我的会话 <span id="session-count">0</span></div>
-      <nav id="sessions" class="sessions" aria-label="选择会话"></nav>
+      <!-- 脚本生成会话导航，浏览器只保存当前标签页记录。 -->
+<nav id="sessions" class="sessions" aria-label="选择会话"></nav>
       <div class="sidebar-footer"><span class="small-tree">杉</span><div>把每次对话，接着聊下去。<small>当前标签页保留会话列表</small></div></div>
     </aside>
 
+    <!-- 主内容按输入、处理结果和来源组织；动态文字由脚本以纯文本填入。 -->
     <main class="main">
       <header class="topbar"><div class="breadcrumb">云杉商城 <span>/</span> 对话工作台</div><nav class="workbench-links" aria-label="学习功能"><a class="embedding-lab-link" href="/internal/embedding-lab" title="第六章实验，需要 local 环境">语义实验室 ↗</a><a class="knowledge-link" href="/internal/knowledge" title="第七章，需要 local,knowledge 环境">知识检索 ↗</a><a class="knowledge-link" href="/internal/rag" title="第九章，依据知识库回答">知识问答 ↗</a></nav></header>
       <div class="workbench">
         <section class="chat-panel" aria-label="客服聊天">
           <header class="chat-header"><div><div class="eyebrow">CUSTOMER CONVERSATION</div><h1 id="session-title">开始一场对话</h1><p id="session-meta">正在创建会话…</p></div><button id="clear-memory" class="quiet-button" disabled><svg><use href="#reset"/></svg><span>清空记忆</span></button></header>
           <div id="notice" class="notice" role="alert" hidden></div>
-          <div id="messages" class="messages" role="log" aria-label="聊天消息" aria-live="polite" aria-relevant="additions"></div>
+          <!-- 消息区域声明为无障碍日志，追加回复时由辅助技术温和播报。 -->
+<div id="messages" class="messages" role="log" aria-label="聊天消息" aria-live="polite" aria-relevant="additions"></div>
           <div class="composer-wrap">
-            <form id="chat-form" class="composer">
+            <!-- 客服一次提交返回答复、意图和订单工具轨迹；中文输入法确认键由脚本特别处理。 -->
+<form id="chat-form" class="composer">
               <label class="sr-only" for="message-input">输入消息</label>
               <textarea id="message-input" rows="2" maxlength="4000" placeholder="说说您的问题，我们接着聊。" disabled></textarea>
               <div class="composer-bottom"><span class="keyboard-tip">Enter 发送 <span>·</span> Shift + Enter 换行</span><span id="char-count" class="char-count">0 / 4000</span><button id="send-message" class="send-button" type="submit" aria-label="发送消息" disabled><svg><use href="#send"/></svg></button></div>
@@ -46,7 +53,8 @@
         </section>
 
         <aside class="inspector" aria-label="意图识别结果">
-          <details id="inspector-details" open>
+          <!-- 查看选中回复的结构化意图及真实工具结果，不额外调用模型。 -->
+<details id="inspector-details" open>
             <summary><span>对话洞察<small>理解这一句的需求</small></span><span class="detail-toggle">⌄</span></summary>
             <div class="inspector-body">
               <div class="insight-heading"><span class="live-dot"></span><span id="insight-status">等待第一条消息</span></div>
@@ -64,9 +72,11 @@
     </main>
   </div>
 
-  <template id="empty-state"><div class="empty-state"><div class="welcome-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><svg><use href="#tree"/></svg><span class="orbit-dot"></span><span class="art-label">HELLO, AGAIN.</span></div><span class="welcome-kicker">您好，这里是云杉客服</span><h2>每一句，都接得上。</h2><p>聊聊您的问题。关于订单、物流或售后，<br>我们从这里开始。</p><div class="suggestions"><button data-prompt="我的订单是 A10001。"><span>聊聊我的订单</span><small>我的订单是 A10001。</small><svg><use href="#arrow"/></svg></button><button data-prompt="买错了颜色，我想申请退货。"><span>我有售后问题</span><small>买错了颜色，想申请退货。</small><svg><use href="#arrow"/></svg></button></div></div></template>
+  <!-- 可复用的空会话模板，脚本克隆后绑定示例按钮，模板自身不显示。 -->
+<template id="empty-state"><div class="empty-state"><div class="welcome-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><svg><use href="#tree"/></svg><span class="orbit-dot"></span><span class="art-label">HELLO, AGAIN.</span></div><span class="welcome-kicker">您好，这里是云杉客服</span><h2>每一句，都接得上。</h2><p>聊聊您的问题。关于订单、物流或售后，<br>我们从这里开始。</p><div class="suggestions"><button data-prompt="我的订单是 A10001。"><span>聊聊我的订单</span><small>我的订单是 A10001。</small><svg><use href="#arrow"/></svg></button><button data-prompt="买错了颜色，我想申请退货。"><span>我有售后问题</span><small>买错了颜色，想申请退货。</small><svg><use href="#arrow"/></svg></button></div></div></template>
 
-  <dialog id="clear-dialog" aria-labelledby="clear-title"><form method="dialog"><span class="dialog-icon"><svg><use href="#reset"/></svg></span><h2 id="clear-title">让这场对话重新开始？</h2><p>将清空当前会话的模型记忆。页面上的聊天记录仍然保留，但接下来的回答不会再参考此前内容。</p><div class="dialog-actions"><button value="cancel" class="quiet-button">取消</button><button id="confirm-clear" value="confirm" class="primary-button">清空记忆</button></div></form></dialog>
+  <!-- 清空记忆确认框：取消保留上下文，确认后调用后端 DELETE。 -->
+<dialog id="clear-dialog" aria-labelledby="clear-title"><form method="dialog"><span class="dialog-icon"><svg><use href="#reset"/></svg></span><h2 id="clear-title">让这场对话重新开始？</h2><p>将清空当前会话的模型记忆。页面上的聊天记录仍然保留，但接下来的回答不会再参考此前内容。</p><div class="dialog-actions"><button value="cancel" class="quiet-button">取消</button><button id="confirm-clear" value="confirm" class="primary-button">清空记忆</button></div></form></dialog>
   <noscript>请在浏览器中启用 JavaScript，以使用客服聊天界面。</noscript>
 </body>
 </html>

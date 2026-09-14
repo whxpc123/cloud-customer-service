@@ -1,9 +1,12 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>知识问答 · 云杉客服</title><link rel="stylesheet" href="/embedding-lab.css"><link rel="stylesheet" href="/rag-lab.css"><script defer src="/rag-lab.js"></script></head>
+<!-- 无状态知识问答页面：由同一个 Spring Boot 应用提供，交互逻辑位于关联 JS。 -->
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>知识问答 · 云杉客服</title><link rel="stylesheet" href="/embedding-lab.css"><link rel="stylesheet" href="/rag-lab.css"><!-- defer 等文档解析完成再执行，脚本可直接查询下方固定 ID 节点。 -->
+  <script defer src="/rag-lab.js"></script></head>
 <body>
 <header><a href="/" class="brand">杉 <span>云杉客服</span></a><a href="/internal/knowledge">管理 / 检索知识 ↗</a><a href="/">对话工作台 ↗</a></header>
-<main>
+<!-- 主内容按输入、处理结果和来源组织；动态文字由脚本以纯文本填入。 -->
+    <main>
 <div class="eyebrow">第九章 / RAG</div>
 <h1>回答之前，<br><span>先把依据摆出来。</span></h1>
 <p class="intro">从已导入的资料中查找相关知识，再依据本次证据回答。没有命中时直接说明，不让模型猜公司制度。</p>
@@ -11,6 +14,7 @@
 <div class="lab-grid">
 <section class="inputs" aria-label="知识提问">
 <h2>问一个完整的问题</h2>
+<!-- 本页每次提交完整问题，后端不携带上一轮上下文或订单工具。 -->
 <form id="rag-form">
 <label for="question">你想了解什么？</label>
 <textarea id="question" rows="5" required maxlength="2000">收到商品十天了，还能申请无理由退货吗？</textarea>
@@ -30,7 +34,9 @@
 <div class="section-heading"><h2>依据资料的回答</h2><span id="answer-status" role="status">等待提问</span></div>
 <p id="answered-question" hidden></p>
 <p id="answer" class="result-text">提交问题后，在这里查看回答和本次提供给模型的知识块。</p>
+<!-- 这里展示 Java 提供给模型的知识来源，不是已经逐句验证过的引文。 -->
 <div id="evidence-panel" hidden><h3>本次提供给模型的证据 <span id="evidence-count"></span></h3><p class="fine">可展开查看完整的命中块；这不是原文件全文，也不是逐句引用校验。相似度不等于答案正确率。</p><div id="references"></div></div>
+<!-- 保留可展开的原始 JSON，便于将页面摘要与真实接口字段对照。 -->
 <details id="raw-details" hidden><summary>查看完整响应 JSON</summary><pre id="raw-result"></pre></details>
 </section>
 </div>

@@ -1,3 +1,7 @@
+/* 客服工作台样式：基础主题 → 三栏布局 → 对话/洞察 → 弹窗 → 响应式覆盖。
+后面的媒体查询按既有顺序覆盖前面规则；选择器和声明顺序保持不变。 */
+
+/* 共享配色、字体和间距变量，聊天区、导航与洞察面板统一引用。 */
 :root {
   --forest:#173f4f;
   --green:#397a71;
@@ -13,6 +17,7 @@
 * {
   box-sizing:border-box
 }
+/* 全局控件、键盘焦点和隐藏元素规则，兼顾鼠标与辅助技术。 */
 body {
   margin:0;
   background:var(--mist);
@@ -64,6 +69,7 @@ svg {
 [hidden] {
   display:none!important
 }
+/* 桌面工作区与会话侧栏；会话列表可独立滚动，长标题省略避免挤压。 */
 .workspace {
   display:flex;
   min-height:100dvh
@@ -212,6 +218,7 @@ svg {
   font-family:serif;
   color:#d4e4df
 }
+/* 主工作区顶部导航以及聊天与洞察的列布局。 */
 .main {
   margin-left:244px;
   width:calc(100% - 244px)
@@ -253,6 +260,7 @@ svg {
   max-width:1540px;
   margin:auto
 }
+/* 聊天卡片与标题操作；消息区域内部滚动，输入区保留在卡片下方。 */
 .chat-panel {
   min-width:0;
   display:flex;
@@ -317,6 +325,7 @@ svg {
   padding:28px 34px;
   scroll-behavior:smooth
 }
+/* 新会话欢迎图案和示例提问入口，不表示已经有模型回复。 */
 .empty-state {
   text-align:center;
   max-width:470px;
@@ -429,6 +438,7 @@ svg {
   height:15px;
   color:var(--green)
 }
+/* 输入框、字符计数和发送按钮；聚焦时边框反馈，无需改变布局尺寸。 */
 .composer-wrap {
   padding:12px 28px 19px;
   background:white
@@ -495,6 +505,7 @@ svg {
   color:#94a2a8;
   margin:10px 0 0
 }
+/* 意图洞察区，details 在窄屏可折叠；样式展示不改变分类或工具执行。 */
 .inspector {
   padding:29px 23px;
   overflow-y:auto;
@@ -575,6 +586,7 @@ svg {
   font-size:10px;
   color:#93a2a8
 }
+/* 模型自评置信度的可视条，真实宽度由 JavaScript 校验后写入。 */
 .confidence-heading {
   display:flex;
   align-items:center;
@@ -616,6 +628,7 @@ svg {
 .missing-fields.needs-info {
   color:#95722c
 }
+/* 结构化原始 JSON 和记忆说明，长字符串换行避免水平溢出。 */
 .raw-result {
   margin-top:24px;
   border-top:1px solid var(--line);
@@ -656,6 +669,7 @@ svg {
 .memory-note p {
   font-size:10px
 }
+/* 按 user/assistant/system/error 区分气泡，正文保留换行且长词可折断。 */
 .message {
   display:flex;
   gap:11px;
@@ -752,6 +766,7 @@ svg {
   display:inline-block;
   animation:pulse 1s infinite
 }
+/* 失败提示与清空确认弹窗，背景遮罩强调当前对话框操作。 */
 .notice {
   margin:12px 28px 0;
   padding:10px 13px;
@@ -800,6 +815,7 @@ dialog p {
   gap:10px;
   margin-top:25px
 }
+/* 消息入场与状态呼吸动画；后面的减弱动态效果规则可停用动画。 */
 @keyframes arrive {
   from {
     opacity:0;
@@ -815,6 +831,7 @@ dialog p {
     opacity:.4
   }
 }
+/* 宽屏调整内容间距，避免整页过度拉伸。 */
 @media(min-width:1500px) {
   .chat-header,.messages {
     padding-left:48px;
@@ -831,6 +848,7 @@ dialog p {
     margin-bottom:22px
   }
 }
+/* 中等宽度减少栏宽与留白，保持消息和洞察区可读。 */
 @media(max-width:1190px) {
   .sidebar {
     width:205px;
@@ -883,6 +901,7 @@ dialog p {
     font-size:9px
   }
 }
+/* 平板宽度重新排列工作区与洞察面板；脚本同步默认折叠状态。 */
 @media(max-width:960px) {
   .workbench {
     grid-template-columns:minmax(0,1fr)
@@ -926,6 +945,7 @@ dialog p {
     height:125px
   }
 }
+/* 手机宽度调整导航、示例按钮和对话卡片，避免输入区及工具结果挤出屏幕。 */
 @media(max-width:650px) {
   .workspace {
     display:block
@@ -1115,6 +1135,7 @@ dialog p {
     display:none
   }
 }
+/* 尊重系统减少动态效果设置，停用非必要过渡和动画。 */
 @media(prefers-reduced-motion:reduce) {
   *,*::before,*::after {
     animation:none!important;
@@ -1122,6 +1143,7 @@ dialog p {
     scroll-behavior:auto!important
   }
 }
+/* 矮屏桌面压缩纵向留白，确保输入与信息面板仍能被访问。 */
 @media(min-width:961px) and (max-height:800px) {
   .chat-header {
     padding-top:19px;
@@ -1190,12 +1212,14 @@ dialog p {
   }
 }
 
+/* 第五章增加的演示身份选择，不是登录表单或权限校验。 */
 .demo-account { margin: -10px 0 20px; }
 .demo-account label { display: flex; justify-content: space-between; font-size: 11px; color: #dbe9ed; margin-bottom: 8px; }
 .demo-account label span { color: #abc2cb; font-size: 9px; }
 .demo-account select { width: 100%; background: #2c5362; border: 1px solid #496c79; color: white; border-radius: 7px; padding: 9px 7px; font: inherit; font-size: 12px; }
 .demo-account small { display: block; margin-top: 6px; color: #abc2cb; font-size: 9px; }
 .demo-account select:disabled { opacity: .5; }
+/* 展示 Java 实际执行的工具记录以及可展开原始结果。 */
 .tool-results-panel { grid-column: 1 / -1; border-top: 1px solid var(--line); margin-top: 22px; padding-top: 17px; }
 .tool-results-heading { display: flex; justify-content: space-between; font-size: 12px; color: var(--ink); margin-bottom: 8px; }
 .tool-results-heading span { font-size: 9px; color: #95722c; background: #f6ecd9; padding: 1px 6px; border-radius: 4px; }
@@ -1215,6 +1239,7 @@ dialog p {
   .chat-panel { height: calc(100dvh - 273px); }
 }
 
+/* 第六至九章工作台导航入口；最后的布局覆盖适配窄屏换行。 */
 .embedding-lab-link { font-size: 11px; color: var(--forest); text-decoration: none; margin-left: auto; margin-right: 16px; white-space: nowrap; }
 @media (max-width: 650px) { .embedding-lab-link { font-size: 10px; margin-right: 10px; } }
 

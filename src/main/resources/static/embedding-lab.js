@@ -1,5 +1,11 @@
+/**
+ * 第六章语义实验页面：比较两句或排序候选，提交后只展示维度与余弦分数。
+ * 这些分数比较语义方向，不表示答案正确率；实验请求会调用服务端向量模型。
+ */
 'use strict';
+// 页面元素查询简写；所有 ID 都对应当前 HTML 中的固定节点。
 const $ = id => document.getElementById(id);
+// 四组样例分别观察近义、无关、否定以及标识符变化，分数不预设为固定值。
 const examples = {
   related:['我要申请退货','东西买错了，我不想要了'],
   unrelated:['我要申请退货','今天天气怎么样'],
@@ -7,18 +13,35 @@ const examples = {
   identifier:['订单 A10001','订单 A10002']
 };
 let busy = false;
+/**
+ * 创建文本节点容器，候选和问题都用 textContent 渲染，避免被解释成 HTML。
+ */
 function node(tag, className, text) { const e=document.createElement(tag); if(className)e.className=className; if(text!==undefined)e.textContent=text; return e; }
+/**
+ * 清掉分数、排序及原始 JSON，恢复空态，防止修改实验输入后误读上一次结果。
+ */
 function clearResult() { $('result').replaceChildren(); $('result').hidden=true; $('raw-details').hidden=true; $('raw-result').textContent=''; $('empty-result').hidden=false; $('result-kind').textContent='等待实验'; }
+/**
+ * 切换比较/排序模式并同步表单可见性和 aria-pressed；忙碌时不能切换。
+ */
 function mode(name) {
   if(busy)return;
   for(const key of ['compare','rank']) { $('mode-'+key).setAttribute('aria-pressed',String(name===key)); $(key+'-form').hidden=key!==name; }
   $('feedback').textContent=''; clearResult();
 }
 for(const name of ['compare','rank']) $('mode-'+name).addEventListener('click',()=>mode(name));
+// 样例按钮只填表和清旧结果，必须提交后才会调用模型。
 document.querySelectorAll('[data-example]').forEach(button=>button.addEventListener('click',()=>{
   const [left,right]=examples[button.dataset.example]; $('left-text').value=left; $('right-text').value=right; clearResult(); $('feedback').textContent='';
 }));
+/**
+ * 提交前校验每段原文非空且最多 2000 字符；服务端还会重复验证，前端校验只用于即时反馈。
+ */
 function validate(text) { if(!text.trim() || text.length>2000)throw new Error('每段文本需要包含 1–2000 个字符。'); }
+/**
+ * 验证维度和分数范围，再展示比较标尺或全部候选排序，同时保留本次输入供核对。
+ * 余弦范围 -1～1 映射为标尺 0～100% 的位置，不把它标为概率。
+ */
 function render(data, kind, payload) {
   if(!Number.isInteger(data.dimensions)||data.dimensions<1)throw new Error('服务返回了无效维度。');
   const validScore = score => typeof score==='number' && Number.isFinite(score) && score>=-1 && score<=1;
@@ -37,6 +60,10 @@ function render(data, kind, payload) {
   }
   $('raw-result').textContent=JSON.stringify(data,null,2);$('raw-details').hidden=false;result.hidden=false;$('empty-result').hidden=true;
 }
+/**
+ * 组装比较或排序请求，先验证全部输入，再锁住表单调用实验 API。
+ * 成功展示摘要，失败给出状态提示，finally 恢复交互；候选按行拆分并保留重复项。
+ */
 async function run(event,kind) {
   event.preventDefault(); if(busy)return;
   try {

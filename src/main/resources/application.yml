@@ -1,4 +1,6 @@
+# 公共配置供第一至九章共享；knowledge 配置按环境追加数据库能力。
 server:
+  # 可用 SERVER_PORT 覆盖；页面与 API 同端口，默认避开本机已占用的常用端口。
   port: ${SERVER_PORT:18080}
 
 app:
@@ -17,16 +19,19 @@ spring:
     name: cloud-customer-service
   ai:
     model:
+      # 第六章默认以 document 角色做语义实验，知识适配器另区分入库 document 与搜索 query。
       embedding: dashscope
     dashscope:
       # 按本项目约定使用 DASHSCOPE_API_KEY，不使用文章中的 AI_DASHSCOPE_API_KEY。
       api-key: ${DASHSCOPE_API_KEY}
+      # 聊天模型负责自然语言生成及结构化意图；每个 ChatClient 另设自己的用途提示词。
       chat:
         options:
           model: qwen-plus
       embedding:
         options:
           model: text-embedding-v4
+          # 向量长度必须与知识库 vector(1024) 列匹配；改模型或维度需重新生成整套向量。
           dimensions: 1024
           text-type: document
 

@@ -9,9 +9,18 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * 集中组装三个用途不同的 ChatClient，复用 Starter 提供的真实 ChatModel。
+ * 客服客户端带会话记忆；意图客户端只返回分类结构；知识问答客户端只接收本次证据。
+ * 系统提示词约束模型的回答方式，身份、数据过滤和业务操作仍由 Java 实现。
+ */
 @Configuration
 public class AiConfig {
 
+    /**
+     * 创建有身份提示和消息窗口 Advisor 的客服客户端。
+     * 会话服务必须为每次调用指定记忆键；工具按请求注册，避免旧单次接口意外获得业务能力。
+     */
     @Bean("customerServiceChatClient")
     public ChatClient customerServiceChatClient(ChatModel chatModel,
             @Qualifier("customerChatMemory") ChatMemory chatMemory,
@@ -69,6 +78,10 @@ public class AiConfig {
                 .build();
     }
 
+    /**
+     * 创建独立无状态的知识问答客户端，使用较低温度减少措辞波动。
+     * 不装配消息记忆或订单工具；低温度和系统规则仍不能保证回答完全依据资料。
+     */
     @Bean("knowledgeAnswerChatClient")
     @org.springframework.context.annotation.Profile("local & knowledge")
     public ChatClient knowledgeAnswerChatClient(ChatModel chatModel,
@@ -98,6 +111,10 @@ public class AiConfig {
                 .build();
     }
 
+    /**
+     * 创建只负责分类的客户端，不写入聊天记忆。
+     * 识别器显式提供同一会话历史，并在调用时附加结构化输出要求。
+     */
     @Bean("intentChatClient")
     public ChatClient intentChatClient(ChatModel chatModel,
             @Value("${app.ai.log-payload:false}") boolean logPayload) {

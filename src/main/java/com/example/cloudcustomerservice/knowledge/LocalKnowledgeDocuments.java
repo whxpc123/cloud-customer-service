@@ -8,10 +8,17 @@ import org.springframework.ai.document.Document;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
+/**
+ * 四条课程知识样例的来源，覆盖退货、运费、物流和发票。
+ * 元数据演示租户、版本、分块和向量配置；这是固定样例，不是用户上传的知识全集。
+ */
 @Component
 @Profile("local & knowledge")
 public class LocalKnowledgeDocuments {
     public static final String TENANT_ID = "tenant-yunshan";
+    /**
+     * 每次构造四条相同的样例规则；固定 ID 支持重复导入更新，不产生重复行。
+     */
     public List<Document> documents() {
         return List.of(
             document("refund-policy", "3.2", 1, "REFUND_POLICY", "除特殊商品外，消费者自签收商品次日起七日内，在商品保持完好且不影响二次销售的情况下，可以申请无理由退货。"),
@@ -20,6 +27,10 @@ public class LocalKnowledgeDocuments {
             document("invoice-policy", "1.4", 1, "INVOICE_POLICY", "订单完成后，用户可以在订单详情页申请电子发票。电子发票开具完成后，将发送至用户绑定的邮箱。")
         );
     }
+    /**
+     * 以租户、来源、版本和块号生成稳定 UUID，并写入检索过滤所需元数据。
+     * 正文不参与此样例 ID；修改同版本样例正文时 upsert 覆盖同一行。
+     */
     private Document document(String source, String version, int chunk, String category, String text) {
         String id = UUID.nameUUIDFromBytes((TENANT_ID + "|" + source + "|" + version + "|" + chunk)
                 .getBytes(StandardCharsets.UTF_8)).toString();

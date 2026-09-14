@@ -39,7 +39,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** 使用真实 ChatClient 和 BeanOutputConverter，仅替换远程模型。 */
+/**
+ * 第三章结构化输出集成测试：真实 BeanOutputConverter 解析模拟模型返回的 JSON。
+ * 覆盖字段校验、原文模板、失败兜底及日志边界，不以模型自评代替业务正确性。
+ *
+ *
+ * 使用真实 ChatClient 和 BeanOutputConverter，仅替换远程模型。
+ */
 @SpringBootTest(properties = "spring.ai.dashscope.api-key=offline-test-placeholder")
 @AutoConfigureMockMvc
 @ExtendWith(OutputCaptureExtension.class)
@@ -48,6 +54,9 @@ class CustomerIntentRecognitionTest {
     @Autowired private ObjectMapper mapper;
     @MockitoBean private ChatModel chatModel;
 
+    /**
+     * 返回有效分类 JSON，验证类型转换、分类专用系统提示和低温度配置，并捕获 Schema 调试输出。
+     */
     @Test
     void convertsJsonToTypedResultUsingSeparateClassifierAndLowTemperature(CapturedOutput output) throws Exception {
         modelReturns("""
@@ -76,6 +85,9 @@ class CustomerIntentRecognitionTest {
                 .doesNotContain("我的订单 A10001 到哪里了？");
     }
 
+    /**
+     * 模拟模型漏报 missingFields，确认 Java 根据意图与实际订单号重新计算需补充字段。
+     */
     @Test
     void computesMissingOrderNumberEvenWhenModelOmitsMissingFields() throws Exception {
         modelReturns("""
@@ -88,6 +100,9 @@ class CustomerIntentRecognitionTest {
                 .andExpect(jsonPath("$.missingFields[0]").value("orderNo"));
     }
 
+    /**
+     * 参数化覆盖不依赖订单号的多种意图，确保转换和校验不会把它们统一误判成订单流程。
+     */
     @ParameterizedTest
     @ValueSource(strings = {"OTHER", "UNKNOWN", "HUMAN_SERVICE"})
     void preservesDifferentNonOrderIntents(String intent) throws Exception {
@@ -98,6 +113,9 @@ class CustomerIntentRecognitionTest {
                 .andExpect(jsonPath("$.missingFields").isEmpty());
     }
 
+    /**
+     * 逐项输入坏 JSON、非法枚举或无效字段，验证失败统一返回稳定 UNKNOWN 契约。
+     */
     @ParameterizedTest
     @ValueSource(strings = {
             "不是 JSON",
@@ -120,6 +138,9 @@ class CustomerIntentRecognitionTest {
         expectFallback(recognize("我的 A10001 想退掉"));
     }
 
+    /**
+     * 空、缺失和超长原文应在本地降级；用调用次数断言避免这些输入仍产生远程开销。
+     */
     @Test
     void blankMissingAndOversizedInputAvoidsModelCalls() throws Exception {
         expectFallback(recognize(""));
@@ -130,6 +151,9 @@ class CustomerIntentRecognitionTest {
         verify(chatModel, never()).call(any(Prompt.class));
     }
 
+    /**
+     * 向分类 API 提交不符合 JSON 对象契约的内容，检查 Web 层拒绝请求。
+     */
     @Test
     void requestBodyMustBeJsonObject() throws Exception {
         mvc.perform(post("/api/intents/recognize").contentType(MediaType.APPLICATION_JSON)
@@ -138,6 +162,9 @@ class CustomerIntentRecognitionTest {
         verify(chatModel, never()).call(any(Prompt.class));
     }
 
+    /**
+     * 模拟模型异常并在错误中放置标记，验证响应降级且日志不包含上游原始内容。
+     */
     @Test
     void modelFailureReturnsFallbackWithoutLoggingRawException(CapturedOutput output) throws Exception {
         when(chatModel.call(any(Prompt.class))).thenThrow(new IllegalStateException("PRIVATE_EXCEPTION_MARKER"));
@@ -146,6 +173,9 @@ class CustomerIntentRecognitionTest {
                 .doesNotContain("PRIVATE_EXCEPTION_MARKER", "PRIVATE_INPUT_MARKER");
     }
 
+    /**
+     * 模拟转换失败文本，核对转换器日志级别控制避免泄露原始模型输出。
+     */
     @Test
     void suppressesConverterLogsThatCanContainRawModelOutput(CapturedOutput output) throws Exception {
         modelReturns("PRIVATE_MODEL_OUTPUT_MARKER 这不是 JSON");
@@ -154,6 +184,9 @@ class CustomerIntentRecognitionTest {
                 .doesNotContain("PRIVATE_MODEL_OUTPUT_MARKER", "PRIVATE_CUSTOMER_MARKER");
     }
 
+    /**
+     * 向消息放入换行和花括号，捕获最终模板结果，确认原文保留且不混入其他请求历史。
+     */
     @Test
     void templatesPreserveNewlinesBracesAndOnlyCurrentMessage() throws Exception {
         modelReturns("{\"intent\":\"UNKNOWN\",\"confidence\":0.2,\"missingFields\":[]}");
@@ -169,16 +202,25 @@ class CustomerIntentRecognitionTest {
         // 标签和消息角色是组织输入的方式，不能视为注入防御或业务授权。
     }
 
+    /**
+     * 通过真实分类 HTTP 入口发送原文，集中处理 JSON 编码供多个边界场景复用。
+     */
     private ResultActions recognize(String message) throws Exception {
         return mvc.perform(post("/api/intents/recognize").contentType(MediaType.APPLICATION_JSON)
                 .content(mapper.writeValueAsBytes(Map.of("message", message))));
     }
 
+    /**
+     * 为下一次模型调用提供指定原始输出，真实转换器仍会继续解析和校验。
+     */
     private void modelReturns(String text) {
         when(chatModel.call(any(Prompt.class))).thenReturn(new ChatResponse(
                 List.of(new Generation(new AssistantMessage(text)))));
     }
 
+    /**
+     * 统一核对 UNKNOWN、空订单号及零置信度，保证不同失败原因遵循同一个返回契约。
+     */
     private void expectFallback(ResultActions result) throws Exception {
         result.andExpect(status().isOk())
                 .andExpect(content().json("""

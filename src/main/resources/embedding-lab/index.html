@@ -1,9 +1,12 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>语义实验室 · 云杉客服</title><link rel="stylesheet" href="/embedding-lab.css"><script defer src="/embedding-lab.js"></script></head>
+<!-- 语义向量实验页面：由同一个 Spring Boot 应用提供，交互逻辑位于关联 JS。 -->
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>语义实验室 · 云杉客服</title><link rel="stylesheet" href="/embedding-lab.css"><!-- defer 等文档解析完成再执行，脚本可直接查询下方固定 ID 节点。 -->
+  <script defer src="/embedding-lab.js"></script></head>
 <body>
 <header><a href="/" class="brand">杉 <span>云杉客服</span></a><a href="/internal/knowledge">第七章 · 知识检索 ↗</a><a href="/">返回对话工作台 ↗</a></header>
-<main>
+<!-- 主内容按输入、处理结果和来源组织；动态文字由脚本以纯文本填入。 -->
+    <main>
   <div class="eyebrow">第六章 / EMBEDDING LAB</div>
   <h1>换一种说法，<br><span>意思有多接近？</span></h1>
   <p class="intro">把句子变成向量，比较它们的方向。观察语义的距离，也看看相似度的边界。</p>
@@ -11,14 +14,16 @@
   <div class="lab-grid">
     <section class="inputs" aria-label="实验输入">
       <div class="mode-switch" role="group" aria-label="实验方式"><button id="mode-compare" aria-pressed="true">两句话比较</button><button id="mode-rank" aria-pressed="false">候选文本排序</button></div>
-      <form id="compare-form">
+      <!-- 两句比较表单；前后端都会检查非空和长度，分数不是准确率。 -->
+<form id="compare-form">
         <div class="section-heading"><h2>从一组对照开始</h2><span>01 / COMPARE</span></div>
         <div class="examples" role="group" aria-label="对照样例"><button type="button" data-example="related">相近表达</button><button type="button" data-example="unrelated">无关话题</button><button type="button" data-example="opposite">相反结论</button><button type="button" data-example="identifier">不同订单号</button></div>
         <label for="left-text">句子 A</label><textarea id="left-text" maxlength="2000" required rows="3">我要申请退货</textarea>
         <label for="right-text">句子 B</label><textarea id="right-text" maxlength="2000" required rows="3">东西买错了，我不想要了</textarea>
         <div class="submit-row"><small>每段最多 2000 字符</small><button class="primary" type="submit">比较语义 →</button></div>
       </form>
-      <form id="rank-form" hidden>
+      <!-- 候选逐行输入，排序保留重复项；客户端仅负责收集原文。 -->
+<form id="rank-form" hidden>
         <div class="section-heading"><h2>哪段内容更相关？</h2><span>02 / RANK</span></div>
         <label for="query-text">查询句子</label><textarea id="query-text" maxlength="2000" required rows="2">衣服尺寸不对，想寄回去</textarea>
         <label for="candidates-text">候选文本 <small>每行一条，1–20 条</small></label><textarea id="candidates-text" required rows="9">商品签收后七日内，符合条件的可以申请无理由退货
@@ -34,7 +39,8 @@
       <div class="section-heading"><h2>观察结果</h2><span id="result-kind">等待实验</span></div>
       <div id="empty-result"><div class="vector-motif" aria-hidden="true">↗ <span>↗</span></div><h3>方向越接近，分数越高。</h3><p>选择一组句子，运行后这里会显示实际维度和余弦相似度，不展示完整向量。</p></div>
       <div id="result" hidden></div>
-      <details id="raw-details" hidden><summary>查看本次响应 JSON</summary><pre id="raw-result"></pre></details>
+      <!-- 保留可展开的原始 JSON，便于将页面摘要与真实接口字段对照。 -->
+<details id="raw-details" hidden><summary>查看本次响应 JSON</summary><pre id="raw-result"></pre></details>
     </section>
   </div>
   <aside class="reading-note"><strong>相关，不等于结论相同。</strong><p>“支持退货”和“不支持退货”可能十分接近；A10001 和 A10002 也可能得分很高。分数不是正确率，也不能替代政策判断或精确订单查询。</p></aside>

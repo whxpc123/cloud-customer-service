@@ -15,9 +15,16 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
+/**
+ * 把自由文本转换为 Java 可处理的业务分类，并对模型输出再做业务校验。
+ * BeanOutputConverter 根据 record 生成 JSON Schema、附加输出格式要求并反序列化。
+ * 它不是正确性保证；无法调用、解析或通过校验时统一降级 UNKNOWN。
+ */
 @Service
 public class CustomerIntentRecognizer {
-    /** 本章的本地输入上限，按 Java String.length() 计数，避免超长文本继续调用模型。 */
+    /**
+     * 本章的本地输入上限，按 Java String.length() 计数，避免超长文本继续调用模型。
+     */
     public static final int MAX_MESSAGE_LENGTH = 4000;
 
     private static final Logger log = LoggerFactory.getLogger(CustomerIntentRecognizer.class);
@@ -27,17 +34,28 @@ public class CustomerIntentRecognizer {
     private final BeanOutputConverter<IntentRecognitionResult> outputConverter =
             new BeanOutputConverter<>(IntentRecognitionResult.class);
 
+    /**
+     * 注入专用分类客户端和客服记忆仓库；分类器只读历史，不注册写入记忆的 Advisor。
+     */
     public CustomerIntentRecognizer(@Qualifier("intentChatClient") ChatClient intentChatClient,
             @Qualifier("customerChatMemory") ChatMemory chatMemory) {
         this.intentChatClient = intentChatClient;
         this.chatMemory = chatMemory;
     }
 
-    /** 第三章接口仍只分类当前消息，不读写会话记忆。 */
+    /**
+     * 第三章接口仍只分类当前消息，不读写会话记忆。
+     *
+     *
+     * 单条识别的兼容入口，不读取或写入任何会话历史。
+     */
     public IntentRecognitionResult recognize(String message) {
         return recognizeWithHistory(null, message);
     }
 
+    /**
+     * 带历史的分类入口；接收会话服务生成的内部记忆键，非法键直接降级。
+     */
     public IntentRecognitionResult recognize(String conversationId, String message) {
         if (conversationId == null || conversationId.isBlank() || conversationId.length() > 160) {
             return IntentRecognitionResult.fallback();
@@ -45,6 +63,11 @@ public class CustomerIntentRecognizer {
         return recognizeWithHistory(conversationId, message);
     }
 
+    /**
+     * 先做输入限制，再将历史和当前消息作为模板数据发送给分类客户端。
+     * entity(outputConverter) 附加格式要求并解析 JSON，随后 validate 处理业务约束。
+     * 任何模型、解析或校验运行时异常都返回统一兜底，防止分类失败中断整个客服流程。
+     */
     private IntentRecognitionResult recognizeWithHistory(String conversationId, String message) {
         if (message == null || message.isBlank() || message.length() > MAX_MESSAGE_LENGTH) {
             return IntentRecognitionResult.fallback();
@@ -86,6 +109,10 @@ public class CustomerIntentRecognizer {
         }
     }
 
+    /**
+     * 检查枚举、有限置信度、订单号原文来源和缺失字段白名单。
+     * 订单号只允许出现在客户消息中，不能仅由助手历史“提供”；最终缺失字段由 Java 重算。
+     */
     private IntentRecognitionResult validate(IntentRecognitionResult result, String message, List<Message> history) {
         if (result == null || result.intent() == null
                 || !Double.isFinite(result.confidence())

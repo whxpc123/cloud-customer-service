@@ -18,11 +18,19 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
+/**
+ * 第五章工具边界测试，直接或通过真实 ToolCallback 执行 Java 订单工具。
+ * 固定样例与模拟仓库分别验证归属结果、拒绝调用的边界和异常信息屏蔽。
+ */
+
 @ExtendWith(OutputCaptureExtension.class)
 class CustomerOrderToolsTest {
     private final CustomerOrderTools tools = new CustomerOrderTools(new InMemoryOrderService(), false);
     private final ObjectMapper mapper = new ObjectMapper();
 
+    /**
+     * 参数化组合用户与订单，比较成功和不可访问结果，同时确认响应不暴露订单拥有者 ID。
+     */
     @ParameterizedTest
     @CsvSource({"1001,A10001,FOUND,SHIPPED", "2002,A20002,FOUND,PACKING",
             "2002,A10001,NOT_FOUND,", "1001,A20002,NOT_FOUND,", "1001,A99999,NOT_FOUND,"})
@@ -34,11 +42,17 @@ class CustomerOrderToolsTest {
         if (code == OrderLookupCode.NOT_FOUND) assertThat(result.expectedDeliveryDate()).isNull();
     }
 
+    /**
+     * 用小写及带空格订单号和 Integer 身份测试规范化，确认最终可读取本人的样例订单。
+     */
     @Test
     void normalizesOrderAndIntegerIdentity() {
         assertThat(tools.queryOrder(" a10001 ", context(1001)).code()).isEqualTo(OrderLookupCode.FOUND);
     }
 
+    /**
+     * 传入字符串、负数、浮点或缺失身份，检查认证提示以及仓库零交互，防止工具绕过应用身份。
+     */
     @Test
     void absentOrInvalidIdentityCannotReachService() {
         OrderService service = mock(OrderService.class);
@@ -51,6 +65,9 @@ class CustomerOrderToolsTest {
         verifyNoInteractions(service);
     }
 
+    /**
+     * 覆盖缺号、全角数字、错误位数和超长输入，验证格式拒绝先于仓库查询且返回内容有界。
+     */
     @Test
     void missingInvalidAndOversizedOrdersNeverReachService() {
         OrderService service = mock(OrderService.class);
@@ -65,6 +82,9 @@ class CustomerOrderToolsTest {
         verifyNoInteractions(service);
     }
 
+    /**
+     * 仓库抛出包含内部地址标记的异常，验证转换为暂不可用，响应与日志都不泄露该标记。
+     */
     @Test
     void exceptionsBecomeStableFailureWithoutLeakingDetails(CapturedOutput output) {
         OrderService service = mock(OrderService.class);
@@ -76,6 +96,9 @@ class CustomerOrderToolsTest {
         assertThat(output.getAll()).doesNotContain("SECRET_DATABASE_ADDRESS", "A10001");
     }
 
+    /**
+     * 查看真实工具 Schema 并伪造模型参数中的身份字段，验证 Schema 仅暴露订单号且应用身份不能被覆盖。
+     */
     @Test
     void actualSchemaExcludesIdentityAndExtraModelIdentityCannotOverrideContext() throws Exception {
         var callback = ToolCallbacks.from(tools)[0];
@@ -92,6 +115,9 @@ class CustomerOrderToolsTest {
         assertThat(mapper.readTree(callback.call("{}", context(1001L))).get("code").asText()).isEqualTo("MISSING_ORDER_NO");
     }
 
+    /**
+     * 执行真实工具并开启日志，核对轨迹与请求 ID 一致，同时检查上下文私有字段不会被打印。
+     */
     @Test
     void logsRealCallsAndCollectsOnlyMinimalResults(CapturedOutput output) {
         var trace = new OrderToolTrace();
@@ -102,5 +128,8 @@ class CustomerOrderToolsTest {
                 .doesNotContain("DO_NOT_LOG_CONTEXT", "currentUserId");
     }
 
+    /**
+     * 创建应用侧 ToolContext 身份；参数接受 Object，以便验证错误身份类型被拒绝。
+     */
     private ToolContext context(Object id) { return new ToolContext(Map.of("currentUserId", id)); }
 }

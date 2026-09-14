@@ -29,6 +29,11 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+/**
+ * 第五章工具与会话链路集成测试：模型决策是模拟的，注解工具的解析与执行由真实 ToolCallingManager 完成。
+ * 检查应用身份传递、实际调用轨迹和跨用户记忆隔离，不测试供应商的自然语言决策能力。
+ */
+
 @SpringBootTest(properties = "spring.ai.dashscope.api-key=offline-test-placeholder")
 @AutoConfigureMockMvc
 class OrderToolConversationTest {
@@ -38,6 +43,9 @@ class OrderToolConversationTest {
     @MockitoBean private ChatModel model;
     @MockitoBean private OrderService orders;
 
+    /**
+     * 让模拟模型给出工具调用，交真实管理器执行，验证服务端身份、订单状态和前端轨迹贯通。
+     */
     @Test
     void frameworkExecutesAnnotatedToolWithServerContextAndReturnsTrace() throws Exception {
         when(orders.findOwnedOrder(1001L,"A10001")).thenReturn(new InMemoryOrderService().findOwnedOrder(1001L,"A10001"));
@@ -60,6 +68,9 @@ class OrderToolConversationTest {
                 .containsExactly(MessageType.USER,MessageType.ASSISTANT);
     }
 
+    /**
+     * 两个用户使用相同外部会话 ID，验证一个用户既不能读取也不能清空另一个用户的记忆。
+     */
     @Test
     void sameExternalIdCannotShareReadOrClearMemoryAcrossIdentities() throws Exception {
         String id = id();
@@ -75,6 +86,9 @@ class OrderToolConversationTest {
         verifyNoInteractions(orders);
     }
 
+    /**
+     * 将仓库连续两次响应设为打包中和已发货，确认第二次追问重新查库而不沿用历史状态。
+     */
     @Test
     void repeatedStateQueriesReadServiceAgainEvenWithHistory() throws Exception {
         String id = id();
@@ -87,6 +101,9 @@ class OrderToolConversationTest {
         verify(orders,times(2)).findOwnedOrder(1001L,"A10001");
     }
 
+    /**
+     * 模拟订单依赖异常，验证模型和前端收到稳定业务结果，没有 SQL 错误原文。
+     */
     @Test
     void toolFailureReachesModelAsBusinessResultAndNoRawException() throws Exception {
         when(orders.findOwnedOrder(1001L,"A10001")).thenThrow(new IllegalStateException("PRIVATE_SQL"));
@@ -96,6 +113,9 @@ class OrderToolConversationTest {
                 .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("PRIVATE_SQL"))));
     }
 
+    /**
+     * 访客工具请求须返回身份要求，旧单次接口没有工具回调，两条路径都不应读取订单仓库。
+     */
     @Test
     void visitorCannotQueryAndLegacyChatHasNoTools() throws Exception {
         stubToolDecision("{\"orderNo\":\"A10001\"}");
@@ -110,6 +130,9 @@ class OrderToolConversationTest {
         verifyNoInteractions(orders);
     }
 
+    /**
+     * 演示身份头出现零、负数、非数字或溢出时返回 400，并阻止模型和订单依赖调用。
+     */
     @Test
     void invalidDemoHeaderIs400BeforeAnyModelRequest() throws Exception {
         for (String header : List.of("0","-1","hello","9223372036854775808")) {
@@ -119,6 +142,10 @@ class OrderToolConversationTest {
         verify(model,never()).call(any(Prompt.class)); verifyNoInteractions(orders);
     }
 
+    /**
+     * 用模拟模型区分分类与客服请求；当配置了工具参数时交给真实 ToolCallingManager 执行。
+     * 它只模拟模型是否选择工具，不跳过 Java 工具的身份和参数校验。
+     */
     private void stubToolDecision(String arguments) {
         when(model.call(any(Prompt.class))).thenAnswer(inv -> {
             Prompt p=inv.getArgument(0);
@@ -138,12 +165,21 @@ class OrderToolConversationTest {
             return reply("已根据工具结果生成回复");
         });
     }
+    /**
+     * 用 ObjectMapper 序列化请求后经 MockMvc 走会话 API，复用统一请求格式；带用户参数的重载同时设置演示身份头。
+     */
     private ResultActions send(String id,Long userId,String message) throws Exception {
         var request=post("/api/conversations/{id}/messages",id).contentType(MediaType.APPLICATION_JSON)
                 .content(mapper.writeValueAsBytes(Map.of("message",message)));
         if(userId!=null) request.header("X-Demo-User-Id",userId);
         return mvc.perform(request);
     }
+    /**
+     * 每例生成独立会话 UUID，避免内存窗口在共享测试容器中相互干扰。
+     */
     private String id(){return UUID.randomUUID().toString();}
+    /**
+     * 将给定文本包装成单候选 ChatResponse，模拟供应商的一次正常回复。
+     */
     private ChatResponse reply(String text){return new ChatResponse(List.of(new Generation(new AssistantMessage(text))));}
 }

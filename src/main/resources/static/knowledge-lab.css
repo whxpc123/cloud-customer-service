@@ -1,5 +1,221 @@
-.seed-area{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:14px;border-bottom:1px solid var(--line)}.seed-area h2{font-size:16px;margin:0}.seed-area p{font-size:11px;color:var(--muted);line-height:1.8}.seed-area button{background:#edf4f5;border:1px solid #c3d7db;border-radius:6px;padding:10px;font-size:12px;white-space:nowrap}.search-options{display:grid;grid-template-columns:1fr 1fr;gap:16px}.search-options label{margin-top:4px}.search-options select,.search-options input{display:block;width:100%;font-size:13px;font-family:inherit;color:var(--ink);padding:10px;margin-top:8px;border:1px solid #c5d4da;border-radius:6px;background:white}.examples{margin-top:12px}.hit{padding:16px 0;border-bottom:1px solid #ccdde3}.hit-heading{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--accent)}.hit-content{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.9}.hit-source{font:10px/1.8 var(--mono);color:var(--muted);overflow-wrap:anywhere}.search-context{font-size:12px;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere}#seed-status{color:var(--accent);font-size:12px;line-height:1.7}#seed-status:empty{display:none}select:focus-visible,input:focus-visible{outline:2px solid #68a4ae;outline-offset:2px}@media(max-width:760px){header{flex-wrap:wrap;height:auto;min-height:62px;padding:16px;gap:14px}header>a{font-size:11px}.brand{margin-right:auto}.seed-area{align-items:flex-start;flex-direction:column}.search-options{gap:10px}}
+/* 知识工作台增量样式；依赖 embedding-lab.css 的主题、布局和基础表单。 */
 
-.import-area h2{font-size:18px;margin:0 0 16px}.import-area .mode-switch{margin:0 0 18px}.import-area input{width:100%;min-width:0;padding:10px;border:1px solid #c5d4da;border-radius:6px;font-size:13px;font-family:inherit;background:#fbfcfc;color:var(--ink)}.import-area input[type=file]{font-size:12px}.import-area input::file-selector-button{border:0;border-radius:4px;padding:8px;margin-right:8px;background:#e4eff0;color:var(--ink);cursor:pointer}.sample-import{margin:26px 0;padding-bottom:22px;border-bottom:1px solid var(--line)}.sample-import .seed-area{margin-top:18px}#import-status{font-size:12px;line-height:1.8;color:var(--accent);overflow-wrap:anywhere}#import-status:empty{display:none}
-
-#preview-summary{white-space:pre-wrap;font-size:12px;line-height:1.9;overflow-wrap:anywhere}.preview-chunk{padding:14px 0;border-bottom:1px solid #c9d9df}.preview-chunk h3{font-size:13px}.preview-chunk details{margin-top:8px;padding-top:8px}.quality-warning{font-size:12px;line-height:1.8;border-left:3px solid #ad8941;padding:6px 12px;background:#fff8e8}#job-status{font-size:12px;line-height:1.8;overflow-wrap:anywhere}.sample-preview,#more-chunks,#refresh-job{margin-top:16px;padding:10px;border:1px solid var(--line);border-radius:6px;background:white;font-size:12px}#chunk-previews{max-height:65vh;overflow:auto;padding-right:8px}#confirm-import{margin-top:12px}.output h2{font-size:16px}.pdf-options{margin-top:12px}.pdf-options .search-options{margin-bottom:10px}
+/* 第七章固定样例导入区，与自定义资料上传入口分开。 */
+.seed-area {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding-bottom:14px;
+  border-bottom:1px solid var(--line)
+}
+.seed-area h2 {
+  font-size:16px;
+  margin:0
+}
+.seed-area p {
+  font-size:11px;
+  color:var(--muted);
+  line-height:1.8
+}
+.seed-area button {
+  background:#edf4f5;
+  border:1px solid #c3d7db;
+  border-radius:6px;
+  padding:10px;
+  font-size:12px;
+  white-space:nowrap
+}
+/* 条数与阈值并列展示，参数仅影响召回，不改变知识原文。 */
+.search-options {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px
+}
+.search-options label {
+  margin-top:4px
+}
+.search-options select,.search-options input {
+  display:block;
+  width:100%;
+  font-size:13px;
+  font-family:inherit;
+  color:var(--ink);
+  padding:10px;
+  margin-top:8px;
+  border:1px solid #c5d4da;
+  border-radius:6px;
+  background:white
+}
+.examples {
+  margin-top:12px
+}
+/* 命中卡展示相似度、完整正文及来源，使用 pre-wrap 保留段落。 */
+.hit {
+  padding:16px 0;
+  border-bottom:1px solid #ccdde3
+}
+.hit-heading {
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  font-size:12px;
+  color:var(--accent)
+}
+.hit-content {
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  font-size:14px;
+  line-height:1.9
+}
+.hit-source {
+  font:10px/1.8 var(--mono);
+  color:var(--muted);
+  overflow-wrap:anywhere
+}
+.search-context {
+  font-size:12px;
+  line-height:1.8;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere
+}
+#seed-status {
+  color:var(--accent);
+  font-size:12px;
+  line-height:1.7
+}
+#seed-status:empty {
+  display:none
+}
+select:focus-visible,input:focus-visible {
+  outline:2px solid #68a4ae;
+  outline-offset:2px
+}
+/* 移动端导航和样例导入改为可换行，避免横向溢出。 */
+@media(max-width:760px) {
+  header {
+    flex-wrap:wrap;
+    height:auto;
+    min-height:62px;
+    padding:16px;
+    gap:14px
+  }
+  header>a {
+    font-size:11px
+  }
+  .brand {
+    margin-right:auto
+  }
+  .seed-area {
+    align-items:flex-start;
+    flex-direction:column
+  }
+  .search-options {
+    gap:10px
+  }
+}
+/* 第八章文件/粘贴导入区域，统一文件选择器与资料名称输入样式。 */
+.import-area h2 {
+  font-size:18px;
+  margin:0 0 16px
+}
+.import-area .mode-switch {
+  margin:0 0 18px
+}
+.import-area input {
+  width:100%;
+  min-width:0;
+  padding:10px;
+  border:1px solid #c5d4da;
+  border-radius:6px;
+  font-size:13px;
+  font-family:inherit;
+  background:#fbfcfc;
+  color:var(--ink)
+}
+.import-area input[type=file] {
+  font-size:12px
+}
+.import-area input::file-selector-button {
+  border:0;
+  border-radius:4px;
+  padding:8px;
+  margin-right:8px;
+  background:#e4eff0;
+  color:var(--ink);
+  cursor:pointer
+}
+.sample-import {
+  margin:26px 0;
+  padding-bottom:22px;
+  border-bottom:1px solid var(--line)
+}
+.sample-import .seed-area {
+  margin-top:18px
+}
+#import-status {
+  font-size:12px;
+  line-height:1.8;
+  color:var(--accent);
+  overflow-wrap:anywhere
+}
+#import-status:empty {
+  display:none
+}
+/* 预览统计与分块卡，正文展示高度受控并可滚动，全部内容仍能展开查看。 */
+#preview-summary {
+  white-space:pre-wrap;
+  font-size:12px;
+  line-height:1.9;
+  overflow-wrap:anywhere
+}
+.preview-chunk {
+  padding:14px 0;
+  border-bottom:1px solid #c9d9df
+}
+.preview-chunk h3 {
+  font-size:13px
+}
+.preview-chunk details {
+  margin-top:8px;
+  padding-top:8px
+}
+/* 突出提取与清理质量提示，提醒核对 PDF 条件、短块等内容。 */
+.quality-warning {
+  font-size:12px;
+  line-height:1.8;
+  border-left:3px solid #ad8941;
+  padding:6px 12px;
+  background:#fff8e8
+}
+/* 后台任务进度和继续显示块/重查任务按钮，样式不代表发布已成功。 */
+#job-status {
+  font-size:12px;
+  line-height:1.8;
+  overflow-wrap:anywhere
+}
+.sample-preview,#more-chunks,#refresh-job {
+  margin-top:16px;
+  padding:10px;
+  border:1px solid var(--line);
+  border-radius:6px;
+  background:white;
+  font-size:12px
+}
+#chunk-previews {
+  max-height:65vh;
+  overflow:auto;
+  padding-right:8px
+}
+#confirm-import {
+  margin-top:12px
+}
+.output h2 {
+  font-size:16px
+}
+.pdf-options {
+  margin-top:12px
+}
+.pdf-options .search-options {
+  margin-bottom:10px
+}

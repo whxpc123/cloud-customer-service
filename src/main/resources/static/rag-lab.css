@@ -1,1 +1,74 @@
-.inputs h2{font-size:18px;margin:0 0 20px}.output{position:static;min-height:420px}.output h3{font-size:14px;margin-top:28px}#answer-status{border:1px solid #b8ccd0;border-radius:20px;padding:7px 10px;line-height:1.5}#answer-status[data-status=NO_EVIDENCE],#answer-status[data-status=TEMPORARILY_UNAVAILABLE]{color:#88571d;background:#fbf3e4;border-color:#e0c89a}#answered-question{font-size:12px;line-height:1.8;color:var(--muted);border-bottom:1px solid #cfdee3;padding-bottom:14px;white-space:pre-wrap;overflow-wrap:anywhere}#answer{font-size:15px;line-height:2}.evidence-card{margin-top:12px;padding:16px;border:1px solid #cadcde;border-radius:8px;background:#f8fbfb;overflow-wrap:anywhere}.evidence-card summary{font-size:13px;color:var(--ink);line-height:1.8}.evidence-card p{white-space:pre-wrap;line-height:1.85;font-size:13px}.evidence-card pre{font-size:10px;color:var(--muted)}#evidence-count{color:var(--muted);font-weight:400}#references:empty::after{content:'本次没有可展示的证据。';font-size:12px;color:var(--muted)}
+/* 第九章知识问答增量样式；继承公共实验室布局，答复区不使用粘滞定位。 */
+
+/* 问题表单与答复区域的基础排版，长答复随文档自然滚动。 */
+.inputs h2 {
+  font-size:18px;
+  margin:0 0 20px
+}
+.output {
+  position:static;
+  min-height:420px
+}
+.output h3 {
+  font-size:14px;
+  margin-top:28px
+}
+/* 执行状态徽标；无证据和服务暂不可用使用提醒色，生成成功也不代表真值认证。 */
+#answer-status {
+  border:1px solid #b8ccd0;
+  border-radius:20px;
+  padding:7px 10px;
+  line-height:1.5
+}
+#answer-status[data-status=NO_EVIDENCE],#answer-status[data-status=TEMPORARILY_UNAVAILABLE] {
+  color:#88571d;
+  background:#fbf3e4;
+  border-color:#e0c89a
+}
+/* 固定展示此次已提交问题，区分输入框中后来修改的内容。 */
+#answered-question {
+  font-size:12px;
+  line-height:1.8;
+  color:var(--muted);
+  border-bottom:1px solid #cfdee3;
+  padding-bottom:14px;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere
+}
+#answer {
+  font-size:15px;
+  line-height:2
+}
+/* 每条来源的可折叠详情保留正文换行，便于核对适用条件与例外。 */
+.evidence-card {
+  margin-top:12px;
+  padding:16px;
+  border:1px solid #cadcde;
+  border-radius:8px;
+  background:#f8fbfb;
+  overflow-wrap:anywhere
+}
+.evidence-card summary {
+  font-size:13px;
+  color:var(--ink);
+  line-height:1.8
+}
+.evidence-card p {
+  white-space:pre-wrap;
+  line-height:1.85;
+  font-size:13px
+}
+.evidence-card pre {
+  font-size:10px;
+  color:var(--muted)
+}
+#evidence-count {
+  color:var(--muted);
+  font-weight:400
+}
+/* 空来源列表的说明性占位，不能当作检索或模型返回的数据。 */
+#references:empty::after {
+  content:'本次没有可展示的证据。';
+  font-size:12px;
+  color:var(--muted)
+}

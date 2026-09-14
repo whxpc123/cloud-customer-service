@@ -1,5 +1,11 @@
+/**
+ * 第四、五章客服工作台：原生 JavaScript 管理会话列表、草稿、消息、意图和真实订单工具轨迹。
+ * 页面记录保存在当前标签页 sessionStorage；模型上下文在服务端，两者的生命周期不同。
+ * 所有客户、存储和模型文本通过 textContent 渲染，不解释为 HTML。
+ */
 'use strict';
 
+// 页面元素查询简写；所有 ID 都对应当前 HTML 中的固定节点。
 const $ = (id) => document.getElementById(id);
 const storageKey = 'yunshan-conversations-v1';
 const intentLabels = {
@@ -16,17 +22,31 @@ let activeId = null;
 let busy = false;
 let selectedTurn = null;
 
+/**
+ * 按 activeId 查当前页面会话；不存在时返回 undefined，由调用处处理空状态。
+ */
 function current() { return sessions.find((session) => session.id === activeId); }
+/**
+ * 显示或隐藏页面级提示，使用 textContent 防止错误内容被当作 HTML 执行。
+ */
 function showNotice(message = '') { $('notice').textContent = message; $('notice').hidden = !message; }
+/**
+ * 保存当前标签页的会话和选中 ID；存储满或被禁用时给出提示，聊天仍可继续。
+ * 这是浏览器页面记录，不会把历史重新同步给服务端模型。
+ */
 function persist() {
   try { sessionStorage.setItem(storageKey, JSON.stringify({ sessions, activeId })); }
   catch { showNotice('浏览器未能保存页面记录。当前仍可聊天，刷新后记录可能丢失。'); }
 }
+/**
+ * 解析 sessionStorage 并过滤非法会话、消息角色和超长草稿；失效存储回到空列表。
+ * 只恢复本应用的数据结构，不能假设浏览器缓存内容天然可信。
+ */
 function restore() {
   try {
     const stored = JSON.parse(sessionStorage.getItem(storageKey) || 'null');
     if (!stored || !Array.isArray(stored.sessions)) return;
-    // Only restore this application's plain-text records. Never render storage or model text as HTML.
+    // 只恢复本应用的纯文本记录，缓存和模型返回都不能按 HTML 渲染。
     sessions = stored.sessions.filter(s => s && /^[a-zA-Z0-9_-]{1,100}$/.test(s.id)
       && typeof s.title === 'string' && Array.isArray(s.turns))
       .map(s => ({ id: s.id, title: s.title.slice(0,80), demoUserId: [1001,2002].includes(s.demoUserId) ? s.demoUserId : null, createdAt: Number(s.createdAt) || Date.now(), draft: typeof s.draft === 'string' ? s.draft.slice(0,4000) : '',
@@ -35,17 +55,27 @@ function restore() {
     activeId = sessions.some(s => s.id === stored.activeId) ? stored.activeId : sessions[0]?.id;
   } catch { sessions = []; }
 }
+/**
+ * 创建普通 DOM 节点，文本统一走 textContent；模型输出中的标签只会按文字展示。
+ */
 function element(tag, className, text) {
   const node = document.createElement(tag);
   if (className) node.className = className;
   if (text !== undefined) node.textContent = text;
   return node;
 }
+/**
+ * 在 SVG 命名空间创建 use 引用，复用页面定义的本地图标，避免动态拼接 SVG 字符串。
+ */
 function icon(name) {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
   use.setAttribute('href', '#' + name); svg.append(use); svg.setAttribute('aria-hidden', 'true'); return svg;
 }
+/**
+ * 根据忙碌状态、会话和输入统一设置按钮可用性及 aria-busy。
+ * 请求期间禁止切会话、换身份和重复发送，保证同一窗口按轮次顺序调用。
+ */
 function updateControls() {
   $('new-session').disabled = busy;
   $('demo-user').disabled = busy;
@@ -56,6 +86,9 @@ function updateControls() {
   document.querySelectorAll('.session-item, [data-prompt]').forEach(button => { button.disabled = busy; });
   $('chat-form').setAttribute('aria-busy', String(busy));
 }
+/**
+ * 重建会话导航并绑定选择事件；切换前保存草稿，随后恢复目标会话的草稿和最近洞察。
+ */
 function renderSessions() {
   $('sessions').replaceChildren();
   $('session-count').textContent = sessions.length;
@@ -76,15 +109,25 @@ function renderSessions() {
     $('sessions').append(button);
   });
 }
+/**
+ * 从后向前找最近一次意图结果；遇到清空记忆标记就停止，不展示旧上下文的洞察作为当前结果。
+ */
 function latestResult(session) {
-  // A reset marker ends the previous model context, while earlier page records stay visible.
+  // 清空标记结束旧模型上下文，但此前页面记录仍可见。
   for (let i = session.turns.length - 1; i >= 0; i--) {
     if (session.turns[i].role === 'system') return null;
     if (session.turns[i].intent) return session.turns[i];
   }
   return null;
 }
+/**
+ * 将输入框原文存入当前会话草稿，切换会话或页面离开时可以恢复未发送内容。
+ */
 function saveDraft() { if (current()) current().draft = $('message-input').value; }
+/**
+ * 重绘当前会话记录，空会话使用 template 示例；用户、助手、清空提示和错误采用不同样式。
+ * 查看历史回复只更新洞察面板，不再请求模型或改写服务端记忆。
+ */
 function renderMessages() {
   const list = $('messages'); list.replaceChildren();
   const session = current();
@@ -121,6 +164,10 @@ function renderMessages() {
   }
   list.scrollTop = session?.turns.length ? list.scrollHeight : 0;
 }
+/**
+ * 展示选中回复的分类 JSON、订单号、缺失字段和置信度；非法分数不直接用于样式宽度。
+ * 订单号标明来源于对话而未验证归属，置信度条也不是业务成功率。
+ */
 function renderInsight() {
   const result = selectedTurn?.intent;
   const valid = result && typeof result === 'object';
@@ -139,6 +186,10 @@ function renderInsight() {
   $('raw-json').textContent = valid ? JSON.stringify(result, null, 2) : '发送消息后查看';
   renderToolResults(selectedTurn);
 }
+/**
+ * 仅渲染后端返回的 orderLookups 轨迹；不能根据回答里“查到了”三个字推断执行过工具。
+ * 查询状态和订单状态分别翻译，成功日期明确作为固定样例展示。
+ */
 function renderToolResults(turn) {
   const results = Array.isArray(turn?.orderLookups) ? turn.orderLookups : [];
   $('tool-summary').textContent = !turn ? '发送消息后查看是否执行查询' : results.length ? `实际执行了 ${results.length} 次查询` : '本轮没有执行订单查询';
@@ -157,6 +208,9 @@ function renderToolResults(turn) {
     card.append(details); $('tool-results').append(card);
   });
 }
+/**
+ * 统一刷新导航、消息、洞察、演示用户和输入控件，使页面各区来自同一当前会话状态。
+ */
 function render() {
   renderSessions(); renderMessages(); renderInsight();
   if (current()) $('demo-user').value = current().demoUserId ? String(current().demoUserId) : 'guest';
@@ -164,6 +218,10 @@ function render() {
   $('session-meta').textContent = current() ? (current().demoUserId ? '用户 ' + current().demoUserId : '访客') + ' · 会话 ' + activeId : '点击“新建会话”开始';
   updateControls();
 }
+/**
+ * 封装同源 JSON 请求，合并调用方演示身份头并转换 HTTP 错误。
+ * 204 的清空响应没有正文，不能直接调用 response.json()。
+ */
 async function request(path, options = {}) {
   const response = await fetch(path, { ...options, headers: { 'Content-Type':'application/json', ...options.headers } });
   if (!response.ok) throw new Error(response.status === 400 ? '输入不符合要求，请检查消息内容。'
@@ -171,9 +229,16 @@ async function request(path, options = {}) {
     : `服务请求失败（${response.status}），请确认 Spring Boot 已正常启动。`);
   return response.status === 204 ? null : response.json();
 }
+/**
+ * 将 fetch 的网络 TypeError 转成启动提示；业务或格式错误保留已转换的可读说明。
+ */
 function errorMessage(error) {
   return error instanceof TypeError ? '无法连接服务，请确认 Spring Boot 正在运行。' : error.message || '请求失败，请稍后继续。';
 }
+/**
+ * 请求服务器生成会话 ID，固定此会话的演示身份，再插入页面列表。
+ * 失败时保留原会话，finally 始终解除忙碌状态。
+ */
 async function newSession() {
   if (busy) return;
   const demoUserId = $('demo-user').value === 'guest' ? null : Number($('demo-user').value);
@@ -187,6 +252,10 @@ async function newSession() {
   } catch (error) { showNotice(errorMessage(error)); }
   finally { busy = false; render(); }
 }
+/**
+ * 先在页面保存客户消息与等待提示，再调用一次会话 API 获取回复、意图和工具结果。
+ * 失败时服务端可能已存入客户消息，因此保留错误标记并提醒避免盲目重发。
+ */
 async function sendMessage(event) {
   event.preventDefault();
   const session = current(); const message = $('message-input').value.trim();
@@ -210,6 +279,9 @@ async function sendMessage(event) {
     pending.remove(); busy = false; saveDraft(); persist(); render(); $('message-input').focus({preventScroll:true});
   }
 }
+/**
+ * 调用 DELETE 清空服务端窗口；成功后在页面追加分界提示，之前的可见消息仍保留。
+ */
 async function clearMemory() {
   if (busy || !current()) return;
   const session = current(); busy = true; updateControls(); showNotice();
@@ -220,13 +292,19 @@ async function clearMemory() {
   } catch (error) { showNotice(errorMessage(error)); }
   finally { busy = false; render(); }
 }
+/**
+ * 把当前会话已选的演示用户放入请求头，访客省略该头。
+ * 这是本地教学身份选择，实际生产必须由可信登录机制提供身份。
+ */
 function demoHeaders(session) {
-  // This header selects a local demo identity; it is not production authentication.
+  // 请求头仅选择本地演示身份，不能用于生产认证。
   return session.demoUserId ? {'X-Demo-User-Id':String(session.demoUserId)} : {};
 }
+// 换演示用户必须新建会话，不能把已有窗口直接切给另一身份。
 $('demo-user').addEventListener('change', newSession);
 $('chat-form').addEventListener('submit', sendMessage);
 $('message-input').addEventListener('input', () => { saveDraft(); updateControls(); });
+// 中文输入法组词阶段的 Enter 不发送；Shift+Enter 保留为换行。
 $('message-input').addEventListener('keydown', event => {
   if (event.key === 'Enter' && !event.shiftKey && !event.isComposing && event.keyCode !== 229) {
     event.preventDefault(); if (!busy) $('chat-form').requestSubmit();
@@ -235,12 +313,14 @@ $('message-input').addEventListener('keydown', event => {
 $('new-session').addEventListener('click', newSession);
 $('clear-memory').addEventListener('click', () => {
   if (!busy && current()) {
-    // Escape must cancel even after an earlier dialog was confirmed.
+    // 每次打开前重置结果，确保曾经确认过后再按 Escape 仍然是取消。
     $('clear-dialog').returnValue = 'cancel';
     $('clear-dialog').showModal();
   }
 });
+// 只有对话框显式确认才调用清空 API；取消和 Escape 都不发请求。
 $('clear-dialog').addEventListener('close', () => { if ($('clear-dialog').returnValue === 'confirm') clearMemory(); });
+// 离开页面前保存草稿；初始化时恢复页面记录，无会话则向服务端新建。
 window.addEventListener('pagehide', () => { saveDraft(); persist(); });
 if (matchMedia('(max-width:960px)').matches) $('inspector-details').open = false;
 restore();

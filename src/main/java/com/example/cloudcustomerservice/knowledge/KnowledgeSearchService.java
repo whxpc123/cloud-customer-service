@@ -10,13 +10,28 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
+/**
+ * 第七章的向量检索服务，同时约束租户、发布状态、知识库和语言范围。
+ * 先构造服务端过滤表达式，再复核返回元数据；相似度和 topK 是召回条件，不保证全文完整。
+ */
 @Service
 @Profile("local & knowledge")
 public class KnowledgeSearchService {
     private static final Logger log = LoggerFactory.getLogger(KnowledgeSearchService.class);
     private final VectorStore vectorStore;
+    /**
+     * 注入 VectorStore 抽象，统一构造过滤请求并验证返回元数据。
+     */
     public KnowledgeSearchService(VectorStore vectorStore) { this.vectorStore = vectorStore; }
 
+    /**
+     * 验证输入并构造四项 AND 过滤；topK 默认 5，阈值默认 0.60。
+     * 无命中返回空列表；依赖异常抛出 KnowledgeUnavailableException，不能混为无资料。
+     * @param tenantId 服务端确定的租户标识，不能让模型决定
+     * @param query 搜索原文，非空且不超过 2000 字符
+     * @param topK 可空，最多返回 1～10 块
+     * @param threshold 可空，接受 0～1 的有限数值
+     */
     public KnowledgeSearchResult search(String tenantId, String query, Integer topK, Double threshold) {
         if (tenantId == null || !tenantId.matches("[a-zA-Z0-9_-]{1,80}")) throw new IllegalArgumentException("Invalid tenantId");
         if (query == null || query.isBlank() || query.length() > 2000) throw new IllegalArgumentException("query must contain 1 to 2000 characters");
@@ -44,6 +59,10 @@ public class KnowledgeSearchService {
             throw new KnowledgeUnavailableException();
         }
     }
+    /**
+     * 将存储 Document 转成展示 DTO，保留完整正文和元数据副本。
+     * 分数必须有限；兼容旧样例缺少名称或块号的情况，缺失块号以 0 标记。
+     */
     private KnowledgeHit hit(Document d) {
         if (d.getScore() == null || !Double.isFinite(d.getScore())) throw new IllegalStateException("Invalid score");
         var m = d.getMetadata();

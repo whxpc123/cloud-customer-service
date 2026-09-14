@@ -14,19 +14,33 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+/**
+ * 文件读取与上传契约测试，使用内存生成的真实 PDF 字节及 multipart 请求。
+ * 向量模型和数据库写入使用替身；读取成功与发布成功是不同验证层次。
+ */
+
 class KnowledgeDocumentReaderTest {
     private final KnowledgeDocumentReader reader = new KnowledgeDocumentReader();
 
+    /**
+     * 用带 BOM 和 CRLF 的真实字节验证 UTF-8 文本与 Markdown 读取，结果统一为正常正文换行。
+     */
     @Test void readsUtf8TextAndMarkdownAndNormalizesLineEndings() {
         for (String name : new String[]{"政策.txt", "政策.MD", "政策.markdown"}) {
             assertThat(reader.read(file(name, "\uFEFF退货政策\r\n需保持商品完好。".getBytes(StandardCharsets.UTF_8))))
                     .isEqualTo("退货政策\n需保持商品完好。");
         }
     }
+    /**
+     * 在内存生成含文字的真实 PDF，再通过读取器提取，避免仅用文件后缀模拟 PDF 支持。
+     */
     @Test void extractsTextFromActualPdf() throws Exception {
         assertThat(reader.read(file("rules.pdf", pdf("Moonlight support is open on Thursday."))))
                 .contains("Moonlight support is open on Thursday.");
     }
+    /**
+     * 覆盖扫描件、损坏内容、非法编码及文件/正文超限，检查拒绝行为和可读说明。
+     */
     @Test void rejectsEmptyScannedInvalidAndOversizedFiles() throws Exception {
         assertThatIllegalArgumentException().isThrownBy(() -> reader.read(file("scan.pdf", pdf(null))))
                 .withMessageContaining("OCR");
@@ -37,6 +51,9 @@ class KnowledgeDocumentReaderTest {
         }
         assertThatIllegalArgumentException().isThrownBy(() -> KnowledgeDocumentReader.normalize("x".repeat(50001)));
     }
+    /**
+     * 通过 multipart 上传真实 PDF，捕获准备后写入参数，再测试错误文件不调用向量和写入依赖。
+     */
     @Test void uploadEndpointPassesExtractedTextAndSafeNameAndReportsErrors() throws Exception {
         var preparation = new com.example.cloudcustomerservice.knowledge.ingestion.KnowledgePreparationService(
                 new com.example.cloudcustomerservice.knowledge.ingestion.KnowledgeDocumentReaderFactory());
@@ -56,9 +73,15 @@ class KnowledgeDocumentReaderTest {
         verifyNoInteractions(writer,model);
     }
 
+    /**
+     * 在内存包装 multipart 文件字节，用于测试上传与读取流程而不访问用户文件。
+     */
     private static MockMultipartFile file(String name, byte[] content) {
         return new MockMultipartFile("file", name, "application/octet-stream", content);
     }
+    /**
+     * 在内存创建真实 PDF；正文为空时生成无文字页面，用于模拟需要 OCR 的扫描件边界。
+     */
     static byte[] pdf(String text) throws Exception {
         try (var document = new PDDocument(); var output = new ByteArrayOutputStream()) {
             var page = new PDPage(); document.addPage(page);

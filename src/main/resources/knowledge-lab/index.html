@@ -1,8 +1,12 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>知识检索 · 云杉客服</title><link rel="stylesheet" href="/embedding-lab.css"><link rel="stylesheet" href="/knowledge-lab.css"><script defer src="/knowledge-lab.js"></script></head>
-<body><header><a href="/" class="brand">杉 <span>云杉客服</span></a><a href="/internal/rag">第九章 · 知识问答 ↗</a><a href="/">返回对话工作台 ↗</a></header><main>
+<!doctype html><html lang="zh-CN"><!-- 知识预览导入与检索页面：由同一个 Spring Boot 应用提供，交互逻辑位于关联 JS。 -->
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>知识检索 · 云杉客服</title><link rel="stylesheet" href="/embedding-lab.css"><link rel="stylesheet" href="/knowledge-lab.css"><!-- defer 等文档解析完成再执行，脚本可直接查询下方固定 ID 节点。 -->
+  <script defer src="/knowledge-lab.js"></script></head>
+<body><header><a href="/" class="brand">杉 <span>云杉客服</span></a><a href="/internal/rag">第九章 · 知识问答 ↗</a><a href="/">返回对话工作台 ↗</a></header><!-- 主内容按输入、处理结果和来源组织；动态文字由脚本以纯文本填入。 -->
+    <main>
 <div class="eyebrow">第八章 / DOCUMENT ETL</div><h1>先看看怎么切，<br><span>再把完整规则存下来。</span></h1><p class="intro">正文、来源和向量保存在 PostgreSQL 中。搜索只生成问题的向量，从知识库找出相关片段。</p>
 <div class="model-note">PostgreSQL + pgvector <span>1024 维 · HNSW</span><span>tenant-yunshan</span><span>仅检索已发布的中文售后知识</span></div>
 <div class="lab-grid"><section class="inputs" aria-label="知识检索设置">
+<!-- 上传或粘贴后先预览；此表单提交不会直接向量化和写库。 -->
 <form id="import-form" class="import-area" aria-label="导入自己的资料">
 <h2>导入自己的资料</h2>
 <div class="mode-switch" role="group" aria-label="导入方式"><button type="button" id="file-mode" aria-pressed="true">上传文件</button><button type="button" id="text-mode" aria-pressed="false">粘贴正文</button></div>
@@ -16,10 +20,13 @@
 </form><button type="button" id="preview-sample" class="sample-preview">预览第八章售后制度样例</button>
 <details class="sample-import"><summary>导入课程样例（可选）</summary><div class="seed-area"><div><h2>四条课程知识</h2><p>退货条件、退货运费、物流异常、电子发票。</p></div><button id="seed" type="button">导入 / 更新样例</button></div>
 <p class="fine">点击后会重新生成四条向量并按稳定 ID 更新。应用启动不会自动导入，重启保留数据库内容。</p><p id="seed-status" role="status"></p></details>
+<!-- 查询已发布知识，topK 和阈值限制召回结果，不是全文浏览。 -->
 <form id="search-form"><label for="query">想查找什么？</label><textarea id="query" rows="3" required maxlength="2000">衣服买错了，想寄回去</textarea>
 <div class="examples" role="group" aria-label="搜索样例"><button type="button" data-query="衣服买错了，想寄回去">退货</button><button type="button" data-query="快递两天都没有动静">物流异常</button><button type="button" data-query="电子发票去哪里申请？">电子发票</button></div>
 <div class="search-options"><label for="top-k">最多返回 <select id="top-k"><option value="1">1 条</option><option value="3">3 条</option><option value="5" selected>5 条</option><option value="10">10 条</option></select></label><label for="threshold">最低相似度 <input id="threshold" type="number" min="0" max="1" step="0.01" value="0.60" required></label></div>
 <p class="fine">0.60 是实验起点，不是已校准阈值；调低可观察更多结果。最多返回 10 条，每次搜索会调用向量服务。</p>
 <div class="submit-row"><small>每个问题最多 2000 字符</small><button type="submit" class="primary">检索知识 →</button></div></form><p id="feedback" role="status" aria-live="polite"></p></section>
-<section class="output" aria-label="预览与检索结果" aria-live="polite" aria-busy="false"><div class="mode-switch"><button type="button" id="show-preview" aria-pressed="false">切分预览</button><button type="button" id="show-search" aria-pressed="true">检索结果</button></div><div id="preview-panel" hidden><h2>切分预览</h2><p id="preview-summary">先选择资料并生成预览。</p><div id="preview-warnings"></div><div id="chunk-previews"></div><button type="button" id="more-chunks" hidden>显示更多知识块</button><p class="fine">预览保留 15 分钟。确认后会调用百炼并替换同名资料的所有旧版本。页码、标题、条件与例外都需要核对。</p><button type="button" id="confirm-import" class="primary" disabled>确认这些知识块并导入</button><p id="job-status" role="status"></p><button type="button" id="refresh-job" hidden>重新查询任务状态</button></div><div id="search-results"><div class="section-heading"><h2>相关知识片段</h2><span id="result-count">等待搜索</span></div><div id="empty-result"><div class="vector-motif" aria-hidden="true">▤</div><h3>找到资料，保留出处。</h3><p>先上传资料、粘贴正文，或导入课程样例。搜索结果会显示正文、版本和知识块编号，不生成客服回答。</p></div><div id="hits" hidden></div><details id="raw-details" hidden><summary>查看检索结果 JSON</summary><pre id="raw-result"></pre></details></div></section></div>
+<section class="output" aria-label="预览与检索结果" aria-live="polite" aria-busy="false"><div class="mode-switch"><button type="button" id="show-preview" aria-pressed="false">切分预览</button><button type="button" id="show-search" aria-pressed="true">检索结果</button></div><!-- 完整分块预览和质量提示，只有确认令牌后才启动后台发布。 -->
+<div id="preview-panel" hidden><h2>切分预览</h2><p id="preview-summary">先选择资料并生成预览。</p><div id="preview-warnings"></div><div id="chunk-previews"></div><button type="button" id="more-chunks" hidden>显示更多知识块</button><p class="fine">预览保留 15 分钟。确认后会调用百炼并替换同名资料的所有旧版本。页码、标题、条件与例外都需要核对。</p><button type="button" id="confirm-import" class="primary" disabled>确认这些知识块并导入</button><p id="job-status" role="status"></p><button type="button" id="refresh-job" hidden>重新查询任务状态</button></div><div id="search-results"><div class="section-heading"><h2>相关知识片段</h2><span id="result-count">等待搜索</span></div><div id="empty-result"><div class="vector-motif" aria-hidden="true">▤</div><h3>找到资料，保留出处。</h3><p>先上传资料、粘贴正文，或导入课程样例。搜索结果会显示正文、版本和知识块编号，不生成客服回答。</p></div><div id="hits" hidden></div><!-- 保留可展开的原始 JSON，便于将页面摘要与真实接口字段对照。 -->
+<details id="raw-details" hidden><summary>查看检索结果 JSON</summary><pre id="raw-result"></pre></details></div></section></div>
 <aside class="reading-note"><strong>相关资料，不等于已经得到业务结论。</strong><p>课程样例不代表真实商城政策；上传资料的准确性由资料提供者确认。租户和发布范围由服务端固定；此页只检索片段；需要依据资料生成回答，请进入第九章“知识问答”。不能办理退款。</p></aside><footer>文档以 document 角色入库，问题以 query 角色检索。Top K 是结果上限；阈值或过滤可能让结果更少。HNSW 为近似索引，四条样例不能代表八万条知识的性能。</footer></main></body></html>
