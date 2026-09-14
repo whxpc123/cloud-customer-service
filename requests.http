@@ -570,3 +570,60 @@ POST http://localhost:18080/internal/rag/answer
 Content-Type: application/json
 
 {"question":"我的订单 A10001 已经签收十天，现在还能退吗？"}
+
+
+### 第十章 1：Advisor 多轮知识问答页面（需要 local,knowledge）
+GET http://localhost:18080/internal/advisor-rag
+
+### 第十章 2：新建知识会话，不调用模型
+POST http://localhost:18080/internal/advisor-rag/conversations
+
+> {% client.global.set("advisorConversationId", response.body.conversationId); %}
+
+### 第十章 3：完整问题，检查返回的 requestId 与真实来源
+# 只需这一个请求，内部一次 chatClientResponse 同时取得答复和证据。
+POST http://localhost:18080/internal/advisor-rag/conversations/{{advisorConversationId}}/messages
+Content-Type: application/json
+X-Demo-User-Id: 1001
+
+{"question":"我买错了衣服，想退货，有什么条件？"}
+
+### 第十章 4：同会话追问，retrievalQuery 仍是当前原文；本章不进行 Query Rewrite
+POST http://localhost:18080/internal/advisor-rag/conversations/{{advisorConversationId}}/messages
+Content-Type: application/json
+X-Demo-User-Id: 1001
+
+{"question":"那运费呢？"}
+
+### 第十章 5：无证据时 Gate 停止 ChatModel，向量检索已经发生
+# Memory.before 已保存原始客户问题；无证据或失败并不自动回滚这条记忆。
+POST http://localhost:18080/internal/advisor-rag/conversations/{{advisorConversationId}}/messages
+Content-Type: application/json
+X-Demo-User-Id: 1001
+
+{"question":"你们老板最喜欢什么咖啡？"}
+
+### 第十章 6：同外部 ID、不同用户，各自使用独立记忆；不是生产认证方式
+POST http://localhost:18080/internal/advisor-rag/conversations/{{advisorConversationId}}/messages
+Content-Type: application/json
+X-Demo-User-Id: 2002
+
+{"question":"刚才我说买错了什么？"}
+
+### 第十章 7：清空用户 1001 的知识会话，不清空 2002、访客或普通客服
+DELETE http://localhost:18080/internal/advisor-rag/conversations/{{advisorConversationId}}/memory
+X-Demo-User-Id: 1001
+
+### 第十章 8：客户端声明的租户不改变服务端固定的 tenant-yunshan
+POST http://localhost:18080/internal/advisor-rag/conversations/{{advisorConversationId}}/messages
+Content-Type: application/json
+X-Demo-User-Id: 1001
+X-Tenant-Id: tenant-songguo
+
+{"question":"因质量问题退货，运费由谁承担？","tenantId":"tenant-songguo"}
+
+### 第十章 9：空问题应 400，审计缺参/错误顺序通过离线测试验证，不开放破坏配置的接口
+POST http://localhost:18080/internal/advisor-rag/conversations/{{advisorConversationId}}/messages
+Content-Type: application/json
+
+{"question":" "}

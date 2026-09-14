@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>云杉客服 · 多轮知识问答</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/embedding-lab.css">
+  <link rel="stylesheet" href="/rag-lab.css">
+  <link rel="stylesheet" href="/advisor-lab.css">
+  <!-- 复用同一 Spring Boot 的页面资源，DOM 解析完毕后再绑定事件。 -->
+  <script src="/advisor-lab.js" defer></script>
+</head>
+<body>
+<header><a href="/" class="brand">杉 <span>云杉客服</span></a><nav aria-label="章节导航"><a href="/internal/knowledge">导入与检索 ↗</a><a href="/internal/rag">第九章 · 单次问答 ↗</a><a href="/">客服工作台 ↗</a></nav></header>
+<main>
+  <p class="eyebrow">CHAPTER 10 / ADVISOR CHAIN</p>
+  <h1>带着上下文，<span>继续问资料。</span></h1>
+  <p class="intro">同一会话可以连续追问；每轮重新检索知识，无证据时停止聊天生成。先导入资料，再观察“记得上文”和“搜对资料”的区别。</p>
+  <!-- 此处展示配置顺序，不是伪装成真实实时进度的动画。实际结果见下方证据和审计 ID。 -->
+  <ol class="advisor-chain" aria-label="配置的请求处理顺序"><li>审计检查</li><li>加载记忆</li><li>检索资料</li><li>证据检查</li><li>模型回答</li></ol>
+  <p class="chain-caption">请求从左向右进入，响应按相反顺序返回。普通客服与订单工具继续使用原来的调用链。</p>
+  <div class="lab-grid">
+    <section class="inputs" aria-label="知识会话">
+      <div class="section-heading"><h2>知识会话</h2><button id="new-session" type="button" class="secondary" disabled>新建会话</button></div>
+      <label for="demo-user">演示用户 <small>仅本地测试，切换后新建会话</small></label>
+      <select id="demo-user" disabled><option value="1001">用户 1001</option><option value="2002">用户 2002</option><option value="guest">访客</option></select>
+      <p id="session-id" class="session-info">正在创建会话…</p>
+      <div class="examples"><button type="button" data-question="我买错了衣服，想退货，有什么条件？">退货条件</button><button type="button" data-question="那运费呢？">追问：那运费呢？</button><button type="button" data-question="你们老板最喜欢什么咖啡？">无证据实验</button></div>
+      <div id="messages" class="knowledge-messages" role="log" aria-live="polite" aria-label="当前知识会话记录"><p class="fine">发送完整问题开始对话，再尝试简短追问。</p></div>
+      <form id="advisor-form">
+        <label for="question">继续提问 <small>最多 2000 字符</small></label>
+        <textarea id="question" rows="3" maxlength="2000" required disabled placeholder="例如：我买错了衣服，退货运费由谁承担？"></textarea>
+        <div class="submit-row"><button id="clear-memory" type="button" class="secondary" disabled>清空模型记忆</button><button id="ask" class="primary" type="submit" disabled>发送问题</button></div>
+      </form>
+      <p id="feedback" role="status"></p>
+      <p class="fine">模型窗口最多 20 条消息。刷新页面会新建会话；清空模型记忆后，之前的页面记录仍可见。模型调用失败或无证据时，客户原文也可能已进入窗口。</p>
+    </section>
+    <!-- 右侧显示所选一轮的原始问题、请求 ID 和本次真实来源，不沿用上一轮来源。 -->
+    <section class="output" id="result-panel" aria-label="本轮依据" aria-busy="false">
+      <div class="section-heading"><h2>本轮依据</h2><span id="result-status">等待提问</span></div>
+      <p id="retrieval-query" class="retrieval-query">发送后查看实际用于搜索的问题。</p>
+      <p class="fine">本章检索的仍是当前问题原文，不会自动把“那运费呢”改写成完整的退货问题；调整检索问题的能力在下一章实现。</p>
+      <p id="request-id" class="request-id"></p>
+      <div id="references"></div>
+      <details id="raw-details" hidden><summary>查看这轮接口 JSON</summary><pre id="raw-result"></pre></details>
+    </section>
+  </div>
+  <aside class="reading-note"><strong>有来源，也需要核对回答。</strong><p>来源是本次交给模型的知识块，并不是逐句核验的引用。ANSWERED 只表示模型生成了答复，也可能是拒答或冲突提示；本页不能查询订单或办理退款。</p></aside>
+</main>
+<!-- 原生对话框显式确认清空；Escape 不会发送 DELETE。 -->
+<dialog id="clear-dialog"><h2>清空当前模型记忆？</h2><p>接下来的问题将不再使用之前的上下文，已有页面记录仍保留。</p><form method="dialog"><button value="cancel" class="secondary">取消</button><button value="confirm" class="primary">确认清空</button></form></dialog>
+</body>
+</html>
