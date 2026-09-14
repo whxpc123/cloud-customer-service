@@ -627,3 +627,52 @@ POST http://localhost:18080/internal/advisor-rag/conversations/{{advisorConversa
 Content-Type: application/json
 
 {"question":" "}
+
+
+### 第十章补充 1：管理台（需要 local,knowledge；临时验收版本端口 18082）
+GET http://localhost:18080/internal/knowledge-admin
+
+### 第十章补充 2：已发布文档分页，先从 items 中选取要查看的 sourceId
+GET http://localhost:18080/internal/knowledge-admin/documents?status=PUBLISHED&type=ALL&page=1&pageSize=15
+
+### 第十章补充 3：文档详情；将值改成列表实际返回的来源 ID
+@managedSourceId = refund-policy
+GET http://localhost:18080/internal/knowledge-admin/documents/{{managedSourceId}}
+
+### 第十章补充 4：下载原件（旧资料只有切片，明确返回 404）
+GET http://localhost:18080/internal/knowledge-admin/documents/{{managedSourceId}}/download
+
+### 第十章补充 5：导出已经入库的知识块正文
+GET http://localhost:18080/internal/knowledge-admin/documents/{{managedSourceId}}/export
+
+### 第十章补充 6：回收站会退出新检索；只对你确认需要下架的来源运行
+PATCH http://localhost:18080/internal/knowledge-admin/documents/{{managedSourceId}}/archive
+Content-Type: application/json
+
+{"archived":true}
+
+### 第十章补充 7：恢复刚归档的来源，不重新生成向量
+PATCH http://localhost:18080/internal/knowledge-admin/documents/{{managedSourceId}}/archive
+Content-Type: application/json
+
+{"archived":false}
+
+### 第十章补充 8：自建题集；真实模型调用，每题独立会话
+POST http://localhost:18080/internal/knowledge-admin/evaluations
+Content-Type: application/json
+
+{
+  "name": "售后资料更新回归",
+  "cases": [
+    {"question":"因质量问题退货，运费由谁承担？","shouldRefuse":false,"expectedSources":["refund-policy"]},
+    {"question":"你们老板最喜欢什么咖啡？","shouldRefuse":true,"expectedSources":[]}
+  ]
+}
+
+> {% client.global.set("knowledgeEvaluationId", response.body.id); %}
+
+### 第十章补充 9：查看增量结果及完成状态，不重发模型请求
+GET http://localhost:18080/internal/knowledge-admin/evaluations/{{knowledgeEvaluationId}}
+
+### 第十章补充 10：最近 50 次评测摘要
+GET http://localhost:18080/internal/knowledge-admin/evaluations

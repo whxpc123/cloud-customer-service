@@ -21,6 +21,9 @@ class EmbeddingLabProfileTest {
      */
     @Test void labPageAndApisDoNotExistOutsideLocal() throws Exception {
         mvc.perform(get("/internal/embedding-lab")).andExpect(status().isNotFound());
+        mvc.perform(get("/internal/knowledge-admin")).andExpect(status().isNotFound());
+        mvc.perform(get("/internal/knowledge-admin/documents")).andExpect(status().isNotFound());
+        mvc.perform(post("/internal/knowledge-admin/evaluations").contentType("application/json").content("{}")).andExpect(status().isNotFound());
         // 第十章同样只在 local 与 knowledge 同时启用时注册。
         mvc.perform(get("/internal/advisor-rag")).andExpect(status().isNotFound());
         mvc.perform(post("/internal/advisor-rag/conversations")).andExpect(status().isNotFound());

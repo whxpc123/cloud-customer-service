@@ -51,7 +51,29 @@ public class KnowledgeBatchWriter {
             jdbc.batchUpdate("INSERT INTO "+table+" (id,content,metadata,embedding) VALUES (?,?,?::json,?) " +
                     "ON CONFLICT(id) DO UPDATE SET content=EXCLUDED.content,metadata=EXCLUDED.metadata,embedding=EXCLUDED.embedding",rows);
             removeOldChunks(prepared);
+            saveOriginal(prepared);
         });
+    }
+    /**
+     * 原件与向量同事务发布；失败一并回滚。同名更新保留首次上传时间，更新正文和版本时间。
+     * 没有原件的程序化导入删除旧原件快照，避免下载到不对应当前切片的旧文件。
+     */
+    private void saveOriginal(PreparedKnowledge prepared) {
+        var source = prepared.source();
+        if (prepared.original() == null) {
+            jdbc.update("DELETE FROM ai.knowledge_originals WHERE tenant_id=? AND source_id=?", source.tenantId(), source.sourceId());
+            return;
+        }
+        byte[] bytes = prepared.original().bytes();
+        String hash;
+        try { hash = java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(bytes)); }
+        catch (java.security.NoSuchAlgorithmException ex) { throw new IllegalStateException(ex); }
+        jdbc.update("""
+                INSERT INTO ai.knowledge_originals(tenant_id,source_id,file_name,file_type,file_hash,file_bytes,extracted_text)
+                VALUES (?,?,?,?,?,?,?) ON CONFLICT(tenant_id,source_id) DO UPDATE SET
+                file_name=EXCLUDED.file_name,file_type=EXCLUDED.file_type,file_hash=EXCLUDED.file_hash,
+                file_bytes=EXCLUDED.file_bytes,extracted_text=EXCLUDED.extracted_text,updated_at=now()
+                """, source.tenantId(), source.sourceId(), source.fileName(), source.fileType(), hash, bytes, prepared.original().extractedText());
     }
     /**
      * 删除同租户、同来源中不属于本次块 ID 集合的旧记录，其他来源不受影响。

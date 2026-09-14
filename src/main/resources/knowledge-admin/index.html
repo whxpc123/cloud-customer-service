@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>云杉 · 知识库管理</title>
+    <link rel="icon" href="/favicon.svg" />
+    <link rel="stylesheet" href="/knowledge-admin.css" />
+    <script defer src="/knowledge-admin.js"></script>
+  </head>
+  <body>
+    <!-- 管理台沿用本项目 API；导航不重新装载页面，也不自动触发收费问答。 -->
+    <aside class="sidebar">
+      <a class="logo" href="#home"><span>杉</span>云杉知识库</a>
+      <p class="nav-label">工作空间</p>
+      <nav aria-label="知识库管理">
+        <a href="#home" data-nav="home">◫ <span>概览</span></a
+        ><a href="#documents" data-nav="documents">▤ <span>文档管理</span></a
+        ><a href="#chat" data-nav="chat">☏ <span>知识问答</span></a
+        ><a href="#evaluations" data-nav="evaluations"
+          >◷ <span>评测分析</span></a
+        >
+      </nav>
+      <div class="sidebar-bottom">
+        <span class="dot"></span> 本地演示空间
+        <p>云杉商城 · 中文售后知识</p>
+        <a href="/">返回客服工作台 ↗</a
+        ><a href="/internal/knowledge">章节导入与检索 ↗</a>
+      </div>
+    </aside>
+    <div class="shell">
+      <header>
+        <div>
+          云杉商城 <span>/</span> <strong id="location">知识库管理</strong>
+        </div>
+        <a href="/internal/advisor-rag">第十章实验页 ↗</a>
+      </header>
+      <main id="app" aria-live="polite"><p>正在读取知识库…</p></main>
+    </div>
+    <!-- 只对移入回收站、清空模型记忆等操作确认；不提供不可恢复的数据库删除入口。 -->
+    <dialog id="confirm-dialog">
+      <h2 id="confirm-title">确认操作</h2>
+      <p id="confirm-text"></p>
+      <form method="dialog">
+        <button value="cancel">取消</button
+        ><button value="confirm" class="primary">确认</button>
+      </form>
+    </dialog>
+    <div id="toast" role="status" hidden></div>
+  </body>
+</html>

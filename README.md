@@ -2,9 +2,9 @@
 
 根据《第一章：老板下午要看的 AI 客服》实现的 Java 学习项目。后续章节在这个项目上逐步增加能力，每章的改动与验收方式记录在 `docs/chapters/`。
 
-当前进度：**第十章——Advisor 调用链、会话记忆、知识检索、证据拦截与审计日志**。
+当前进度：**第十章及补充——Advisor 调用链、知识库管理台与基础评测**。
 
-章节记录：[第一章](docs/chapters/01-first-chat.md) · [第二章](docs/chapters/02-system-prompt.md) · [第三章](docs/chapters/03-structured-output.md) · [第四章](docs/chapters/04-chat-memory.md) · [第五章](docs/chapters/05-tool-calling.md) · [第六章](docs/chapters/06-embedding-lab.md) · [第七章](docs/chapters/07-pgvector-knowledge.md) · [第八章](docs/chapters/08-document-etl.md) · [第九章](docs/chapters/09-manual-rag.md) · [第十章](docs/chapters/10-advisor-chain.md)。
+章节记录：[第一章](docs/chapters/01-first-chat.md) · [第二章](docs/chapters/02-system-prompt.md) · [第三章](docs/chapters/03-structured-output.md) · [第四章](docs/chapters/04-chat-memory.md) · [第五章](docs/chapters/05-tool-calling.md) · [第六章](docs/chapters/06-embedding-lab.md) · [第七章](docs/chapters/07-pgvector-knowledge.md) · [第八章](docs/chapters/08-document-etl.md) · [第九章](docs/chapters/09-manual-rag.md) · [第十章](docs/chapters/10-advisor-chain.md) · [第十章补充：知识管理台](docs/chapters/10-knowledge-management.md)。
 
 每章对应独立 Git 提交和 `chapter-NN` 标签，具体变化见 [CHANGELOG](CHANGELOG.md)。第 1～3 章历史根据已实现代码于 2026-09-12 补建；后续每章验收完成后提交并推送。
 
@@ -20,6 +20,7 @@
 | [chapter-08](https://github.com/whxpc123/cloud-customer-service/tree/chapter-08) | DocumentReader、Token 切分、预览确认与后台导入 | [与第七章导入补充比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-07-import...chapter-08) |
 | [chapter-09](https://github.com/whxpc123/cloud-customer-service/tree/chapter-09) | 手动 RAG、无证据拒答、真实来源与知识问答页 | [与第八章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-08...chapter-09) |
 | [chapter-10](https://github.com/whxpc123/cloud-customer-service/tree/chapter-10) | Advisor 调用链、多轮知识问答、证据拦截与审计 | [本章功能改动](https://github.com/whxpc123/cloud-customer-service/compare/ad36c22751e76c176fa1f166711299e85d9d4404...chapter-10) |
+| [chapter-10-admin](https://github.com/whxpc123/cloud-customer-service/tree/chapter-10-admin) | 文档目录、原件下载、回收站、多会话知识问答、自建题集评测 | [与第十章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-10...chapter-10-admin) |
 
 在 GitHub 选择对应标签查看该章完整代码，在 Compare 页面选择相邻标签查看改动。阅读历史版本可以使用独立工作目录，例如 `git worktree add ../chapter-01-view chapter-01`，避免覆盖当前开发目录。
 
@@ -104,7 +105,7 @@ curl --get 'http://localhost:18080/api/chat' \
 java -jar target/cloud-customer-service-0.0.1-SNAPSHOT.jar
 ```
 
-自动测试在需要调用的路径替换 ChatModel / EmbeddingModel，不访问百炼、不需要真实 Key，覆盖聊天回归、结构化转换、非法字段、异常兜底、角色隔离和日志。当前共有 135 项测试：普通运行通过 128 项、跳过 7 项需真实 pgvector 的集成测试；启用专用测试库后 135 项全部通过。覆盖工具执行、会话隔离、向量数学、批次边界、知识过滤、重复导入及异常保护。集成测试步骤见第七章文档。启动应用和运行 JAR 仍需真实 `DASHSCOPE_API_KEY`。
+自动测试在需要调用的路径替换 ChatModel / EmbeddingModel，不访问百炼、不需要真实 Key，覆盖聊天回归、结构化转换、非法字段、异常兜底、角色隔离和日志。当前共有 145 项测试：普通运行通过 131 项、跳过 14 项需真实 pgvector 的集成测试；启用专用测试库后 145 项全部通过。覆盖工具执行、会话隔离、向量数学、批次边界、知识过滤、重复导入及异常保护。集成测试步骤见第七章文档。启动应用和运行 JAR 仍需真实 `DASHSCOPE_API_KEY`。
 
 ## 目录与章节对应
 
@@ -277,3 +278,15 @@ IDEA 同步 Maven 后运行原 `CloudCustomerServiceApplication` 配置，打开
 链路为 **Audit → Memory → QuestionAnswerAdvisor → Evidence Gate → ChatModel**。只执行一次 `chatClientResponse()`，同时读取回答和检索 Context；无证据直接返回 `NO_EVIDENCE`，不调用聊天模型（查询向量仍需生成）。IDEA 搜索 `[AI AUDIT]` / `[AI EVIDENCE]` 查看审计；原完整提示词日志继续受 `app.ai.log-payload` 控制。
 
 本章仍按当前问题原文搜索，不自动改写追问。记忆按知识业务、租户、演示身份和会话隔离；刷新新建会话，重启丢失内存历史。同会话请求须串行。来源是实际检索块，不代表回答逐句正确；实测曾出现模型扩写未提供的政策细节，详见 [第十章实现与验收](docs/chapters/10-advisor-chain.md)。
+
+
+## 第十章补充：知识库管理台与基础评测
+
+开启 `local,knowledge` 后访问 <http://127.0.0.1:18080/internal/knowledge-admin>。与现有应用一起启动，无需安装前端工程。
+
+- **文档管理**：搜索、状态/格式筛选、分页；上传 TXT / Markdown / PDF / DOCX / PPTX 或粘贴正文，先预览再导入。详情查看完整切片、原文/提取正文、版本与文件哈希，下载原件或导出知识块。
+- **回收站**：移入后不参与新检索，文件和向量保留；可恢复发布。已有会话记忆和历史答案不被改写，需要清空会话后验证下架效果。同名重新导入会替换并发布该来源。
+- **知识问答**：新建/切换会话、清空模型记忆、展开每轮实际来源；复用第十章接口。页面记录保存在当前标签页，后端记忆仍在内存。
+- **评测分析**：每次 1–20 道自定义题，指定是否应无证据拒答和可选期望来源。保存题集、实际回答与来源、整轮耗时，支持失败/不匹配筛选、历史查看和复制题集再测。
+
+旧资料只有切片，没有原件、原始上传时间；页面明确标注，重新导入后才可下载原文件。基础指标不代表回答正确率，完整定义、接口及验收见[补充说明](docs/chapters/10-knowledge-management.md)。

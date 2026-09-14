@@ -32,7 +32,8 @@ public class KnowledgePreparationService {
     public PreparedKnowledge text(String name, String version, String text, ChunkingOptions options) {
         var source = new KnowledgeSource(name, version, "pasted-text.txt", "TEXT");
         String checked = KnowledgeDocumentReader.normalize(text);
-        return prepare(source, List.of(new Document(checked)), options);
+        return prepare(source, List.of(new Document(checked)), options)
+                .withOriginal(new KnowledgeOriginal(text.getBytes(StandardCharsets.UTF_8), checked));
     }
     /**
      * 检查 multipart 非空和大小，清理文件名；未指定资料名时使用文件名。
@@ -49,7 +50,11 @@ public class KnowledgePreparationService {
      */
     public PreparedKnowledge bytes(String name, String version, String fileName, byte[] bytes, ChunkingOptions options) {
         var source = new KnowledgeSource(name, version, fileName, KnowledgeDocumentReaderFactory.fileType(fileName));
-        return prepare(source, readers.read(source, bytes, options), options);
+        var extracted = readers.read(source, bytes, options);
+        var prepared = prepare(source, extracted, options);
+        String fullText = extracted.stream().map(d -> d.getText() == null ? "" : d.getText())
+                .collect(java.util.stream.Collectors.joining("\n\n"));
+        return prepared.withOriginal(new KnowledgeOriginal(bytes, fullText));
     }
     /**
      * 汇总提取长度并检查乱码，清理后保留有效段；白名单复制来源元数据并由服务端补全身份范围。
