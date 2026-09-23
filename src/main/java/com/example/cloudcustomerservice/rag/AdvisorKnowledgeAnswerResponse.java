@@ -14,7 +14,13 @@ import com.example.cloudcustomerservice.rag.query.QueryTransformationResult;
  * @param references 本次 Modular RAG Context 中实际检索并提供给模型的文档快照
  */
 public record AdvisorKnowledgeAnswerResponse(String requestId, String conversationId, String retrievalQuery,
-        KnowledgeAnswerStatus status, String answer, List<KnowledgeReference> references, QueryTransformationResult transformation, QueryExpansionResult expansion) {
+        KnowledgeAnswerStatus status, String answer, List<KnowledgeReference> references, QueryTransformationResult transformation, QueryExpansionResult expansion,
+        com.example.cloudcustomerservice.rag.rerank.RerankTrace.Snapshot reranking) {
+    /** 兼容第十二章构造与旧评测快照。 */
+    public AdvisorKnowledgeAnswerResponse(String requestId,String conversationId,String retrievalQuery,KnowledgeAnswerStatus status,
+            String answer,List<KnowledgeReference> references,QueryTransformationResult transformation,QueryExpansionResult expansion) {
+        this(requestId,conversationId,retrievalQuery,status,answer,references,transformation,expansion,null);
+    }
     /** 兼容旧章节测试和评测记录构造，旧数据没有转换轨迹。 */
     public AdvisorKnowledgeAnswerResponse(String requestId, String conversationId, String retrievalQuery,
             KnowledgeAnswerStatus status, String answer, List<KnowledgeReference> references) {

@@ -33,7 +33,7 @@ public class LocalAdvisorKnowledgeController {
     public AdvisorKnowledgeAnswerResponse answer(@PathVariable String id,
             @RequestHeader(value = "X-Demo-User-Id", required = false) Long userId,
             @RequestBody KnowledgeConversationQuestionRequest request) {
-        return service.answer(LocalKnowledgeDocuments.TENANT_ID, id, userId, request.question(), request.expansionMode());
+        return service.answer(LocalKnowledgeDocuments.TENANT_ID, id, userId, request.question(), request.expansionMode(), request.rerankEnabled());
     }
 
     /** 清空当前演示身份的知识会话上下文，返回 204；页面记录由前端单独管理。 */

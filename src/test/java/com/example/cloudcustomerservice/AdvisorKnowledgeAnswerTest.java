@@ -44,7 +44,7 @@ class AdvisorKnowledgeAnswerTest {
     final KnowledgeFilterFactory filters=new KnowledgeFilterFactory();
     final CustomerAdvisorConfiguration advisors=new CustomerAdvisorConfiguration();
     final ChatClient client=new KnowledgeChatClientConfiguration().knowledgeConversationChatClient(model,advisors.requestAuditAdvisor(filters),
-            advisors.customerMemoryAdvisor(memory),modular.customerModularRagAdvisor(modular.compression(modular.queryTransformerChatClientBuilder(transformerModel,false)), new com.example.cloudcustomerservice.rag.config.QueryExpansionConfiguration().guardedQueryExpander(modular.queryTransformerChatClientBuilder(transformerModel,false)), new com.example.cloudcustomerservice.rag.expansion.MultiQueryRetrieval(store,new org.springframework.ai.rag.retrieval.join.ConcatenationDocumentJoiner()),modular.customerQueryAugmenter()),advisors.evidenceRequiredAdvisor(),false);
+            advisors.customerMemoryAdvisor(memory),modular.customerModularRagAdvisor(modular.compression(modular.queryTransformerChatClientBuilder(transformerModel,false)), new com.example.cloudcustomerservice.rag.config.QueryExpansionConfiguration().guardedQueryExpander(modular.queryTransformerChatClientBuilder(transformerModel,false)), new com.example.cloudcustomerservice.rag.expansion.MultiQueryRetrieval(store,new org.springframework.ai.rag.retrieval.join.ConcatenationDocumentJoiner()),modular.customerQueryAugmenter(), RerankTestSupport.ranker(), RerankTestSupport.budget()),advisors.evidenceRequiredAdvisor(),false);
     final AdvisorKnowledgeAnswerService service=new AdvisorKnowledgeAnswerService(client,filters,memory);
     final MockMvc mvc=MockMvcBuilders.standaloneSetup(new LocalAdvisorKnowledgeController(service)).build();
     final ObjectMapper mapper=new ObjectMapper();
@@ -71,8 +71,8 @@ class AdvisorKnowledgeAnswerTest {
         assertThat(result.references().get(0).documentId()).isEqualTo(document.getId());
         assertThat(result.references().get(0).sourceName()).isEqualTo("售后制度");assertThat(result.references().get(0).sourceVersion()).isEqualTo("3.2");
         var query=ArgumentCaptor.forClass(SearchRequest.class);verify(store).similaritySearch(query.capture());
-        assertThat(query.getValue().getQuery()).isEqualTo(result.retrievalQuery());assertThat(query.getValue().getTopK()).isEqualTo(5);
-        assertThat(query.getValue().getSimilarityThreshold()).isEqualTo(.60);
+        assertThat(query.getValue().getQuery()).isEqualTo(result.retrievalQuery());assertThat(query.getValue().getTopK()).isEqualTo(6);
+        assertThat(query.getValue().getSimilarityThreshold()).isEqualTo(.45);
         assertThat(query.getValue().getFilterExpression().toString()).contains("tenant-yunshan","PUBLISHED","after-sales","zh-CN");
         var prompt=ArgumentCaptor.forClass(Prompt.class);verify(model).call(prompt.capture());
         assertThat(prompt.getValue().getUserMessage().getText()).contains(document.getText(),"完整问题 {question_answer_context}")
@@ -168,7 +168,7 @@ class AdvisorKnowledgeAnswerTest {
     @Test void explicitOrdersAndWrongOrderCounterexample() {
         assertThat(CustomerAdvisorOrders.AUDIT).isLessThan(CustomerAdvisorOrders.MEMORY);
         assertThat(advisors.customerMemoryAdvisor(memory).getOrder()).isEqualTo(CustomerAdvisorOrders.MEMORY);
-        assertThat(modular.customerModularRagAdvisor(modular.compression(modular.queryTransformerChatClientBuilder(transformerModel,false)), new com.example.cloudcustomerservice.rag.config.QueryExpansionConfiguration().guardedQueryExpander(modular.queryTransformerChatClientBuilder(transformerModel,false)), new com.example.cloudcustomerservice.rag.expansion.MultiQueryRetrieval(store,new org.springframework.ai.rag.retrieval.join.ConcatenationDocumentJoiner()),modular.customerQueryAugmenter()).getOrder()).isEqualTo(CustomerAdvisorOrders.RAG);
+        assertThat(modular.customerModularRagAdvisor(modular.compression(modular.queryTransformerChatClientBuilder(transformerModel,false)), new com.example.cloudcustomerservice.rag.config.QueryExpansionConfiguration().guardedQueryExpander(modular.queryTransformerChatClientBuilder(transformerModel,false)), new com.example.cloudcustomerservice.rag.expansion.MultiQueryRetrieval(store,new org.springframework.ai.rag.retrieval.join.ConcatenationDocumentJoiner()),modular.customerQueryAugmenter(), RerankTestSupport.ranker(), RerankTestSupport.budget()).getOrder()).isEqualTo(CustomerAdvisorOrders.RAG);
         assertThat(CustomerAdvisorOrders.MEMORY).isLessThan(CustomerAdvisorOrders.RAG);
         assertThat(CustomerAdvisorOrders.RAG).isLessThan(new EvidenceRequiredAdvisor().getOrder());
         var wrongRag=RetrievalAugmentationAdvisor.builder().documentRetriever(modular.customerDocumentRetriever(store)).taskExecutor(new org.springframework.core.task.SyncTaskExecutor()).order(CustomerAdvisorOrders.EVIDENCE_GATE+1).build();

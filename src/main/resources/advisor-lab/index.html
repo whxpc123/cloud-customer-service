@@ -12,13 +12,13 @@
   <script src="/advisor-lab.js" defer></script>
 </head>
 <body>
-<header><a href="/" class="brand">杉 <span>云杉客服</span></a><nav aria-label="章节导航"><a href="/internal/knowledge">导入与检索 ↗</a><a href="/internal/rag">第九章 · 单次问答 ↗</a><a href="/">客服工作台 ↗</a><a href="/internal/knowledge-admin">知识库管理 ↗</a><a href="/internal/query-expansion">多路检索实验 ↗</a></nav></header>
+<header><a href="/" class="brand">杉 <span>云杉客服</span></a><nav aria-label="章节导航"><a href="/internal/knowledge">导入与检索 ↗</a><a href="/internal/rag">第九章 · 单次问答 ↗</a><a href="/">客服工作台 ↗</a><a href="/internal/knowledge-admin">知识库管理 ↗</a><a href="/internal/rerank">重排实验 ↗</a><a href="/internal/query-expansion">多路检索实验 ↗</a></nav></header>
 <main>
-  <p class="eyebrow">CHAPTER 12 / MODULAR RAG · ADVISOR CHAIN</p>
+  <p class="eyebrow">CHAPTER 13 / MODULAR RAG · ADVISOR CHAIN</p>
   <h1>带着上下文，<span>继续问资料。</span></h1>
   <p class="intro">同一会话可以连续追问；每轮重新检索知识，无证据时停止聊天生成。先导入资料，再观察“记得上文”和“搜对资料”的区别。</p>
   <!-- 此处展示配置顺序，不是伪装成真实实时进度的动画。实际结果见下方证据和审计 ID。 -->
-  <ol class="advisor-chain" aria-label="配置的请求处理顺序"><li>审计检查</li><li>加载记忆</li><li>补全查询</li><li>按需扩展</li><li>检索与合并</li><li>证据检查</li><li>模型回答</li></ol>
+  <ol class="advisor-chain" aria-label="配置的请求处理顺序"><li>审计检查</li><li>加载记忆</li><li>补全查询</li><li>按需扩展</li><li>检索与合并</li><li>重排</li><li>上下文预算</li><li>证据检查</li><li>模型回答</li></ol>
   <p class="chain-caption">请求从左向右进入，响应按相反顺序返回。普通客服与订单工具继续使用原来的调用链。</p>
   <div class="lab-grid">
     <section class="inputs" aria-label="知识会话">
@@ -32,6 +32,7 @@
         <label for="question">继续提问 <small>最多 2000 字符</small></label>
         <textarea id="question" rows="3" maxlength="2000" required disabled placeholder="例如：我买错了衣服，退货运费由谁承担？"></textarea>
         <label for="expansion-mode">检索方式 <small>多路会增加模型与向量调用</small></label><select id="expansion-mode"><option value="AUTO">自动判断（主题规则）</option><option value="OFF">单路检索</option><option value="ON">强制多路（3 条变体 + 原问题）</option></select>
+        <label for="rerank-enabled">资料重排</label><select id="rerank-enabled"><option value="true">启用重排（不可用时降级）</option><option value="false">关闭重排，保留相同预算</option></select>
         <div class="submit-row"><button id="clear-memory" type="button" class="secondary" disabled>清空模型记忆</button><button id="ask" class="primary" type="submit" disabled>发送问题</button></div>
       </form>
       <p id="feedback" role="status"></p>

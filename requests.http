@@ -757,3 +757,39 @@ X-Demo-User-Id: 1001
 ### 第十二章 7：清除当前演示身份的会话历史
 DELETE http://localhost:18080/internal/advisor-rag/conversations/{{expansionConversationId}}/memory
 X-Demo-User-Id: 1001
+
+### 第十三章 1：同候选 A/B 重排实验室
+GET http://localhost:18080/internal/rerank
+
+### 第十三章 2：创建实验会话
+POST http://localhost:18080/internal/advisor-rag/conversations
+
+> {% client.global.set("rerankConversationId", response.body.conversationId); %}
+
+### 第十三章 3：宽召回 + Rerank + 正文预算（需配置业务空间地址，缺失则明确降级）
+POST http://localhost:18080/internal/rerank/{{rerankConversationId}}/compare
+Content-Type: application/json
+X-Demo-User-Id: 1001
+
+{"question":"商品签收十天后发现质量问题，还能不能退、运费谁承担、退款多久提交？","expansionMode":"AUTO","perQueryTopK":6,"topN":6,"maxContextTokens":5000}
+
+### 第十三章 4：扩大候选、较小 Top N 与预算；实验不生成回答、不写历史
+POST http://localhost:18080/internal/rerank/{{rerankConversationId}}/compare
+Content-Type: application/json
+X-Demo-User-Id: 1001
+
+{"question":"退款之后优惠券是否返还？","expansionMode":"OFF","perQueryTopK":10,"topN":3,"maxContextTokens":500}
+
+### 第十三章 5：正式问答默认重排，可显式开启
+POST http://localhost:18080/internal/advisor-rag/conversations/{{rerankConversationId}}/messages
+Content-Type: application/json
+X-Demo-User-Id: 1001
+
+{"question":"退款提交需要多久？","expansionMode":"OFF","rerankEnabled":true}
+
+### 第十三章 6：关闭排序但保留相同宽召回和预算；公平回答对照请使用新会话
+POST http://localhost:18080/internal/advisor-rag/conversations/{{rerankConversationId}}/messages
+Content-Type: application/json
+X-Demo-User-Id: 1001
+
+{"question":"退款提交需要多久？","expansionMode":"OFF","rerankEnabled":false}

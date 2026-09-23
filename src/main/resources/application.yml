@@ -44,3 +44,14 @@ logging:
 
     # 此版本 SDK 的异常日志包含输入原文；实验服务另记数量、维度、耗时和异常类型。
     com.alibaba.cloud.ai.dashscope.embedding.DashScopeEmbeddingModel: OFF
+
+# 第十三章只配置业务空间根地址，沿用已有 DASHSCOPE_API_KEY；空值时明确降级。
+---
+spring:
+  config:
+    activate:
+      on-profile: "local & knowledge"
+app:
+  ai:
+    rerank:
+      base-url: ${DASHSCOPE_RERANK_BASE_URL:}

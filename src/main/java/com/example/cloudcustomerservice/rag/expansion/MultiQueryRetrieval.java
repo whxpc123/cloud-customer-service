@@ -3,6 +3,7 @@ package com.example.cloudcustomerservice.rag.expansion;
 import com.example.cloudcustomerservice.ai.advisor.CustomerAdvisorContextKeys;
 import com.example.cloudcustomerservice.ai.advisor.EvidenceRequiredAdvisor;
 import com.example.cloudcustomerservice.rag.query.QueryTransformationTrace;
+import com.example.cloudcustomerservice.rag.rerank.RerankTrace;
 import java.util.*;
 import org.slf4j.*;
 import org.springframework.ai.document.Document;
@@ -19,9 +20,11 @@ public final class MultiQueryRetrieval {
     private static final Logger log = LoggerFactory.getLogger(MultiQueryRetrieval.class);
     private final VectorStoreDocumentRetriever single, multi;
     private final DocumentJoiner joiner;
+    private final VectorStore store;
 
     /** 单路 Top 5、多路每路 Top 3，相同阈值 0.60；策略由服务端轨迹决定。 */
     public MultiQueryRetrieval(VectorStore store, DocumentJoiner joiner) {
+        this.store = store;
         this.single = VectorStoreDocumentRetriever.builder().vectorStore(store).topK(5).similarityThreshold(.60).build();
         this.multi = VectorStoreDocumentRetriever.builder().vectorStore(store).topK(3).similarityThreshold(.60).build();
         this.joiner = joiner;
@@ -37,7 +40,13 @@ public final class MultiQueryRetrieval {
         // 旧字段只代表首路；完整多路查询从 expansion.retrievals 获取。
         if (transformation != null && transformation.retrievalQuery() == null) transformation.searched(query.text());
         try {
-            List<Document> documents = (expansion.topK() == 3 ? multi : single).retrieve(query);
+            VectorStoreDocumentRetriever selected = expansion.topK() == 3 ? multi : single;
+            // 新正式链和第十三章实验宽召回；第十二章历史实验保持原有 3/5、0.60 对照语义。
+            if(query.context().get(RerankTrace.KEY) instanceof RerankTrace r) {
+                expansion.useTopK(r.options().perQueryTopK());
+                selected=VectorStoreDocumentRetriever.builder().vectorStore(store).topK(expansion.topK()).similarityThreshold(.45).build();
+            }
+            List<Document> documents = selected.retrieve(query);
             if (documents == null || documents.size() > expansion.topK()) throw new IllegalStateException("Invalid retrieval count");
             if (EvidenceRequiredAdvisor.validateDocuments(documents, query.context().get(CustomerAdvisorContextKeys.TENANT_ID)) == 0)
                 documents = List.of();

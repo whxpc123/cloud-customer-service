@@ -47,7 +47,7 @@ class QueryExpansionTest {
     private final CustomerAdvisorConfiguration advisors = new CustomerAdvisorConfiguration();
     private final ChatClient client = new KnowledgeChatClientConfiguration().knowledgeConversationChatClient(answerModel,
             advisors.requestAuditAdvisor(filters), advisors.customerMemoryAdvisor(memory),
-            modular.customerModularRagAdvisor(compression,expander,retrieval,modular.customerQueryAugmenter()),advisors.evidenceRequiredAdvisor(),false);
+            modular.customerModularRagAdvisor(compression,expander,retrieval,modular.customerQueryAugmenter(), RerankTestSupport.ranker(), RerankTestSupport.budget()),advisors.evidenceRequiredAdvisor(),false);
     private final AdvisorKnowledgeAnswerService answers = new AdvisorKnowledgeAnswerService(client,filters,memory);
     private final LocalQueryExpansionService lab = new LocalQueryExpansionService(memory,compression,expander,retrieval,filters);
 
@@ -93,7 +93,7 @@ class QueryExpansionTest {
         assertThat(r.references().get(3).score()).isEqualTo(.70);
         assertThat(e.contextCharacters()).isEqualTo(String.join("\n\n",r.references().stream().map(KnowledgeReference::content).toList()).length());
         var requests=ArgumentCaptor.forClass(SearchRequest.class);verify(store,times(4)).similaritySearch(requests.capture());
-        requests.getAllValues().forEach(q->{assertThat(q.getTopK()).isEqualTo(3);assertThat(q.getSimilarityThreshold()).isEqualTo(.60);
+        requests.getAllValues().forEach(q->{assertThat(q.getTopK()).isEqualTo(6);assertThat(q.getSimilarityThreshold()).isEqualTo(.45);
             assertThat(q.getFilterExpression().toString()).contains(TENANT,"PUBLISHED","after-sales","zh-CN");});
         var prompt=ArgumentCaptor.forClass(Prompt.class);verify(answerModel).call(prompt.capture());
         assertThat(prompt.getValue().getUserMessage().getText()).contains(QUESTION,"资料 A","资料 E").doesNotContain(VARIANTS.get(0));
@@ -110,7 +110,7 @@ class QueryExpansionTest {
         assertThat(off.expansion().status()).isEqualTo("DISABLED");
         verifyNoInteractions(expansionModel,compressionModel);
         var requests=ArgumentCaptor.forClass(SearchRequest.class);verify(store,times(2)).similaritySearch(requests.capture());
-        assertThat(requests.getAllValues()).extracting(SearchRequest::getTopK).containsOnly(5);
+        assertThat(requests.getAllValues()).extracting(SearchRequest::getTopK).containsOnly(6);
     }
 
     /** 用户明确打开多路可比较单问题，AUTO 不需要为此加入隐藏分类模型。 */
@@ -135,7 +135,7 @@ class QueryExpansionTest {
         var malformed=answers.answer(TENANT,"bad",null,QUESTION,ExpansionMode.ON);
         assertThat(malformed.expansion().status()).isEqualTo("FALLBACK_INVALID");
         assertThat(malformed.expansion().queries()).containsExactly(QUESTION);
-        assertThat(malformed.expansion().perQueryTopK()).isEqualTo(5);
+        assertThat(malformed.expansion().perQueryTopK()).isEqualTo(6);
         when(expansionModel.call(any(Prompt.class))).thenThrow(new IllegalStateException("PRIVATE_ERROR"));
         assertThat(answers.answer(TENANT,"err",null,QUESTION,ExpansionMode.ON).expansion().status()).isEqualTo("FALLBACK_ERROR");
         verify(expansionModel,times(2)).call(any(Prompt.class));verify(store,times(2)).similaritySearch(any(SearchRequest.class));

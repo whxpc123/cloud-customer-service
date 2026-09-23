@@ -35,6 +35,8 @@ public final class QueryExpansionTrace {
     public boolean includeOriginal() { return includeOriginal; }
     /** 返回实际各路的统一 Top K。 */
     public int topK() { return topK; }
+    /** 第十三章在实际检索前选择宽召回参数，旧实验无此覆盖。 */
+    public void useTopK(int value) { this.topK=value; }
     /** 任一路失败后，后续任务不再访问收费或数据库服务。 */
     public boolean failed() { return retrievalStatus.equals("FAILED"); }
     /** 查询顺序用于稳定“第一次命中”的去重语义。 */

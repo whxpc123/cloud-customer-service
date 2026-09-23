@@ -4,6 +4,7 @@ import com.example.cloudcustomerservice.ai.advisor.CustomerAdvisorContextKeys;
 import com.example.cloudcustomerservice.knowledge.KnowledgeFilterFactory;
 import java.util.List;
 import com.example.cloudcustomerservice.rag.expansion.*;
+import com.example.cloudcustomerservice.rag.rerank.*;
 import com.example.cloudcustomerservice.rag.query.*;
 import java.util.UUID;
 import org.springframework.ai.chat.client.ChatClient;
@@ -48,26 +49,32 @@ public class AdvisorKnowledgeAnswerService {
 
     /** 第十二章策略只作为服务端上下文传递，旧客户端默认 AUTO；关闭时仍保留历史补全。 */
     public AdvisorKnowledgeAnswerResponse answer(String tenantId, String conversationId, Long userId, String question, ExpansionMode mode) {
+        return answer(tenantId,conversationId,userId,question,mode,true);
+    }
+
+    /** 重排开关只影响排序阶段，检索范围仍由服务器决定。 */
+    public AdvisorKnowledgeAnswerResponse answer(String tenantId,String conversationId,Long userId,String question,ExpansionMode mode,boolean rerankEnabled) {
         String filter = filters.publishedAfterSales(tenantId);
         String memoryId = memoryId(tenantId, conversationId, userId);
         if (question == null || question.isBlank() || question.length() > 2000) {
             throw new IllegalArgumentException("问题需要包含 1 至 2000 个字符");
         }
         synchronized (KnowledgeConversationLocks.forKey(memoryId)) {
-            return answerLocked(tenantId, conversationId, userId, question.strip(), memoryId, filter, mode);
+            return answerLocked(tenantId, conversationId, userId, question.strip(), memoryId, filter, mode, rerankEnabled);
         }
     }
 
     /** 在会话锁内执行完整读取/转换/生成/写记忆，防止清空与同会话请求交错。 */
     private AdvisorKnowledgeAnswerResponse answerLocked(String tenantId, String conversationId, Long userId,
-            String query, String memoryId, String filter, ExpansionMode mode) {
+            String query, String memoryId, String filter, ExpansionMode mode, boolean rerankEnabled) {
         var trace = new QueryTransformationTrace(query);
         var expansion = new QueryExpansionTrace(query, mode, 3, true);
+        var rerank = new RerankTrace(new RerankOptions(rerankEnabled,6,6,5000));
         String requestId = UUID.randomUUID().toString();
         KnowledgeAnswerResponse result;
         try {
             ChatClientResponse response = client.prompt().user(query)
-                    .advisors(a -> a.param(QueryExpansionTrace.KEY, expansion).param(QueryTransformationTrace.KEY, trace).param(ChatMemory.CONVERSATION_ID, memoryId)
+                    .advisors(a -> a.param(RerankTrace.KEY, rerank).param(QueryExpansionTrace.KEY, expansion).param(QueryTransformationTrace.KEY, trace).param(ChatMemory.CONVERSATION_ID, memoryId)
                             .param(VectorStoreDocumentRetriever.FILTER_EXPRESSION, filter)
                             .param(CustomerAdvisorContextKeys.REQUEST_ID, requestId)
                             .param(CustomerAdvisorContextKeys.TENANT_ID, tenantId)
@@ -82,7 +89,7 @@ public class AdvisorKnowledgeAnswerService {
         } catch (RuntimeException ex) {
             result = KnowledgeAnswerResponse.unavailable();
         }
-        return new AdvisorKnowledgeAnswerResponse(requestId, conversationId, trace.retrievalQuery(), result.status(), result.answer(), result.references(), trace.snapshot(), expansion.snapshot());
+        return new AdvisorKnowledgeAnswerResponse(requestId, conversationId, trace.retrievalQuery(), result.status(), result.answer(), result.references(), trace.snapshot(), expansion.snapshot(), rerank.snapshot());
     }
 
     /** 验证清空目标后只删除对应知识会话，不影响第九章、其他身份或普通客服。 */

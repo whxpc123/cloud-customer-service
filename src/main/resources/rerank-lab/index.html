@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>云杉客服 · 重排序实验室</title>
+  <link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/embedding-lab.css"><link rel="stylesheet" href="/query-lab.css"><link rel="stylesheet" href="/rerank-lab.css">
+  <script src="/rerank-lab.js" defer></script>
+</head>
+<body>
+<header><a class="brand" href="/">杉 <span>云杉客服</span></a><nav aria-label="章节导航"><a href="/internal/query-expansion">多路检索 ↗</a><a href="/internal/advisor-rag">最终问答 ↗</a><a href="/internal/knowledge-admin">知识库管理 ↗</a></nav></header>
+<main>
+  <p class="eyebrow">CHAPTER 13 / RERANKING</p>
+  <h1>资料找齐以后，<br><span>让直接的依据排在前面。</span></h1>
+  <p class="intro">对同一批候选做排序前后对照，再按预算选取完整知识块。看清名次变化，也看清被舍弃的内容。</p>
+  <section class="query-panel">
+    <div class="panel-head"><h2>这次要核对什么？</h2><button id="new-session" type="button">新建会话</button></div>
+    <p class="fine" id="session">正在创建会话…</p>
+    <form id="compare-form">
+      <label for="question">客户问题</label><textarea id="question" rows="3" maxlength="2000" required>商品签收十天后发现质量问题，还能不能退、运费谁承担、退款多久提交？</textarea>
+      <div class="rank-controls">
+        <div><label for="mode">检索策略</label><select id="mode"><option value="AUTO">自动选择单路 / 多路</option><option value="OFF">单路</option><option value="ON">多路 · 3 条变体 + 原问题</option></select></div>
+        <div><label for="candidate-k">每路候选</label><select id="candidate-k"><option value="3">Top 3</option><option value="6" selected>Top 6</option><option value="10">Top 10</option></select></div>
+        <div><label for="top-n">重排保留</label><select id="top-n"><option value="3">Top 3</option><option value="6" selected>Top 6</option><option value="10">Top 10</option></select></div>
+        <div><label for="budget">正文 Token 预算（估算）</label><select id="budget"><option value="500">500</option><option value="1000">1000</option><option value="5000" selected>5000</option></select></div>
+      </div>
+      <p class="fine">阈值 0.45，合并后最多 24 条进入输入筛选；最终最多 6 个完整知识块。实验会调用查询模型、Embedding 和重排服务，不生成回答或写入会话记忆。</p>
+      <button class="primary" id="submit">比较这批资料的排序</button>
+    </form>
+    <p id="feedback" role="status">等待输入。</p>
+  </section>
+  <section id="result" hidden aria-live="polite">
+    <div class="rank-stats" id="stats"></div>
+    <p class="rank-notice" id="notice"></p>
+    <p class="fine" id="query-trace"></p>
+    <section class="query-panel"><h2>01 · 候选名次怎么变了</h2><p class="fine">向量分数和重排分数是两种信号，均不代表可信度。重排分数用于本次排序，不设置未经评测的删除阈值。</p><div class="rank-table-wrap"><table><thead><tr><th>原名次</th><th>新名次</th><th>来源 / 正文</th><th>向量分数</th><th>重排分数</th></tr></thead><tbody id="ranking"></tbody></table></div></section>
+    <div class="rank-comparison">
+      <section class="query-panel"><p class="eyebrow">A / SAME CANDIDATES</p><h2>沿用向量排序</h2><p class="fine" id="baseline-note"></p><div id="baseline"></div></section>
+      <section class="query-panel"><p class="eyebrow">B / RERANK + BUDGET</p><h2>本轮最终上下文</h2><p class="fine" id="final-note"></p><div id="final-documents"></div></section>
+    </div>
+    <section class="query-panel"><h2>02 · 哪些资料没有进入上下文</h2><div id="exclusions"></div><details><summary>查看实际接口 JSON</summary><pre id="raw"></pre></details></section>
+  </section>
+  <aside class="rank-notice"><strong>重排只能重新排列已经找到的资料。</strong><p>遗漏的资料不会凭空出现，多问题也可能仍有覆盖缺口。高分不证明知识可信；Token 预算使用 CL100K_BASE 估计，不等于 Qwen 账单或完整对话长度。</p></aside>
+</main>
+</body>
+</html>

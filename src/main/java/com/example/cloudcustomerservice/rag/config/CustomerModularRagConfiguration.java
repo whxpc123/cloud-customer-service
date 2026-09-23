@@ -4,6 +4,7 @@ import com.example.cloudcustomerservice.ai.advisor.CustomerAdvisorOrders;
 import com.example.cloudcustomerservice.config.PayloadLoggingChatModel;
 import com.example.cloudcustomerservice.rag.query.*;
 import com.example.cloudcustomerservice.rag.expansion.*;
+import com.example.cloudcustomerservice.rag.rerank.*;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -100,12 +101,14 @@ public class CustomerModularRagConfiguration {
     @Bean("customerModularRagAdvisor")
     public RetrievalAugmentationAdvisor customerModularRagAdvisor(
             @Qualifier("conversationCompressionTransformer") SafeQueryTransformer compression,
-            GuardedQueryExpander expansion, MultiQueryRetrieval retrieval, ContextualQueryAugmenter augmenter) {
+            GuardedQueryExpander expansion, MultiQueryRetrieval retrieval, ContextualQueryAugmenter augmenter,
+            QwenRerankDocumentPostProcessor rerank, ContextBudgetDocumentPostProcessor budget) {
         return RetrievalAugmentationAdvisor.builder()
                 .queryTransformers(q -> compression.transform(SafeQueryTransformer.priorConversation(q)))
                 .queryExpander(expansion)
                 .documentRetriever(retrieval::retrieve)
                 .documentJoiner(retrieval::join)
+                .documentPostProcessors(rerank, budget)
                 .queryAugmenter(augmenter).taskExecutor(new SyncTaskExecutor()).order(CustomerAdvisorOrders.RAG).build();
     }
 }
