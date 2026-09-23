@@ -944,10 +944,12 @@ function renderTurn(parent, turn) {
     return;
   }
   n.append(badge(r.status), markdown(r.answer));
+  // 新轨迹可空以兼容旧评测记录，展示实际分路而不把计划查询冒充已执行。
+  if (r.expansion) n.append(el("p", `多路状态：${r.expansion.status} · 检索 ${r.expansion.retrievalStatus}\n${r.expansion.retrievals.map(b => `${b.query}（${b.documents.length} 块）`).join("\n")}\n候选 ${r.expansion.rawDocumentCount} → ${r.expansion.joinedDocumentCount}，重复 ${r.expansion.duplicateDocumentCount}`, "trace"));
   n.append(
     el(
       "p",
-      `requestId: ${r.requestId}\n实际搜索：${r.retrievalQuery ?? "未执行检索"}\n原始问题：${r.transformation?.originalQuery ?? "旧记录未保存"}\n转换：${r.transformation?.stages.map(s => `${s.name} ${s.status} (${s.durationMs} ms)`).join(" → ") ?? "旧记录未保存"}`,
+      `requestId: ${r.requestId}\n首路搜索：${r.retrievalQuery ?? "未执行检索"}\n原始问题：${r.transformation?.originalQuery ?? "旧记录未保存"}\n转换：${r.transformation?.stages.map(s => `${s.name} ${s.status} (${s.durationMs} ms)`).join(" → ") ?? "旧记录未保存"}`,
       "trace",
     ),
   );

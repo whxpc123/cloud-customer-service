@@ -717,3 +717,43 @@ X-Demo-User-Id: 1001
 ### 第十一章 7：先清空，再发送含糊追问应返回 NEEDS_CLARIFICATION
 DELETE http://localhost:18080/internal/advisor-rag/conversations/{{queryConversationId}}/memory
 X-Demo-User-Id: 1001
+
+### 第十二章 1：多路检索实验台
+GET http://localhost:18080/internal/query-expansion
+
+### 第十二章 2：新建隔离会话
+POST http://localhost:18080/internal/advisor-rag/conversations
+
+> {% client.global.set("expansionConversationId", response.body.conversationId); %}
+
+### 第十二章 3：三条变体 + 完整问题，对照真实单路/多路检索（会调用模型和 Embedding）
+POST http://localhost:18080/internal/query-expansion/{{expansionConversationId}}/expand
+Content-Type: application/json
+X-Demo-User-Id: 1001
+
+{"question":"商品签收十天后发现质量问题，还能不能退、运费谁承担、退款多久提交？","numberOfQueries":3,"includeOriginal":true,"compare":true}
+
+### 第十二章 4：五条变体、不保留完整查询；只生成问题，不检索、不写历史
+POST http://localhost:18080/internal/query-expansion/{{expansionConversationId}}/expand
+Content-Type: application/json
+X-Demo-User-Id: 1001
+
+{"question":"软件还没有激活，能不能退、退货邮费谁承担？","numberOfQueries":5,"includeOriginal":false,"compare":false}
+
+### 第十二章 5：真实最终回答，强制多路；返回实际查询及合并轨迹
+POST http://localhost:18080/internal/advisor-rag/conversations/{{expansionConversationId}}/messages
+Content-Type: application/json
+X-Demo-User-Id: 1001
+
+{"question":"商品签收十天后发现质量问题，还能不能退、运费谁承担、退款多久提交？","expansionMode":"ON"}
+
+### 第十二章 6：关闭扩展，仍可压缩历史；全新会话对比可排除历史影响
+POST http://localhost:18080/internal/advisor-rag/conversations/{{expansionConversationId}}/messages
+Content-Type: application/json
+X-Demo-User-Id: 1001
+
+{"question":"因质量问题退货，运费由谁承担？","expansionMode":"OFF"}
+
+### 第十二章 7：清除当前演示身份的会话历史
+DELETE http://localhost:18080/internal/advisor-rag/conversations/{{expansionConversationId}}/memory
+X-Demo-User-Id: 1001

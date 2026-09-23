@@ -3,6 +3,7 @@ package com.example.cloudcustomerservice.rag;
 import com.example.cloudcustomerservice.conversation.CreateConversationResponse;
 import com.example.cloudcustomerservice.knowledge.LocalKnowledgeDocuments;
 import java.util.Map;
+import com.example.cloudcustomerservice.rag.expansion.KnowledgeConversationQuestionRequest;
 import java.util.UUID;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.*;
@@ -31,8 +32,8 @@ public class LocalAdvisorKnowledgeController {
     @PostMapping("/conversations/{id}/messages")
     public AdvisorKnowledgeAnswerResponse answer(@PathVariable String id,
             @RequestHeader(value = "X-Demo-User-Id", required = false) Long userId,
-            @RequestBody KnowledgeQuestionRequest request) {
-        return service.answer(LocalKnowledgeDocuments.TENANT_ID, id, userId, request.question());
+            @RequestBody KnowledgeConversationQuestionRequest request) {
+        return service.answer(LocalKnowledgeDocuments.TENANT_ID, id, userId, request.question(), request.expansionMode());
     }
 
     /** 清空当前演示身份的知识会话上下文，返回 204；页面记录由前端单独管理。 */

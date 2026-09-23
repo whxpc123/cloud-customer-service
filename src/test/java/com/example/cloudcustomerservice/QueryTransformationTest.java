@@ -42,7 +42,7 @@ class QueryTransformationTest {
     private final CustomerAdvisorConfiguration advisors = new CustomerAdvisorConfiguration();
     private final ChatClient client = new KnowledgeChatClientConfiguration().knowledgeConversationChatClient(answerModel,
             advisors.requestAuditAdvisor(filters), advisors.customerMemoryAdvisor(memory),
-            config.customerModularRagAdvisor(compression, config.customerDocumentRetriever(store), config.customerQueryAugmenter()),
+            config.customerModularRagAdvisor(compression, new com.example.cloudcustomerservice.rag.config.QueryExpansionConfiguration().guardedQueryExpander(config.queryTransformerChatClientBuilder(transformModel,false)), new com.example.cloudcustomerservice.rag.expansion.MultiQueryRetrieval(store,new org.springframework.ai.rag.retrieval.join.ConcatenationDocumentJoiner()), config.customerQueryAugmenter()),
             advisors.evidenceRequiredAdvisor(), false);
     private final AdvisorKnowledgeAnswerService answers = new AdvisorKnowledgeAnswerService(client, filters, memory);
     private final LocalQueryTransformationService lab = new LocalQueryTransformationService(memory, compression, rewrite,

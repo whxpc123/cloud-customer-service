@@ -3,6 +3,7 @@ package com.example.cloudcustomerservice.rag;
 import com.example.cloudcustomerservice.ai.advisor.CustomerAdvisorContextKeys;
 import com.example.cloudcustomerservice.knowledge.KnowledgeFilterFactory;
 import java.util.List;
+import com.example.cloudcustomerservice.rag.expansion.*;
 import com.example.cloudcustomerservice.rag.query.*;
 import java.util.UUID;
 import org.springframework.ai.chat.client.ChatClient;
@@ -42,25 +43,31 @@ public class AdvisorKnowledgeAnswerService {
      * 无证据不调用最终回答模型（查询转换可能已调用模型），但前面的 Memory 已存入客户原文；网络/生成失败也可能保留该原文。
      */
     public AdvisorKnowledgeAnswerResponse answer(String tenantId, String conversationId, Long userId, String question) {
+        return answer(tenantId, conversationId, userId, question, ExpansionMode.AUTO);
+    }
+
+    /** 第十二章策略只作为服务端上下文传递，旧客户端默认 AUTO；关闭时仍保留历史补全。 */
+    public AdvisorKnowledgeAnswerResponse answer(String tenantId, String conversationId, Long userId, String question, ExpansionMode mode) {
         String filter = filters.publishedAfterSales(tenantId);
         String memoryId = memoryId(tenantId, conversationId, userId);
         if (question == null || question.isBlank() || question.length() > 2000) {
             throw new IllegalArgumentException("问题需要包含 1 至 2000 个字符");
         }
         synchronized (KnowledgeConversationLocks.forKey(memoryId)) {
-            return answerLocked(tenantId, conversationId, userId, question.strip(), memoryId, filter);
+            return answerLocked(tenantId, conversationId, userId, question.strip(), memoryId, filter, mode);
         }
     }
 
     /** 在会话锁内执行完整读取/转换/生成/写记忆，防止清空与同会话请求交错。 */
     private AdvisorKnowledgeAnswerResponse answerLocked(String tenantId, String conversationId, Long userId,
-            String query, String memoryId, String filter) {
+            String query, String memoryId, String filter, ExpansionMode mode) {
         var trace = new QueryTransformationTrace(query);
+        var expansion = new QueryExpansionTrace(query, mode, 3, true);
         String requestId = UUID.randomUUID().toString();
         KnowledgeAnswerResponse result;
         try {
             ChatClientResponse response = client.prompt().user(query)
-                    .advisors(a -> a.param(QueryTransformationTrace.KEY, trace).param(ChatMemory.CONVERSATION_ID, memoryId)
+                    .advisors(a -> a.param(QueryExpansionTrace.KEY, expansion).param(QueryTransformationTrace.KEY, trace).param(ChatMemory.CONVERSATION_ID, memoryId)
                             .param(VectorStoreDocumentRetriever.FILTER_EXPRESSION, filter)
                             .param(CustomerAdvisorContextKeys.REQUEST_ID, requestId)
                             .param(CustomerAdvisorContextKeys.TENANT_ID, tenantId)
@@ -75,7 +82,7 @@ public class AdvisorKnowledgeAnswerService {
         } catch (RuntimeException ex) {
             result = KnowledgeAnswerResponse.unavailable();
         }
-        return new AdvisorKnowledgeAnswerResponse(requestId, conversationId, trace.retrievalQuery(), result.status(), result.answer(), result.references(), trace.snapshot());
+        return new AdvisorKnowledgeAnswerResponse(requestId, conversationId, trace.retrievalQuery(), result.status(), result.answer(), result.references(), trace.snapshot(), expansion.snapshot());
     }
 
     /** 验证清空目标后只删除对应知识会话，不影响第九章、其他身份或普通客服。 */
@@ -110,13 +117,8 @@ public class AdvisorKnowledgeAnswerService {
         if (!(value instanceof List<?> documents) || documents.isEmpty()) throw new IllegalStateException("Missing evidence response");
         return documents.stream().map(item -> {
             if (!(item instanceof Document d)) throw new IllegalStateException("Invalid evidence response");
-            var m = d.getMetadata();
-            return new KnowledgeReference(d.getId(), text(m.get("sourceId")),
-                    text(m.getOrDefault("sourceName", m.get("sourceId"))), text(m.get("sourceVersion")),
-                    m.get("chunkIndex") instanceof Number n ? n.intValue() : 0, text(m.get("category")), d.getScore(), d.getText());
+            return KnowledgeReference.from(d);
         }).toList();
     }
 
-    /** 兼容课程旧数据缺少部分展示字段，空值用空串而不是字符串 null。 */
-    private String text(Object value) { return value == null ? "" : value.toString(); }
 }

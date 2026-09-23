@@ -2,9 +2,9 @@
 
 根据《第一章：老板下午要看的 AI 客服》实现的 Java 学习项目。后续章节在这个项目上逐步增加能力，每章的改动与验收方式记录在 `docs/chapters/`。
 
-当前进度：**第十一章——多轮查询转换与模块化 RAG**。
+当前进度：**第十二章——多查询扩展与知识合并**。
 
-章节记录：[第一章](docs/chapters/01-first-chat.md) · [第二章](docs/chapters/02-system-prompt.md) · [第三章](docs/chapters/03-structured-output.md) · [第四章](docs/chapters/04-chat-memory.md) · [第五章](docs/chapters/05-tool-calling.md) · [第六章](docs/chapters/06-embedding-lab.md) · [第七章](docs/chapters/07-pgvector-knowledge.md) · [第八章](docs/chapters/08-document-etl.md) · [第九章](docs/chapters/09-manual-rag.md) · [第十章](docs/chapters/10-advisor-chain.md) · [第十章补充：知识管理台](docs/chapters/10-knowledge-management.md) · [第十一章](docs/chapters/11-query-transformation.md)。
+章节记录：[第一章](docs/chapters/01-first-chat.md) · [第二章](docs/chapters/02-system-prompt.md) · [第三章](docs/chapters/03-structured-output.md) · [第四章](docs/chapters/04-chat-memory.md) · [第五章](docs/chapters/05-tool-calling.md) · [第六章](docs/chapters/06-embedding-lab.md) · [第七章](docs/chapters/07-pgvector-knowledge.md) · [第八章](docs/chapters/08-document-etl.md) · [第九章](docs/chapters/09-manual-rag.md) · [第十章](docs/chapters/10-advisor-chain.md) · [第十章补充：知识管理台](docs/chapters/10-knowledge-management.md) · [第十一章](docs/chapters/11-query-transformation.md) · [第十二章](docs/chapters/12-query-expansion.md)。
 
 每章对应独立 Git 提交和 `chapter-NN` 标签，具体变化见 [CHANGELOG](CHANGELOG.md)。第 1～3 章历史根据已实现代码于 2026-09-12 补建；后续每章验收完成后提交并推送。
 
@@ -22,6 +22,7 @@
 | [chapter-10](https://github.com/whxpc123/cloud-customer-service/tree/chapter-10) | Advisor 调用链、多轮知识问答、证据拦截与审计 | [本章功能改动](https://github.com/whxpc123/cloud-customer-service/compare/ad36c22751e76c176fa1f166711299e85d9d4404...chapter-10) |
 | [chapter-10-admin](https://github.com/whxpc123/cloud-customer-service/tree/chapter-10-admin) | 文档目录、原件下载、回收站、多会话知识问答、自建题集评测 | [与第十章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-10...chapter-10-admin) |
 | [chapter-11](https://github.com/whxpc123/cloud-customer-service/tree/chapter-11) | 历史补全追问、模块化 RAG、查询与检索对照实验 | [与上一章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-10-admin...chapter-11) |
+| [chapter-12](https://github.com/whxpc123/cloud-customer-service/tree/chapter-12) | 按需多查询扩展、逐路检索、按 ID 合并、单路/多路可视化对照 | [与第十一章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-11...chapter-12) |
 
 在 GitHub 选择对应标签查看该章完整代码，在 Compare 页面选择相邻标签查看改动。阅读历史版本可以使用独立工作目录，例如 `git worktree add ../chapter-01-view chapter-01`，避免覆盖当前开发目录。
 
@@ -106,7 +107,7 @@ curl --get 'http://localhost:18080/api/chat' \
 java -jar target/cloud-customer-service-0.0.1-SNAPSHOT.jar
 ```
 
-自动测试在需要调用的路径替换 ChatModel / EmbeddingModel，不访问百炼、不需要真实 Key，覆盖聊天回归、结构化转换、非法字段、异常兜底、角色隔离和日志。当前共有 158 项测试：普通运行通过 144 项、跳过 14 项需真实 pgvector 的集成测试；启用专用测试库后 158 项全部通过。覆盖工具执行、会话隔离、向量数学、批次边界、知识过滤、重复导入及异常保护。集成测试步骤见第七章文档。启动应用和运行 JAR 仍需真实 `DASHSCOPE_API_KEY`。
+自动测试在需要调用的路径替换 ChatModel / EmbeddingModel，不访问百炼、不需要真实 Key，覆盖聊天回归、结构化转换、非法字段、异常兜底、角色隔离和日志。当前共有 175 项测试：普通运行通过 161 项、跳过 14 项需真实 pgvector 的集成测试；启用专用测试库后 175 项全部通过。覆盖工具执行、会话隔离、向量数学、批次边界、知识过滤、重复导入及异常保护。集成测试步骤见第七章文档。启动应用和运行 JAR 仍需真实 `DASHSCOPE_API_KEY`。
 
 ## 目录与章节对应
 
@@ -302,3 +303,12 @@ IDEA 同步 Maven 后运行原 `CloudCustomerServiceApplication` 配置，打开
 现有知识问答和管理台自动使用 **Audit → Memory → RetrievalAugmentationAdvisor（Compression → 检索 → 增强）→ Evidence Gate → 最终模型**。无历史的含糊追问返回 `NEEDS_CLARIFICATION`；转换失败有可观察的回退。原 API 增加 `transformation`，未进入检索时 `retrievalQuery` 为 null。来源过滤仍由服务端控制。
 
 有历史的问答通常增加一次转换模型调用；Rewrite 默认关闭。详细代码入口、接口、真实模型偏差与限制见[第十一章实现与验收](docs/chapters/11-query-transformation.md)。端口统一为 **18080**，无需新增数据库迁移。
+
+
+## 第十二章：多查询扩展与知识合并
+
+打开 <http://127.0.0.1:18080/internal/query-expansion>，选择 1 / 3 / 5 条变体、是否保留补全后的完整问题，并按需开启真实检索对照。页面展示各路查询、命中来源、按 ID 去重数量、上下文规模及单路未找到的候选。
+
+正式多轮知识问答和管理台已接入按需扩展；多轮页面可以切换 AUTO / OFF / ON。成功扩展默认 3 条变体加完整问题，每路 Top 3；单路或失败回退 Top 5，阈值均为 0.60。简单问题默认跳过扩展以减少调用。
+
+扩展和合并不保证逐项都有依据，也不是严格任务拆解或重排。响应和页面保留实际轨迹，回答提示要求逐项说明缺失依据。代码入口、开销、失败保护与真实模型偏差见[第十二章实现与验收](docs/chapters/12-query-expansion.md)。

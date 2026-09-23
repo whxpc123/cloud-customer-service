@@ -3,6 +3,7 @@ package com.example.cloudcustomerservice.rag.config;
 import com.example.cloudcustomerservice.ai.advisor.CustomerAdvisorOrders;
 import com.example.cloudcustomerservice.config.PayloadLoggingChatModel;
 import com.example.cloudcustomerservice.rag.query.*;
+import com.example.cloudcustomerservice.rag.expansion.*;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -16,7 +17,7 @@ import org.springframework.beans.factory.annotation.*;
 import org.springframework.context.annotation.*;
 import org.springframework.core.task.SyncTaskExecutor;
 
-/** 第十一章模块化 RAG 配置；默认只用 Compression，Rewrite 仅供实验接口显式选择。 */
+/** 第十二章模块化 RAG 配置；Compression 后可扩展检索，Rewrite 仍仅供第十一章实验使用。 */
 @Configuration
 @Profile("local & knowledge")
 public class CustomerModularRagConfiguration {
@@ -93,21 +94,18 @@ public class CustomerModularRagConfiguration {
     }
 
     /**
-     * 框架负责转换→检索→增强；最终增强使用原问题，避免把改写文本冒充客户原话。
-     * 单路同步检索用 SyncTaskExecutor，不创建框架默认的无人关闭线程池；后续多查询需另设有界池。
+     * 框架依次处理 Compression → 受控扩展 → 各路检索 → 官方合并 → 原问题增强。
+     * 顺序执行最多六路，避免无管理线程池；trace 不可用于未来并行检索而不做同步改造。
      */
     @Bean("customerModularRagAdvisor")
     public RetrievalAugmentationAdvisor customerModularRagAdvisor(
             @Qualifier("conversationCompressionTransformer") SafeQueryTransformer compression,
-            VectorStoreDocumentRetriever retriever, ContextualQueryAugmenter augmenter) {
+            GuardedQueryExpander expansion, MultiQueryRetrieval retrieval, ContextualQueryAugmenter augmenter) {
         return RetrievalAugmentationAdvisor.builder()
                 .queryTransformers(q -> compression.transform(SafeQueryTransformer.priorConversation(q)))
-                .documentRetriever(q -> {
-                    var trace = (QueryTransformationTrace) q.context().get(QueryTransformationTrace.KEY);
-                    if (trace != null && trace.clarificationRequired()) return java.util.List.of();
-                    if (trace != null) trace.searched(q.text());
-                    return retriever.retrieve(q);
-                })
+                .queryExpander(expansion)
+                .documentRetriever(retrieval::retrieve)
+                .documentJoiner(retrieval::join)
                 .queryAugmenter(augmenter).taskExecutor(new SyncTaskExecutor()).order(CustomerAdvisorOrders.RAG).build();
     }
 }

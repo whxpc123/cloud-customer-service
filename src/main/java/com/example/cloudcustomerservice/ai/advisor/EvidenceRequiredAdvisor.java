@@ -32,6 +32,18 @@ public final class EvidenceRequiredAdvisor implements CallAdvisor {
         if (value == null || value instanceof List<?> list && list.isEmpty()) throw new NoKnowledgeEvidenceException();
         if (!(value instanceof List<?> values)) throw new IllegalStateException("Invalid evidence context");
         Object tenantId = request.context().get(CustomerAdvisorContextKeys.TENANT_ID);
+        int usable = validateDocuments(values, tenantId);
+        if (usable == 0) throw new NoKnowledgeEvidenceException();
+        log.info("[AI EVIDENCE] requestId={} documents={} status=PASSED",
+                request.context().get(CustomerAdvisorContextKeys.REQUEST_ID), usable);
+        return chain.nextCall(request);
+    }
+
+    /**
+     * 第十二章复用同一验证：去重前逐路检查，去重后证据门再次检查。
+     * 空列表在检索阶段合法，真正的空证据阻断仍由 adviseCall 负责。
+     */
+    public static int validateDocuments(List<?> values, Object tenantId) {
         int usable = 0;
         for (Object item : values) {
             if (!(item instanceof Document document)) throw new IllegalStateException("Invalid evidence document");
@@ -42,12 +54,9 @@ public final class EvidenceRequiredAdvisor implements CallAdvisor {
             if (document.getScore() == null || !Double.isFinite(document.getScore())) throw new IllegalStateException("Invalid evidence score");
             if (document.getText() != null && !document.getText().isBlank()) usable++;
         }
-        if (usable == 0) throw new NoKnowledgeEvidenceException();
         // 混有空正文时也不发布不一致的证据列表；数据库非空块才是合法的整组知识结果。
-        if (usable != values.size()) throw new IllegalStateException("Incomplete evidence documents");
-        log.info("[AI EVIDENCE] requestId={} documents={} status=PASSED",
-                request.context().get(CustomerAdvisorContextKeys.REQUEST_ID), usable);
-        return chain.nextCall(request);
+        if (usable > 0 && usable != values.size()) throw new IllegalStateException("Incomplete evidence documents");
+        return usable;
     }
 
     /** 检索之后、模型之前执行。 */

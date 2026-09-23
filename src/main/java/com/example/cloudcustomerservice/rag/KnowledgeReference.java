@@ -14,4 +14,15 @@ package com.example.cloudcustomerservice.rag;
  * @param content 本次送给模型的完整知识块正文
  */
 public record KnowledgeReference(String documentId, String sourceId, String sourceName,
-        String sourceVersion, int chunkIndex, String category, double score, String content) { }
+        String sourceVersion, int chunkIndex, String category, double score, String content) {
+    /** 统一正式回答与实验的展示契约；只接受已经过范围与分数校验的文档。 */
+    public static KnowledgeReference from(org.springframework.ai.document.Document d) {
+        var m = d.getMetadata();
+        return new KnowledgeReference(d.getId(), text(m.get("sourceId")),
+                text(m.getOrDefault("sourceName", m.get("sourceId"))), text(m.get("sourceVersion")),
+                m.get("chunkIndex") instanceof Number n ? n.intValue() : 0,
+                text(m.get("category")), d.getScore(), d.getText());
+    }
+    /** 旧课程数据可能没有展示元数据，空值用空串而不是字符串 null。 */
+    private static String text(Object value) { return value == null ? "" : value.toString(); }
+}

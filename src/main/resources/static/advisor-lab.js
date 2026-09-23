@@ -59,8 +59,9 @@ async function newSession() {
 /** 显示实际检索问题及 Context 返回的来源；查看历史只是切换展示，不重新调用模型。 */
 function showEvidence(data) {
   clearEvidence(); $('result-status').textContent = labels[data.status];
-  $('retrieval-query').textContent = '本次实际检索：' + (data.retrievalQuery ?? '未执行检索');
+  $('retrieval-query').textContent = '首路实际检索：' + (data.retrievalQuery ?? '未执行检索');
   if (data.transformation) $('retrieval-query').textContent += '\n原始问题：' + data.transformation.originalQuery + '\n转换：' + data.transformation.stages.map(s => `${s.name} ${s.status} (${s.durationMs} ms)`).join(' → ');
+  if (data.expansion) $('retrieval-query').textContent += '\n扩展：' + data.expansion.status + '\n实际各路：' + data.expansion.retrievals.map(b => b.query).join(' | ') + `\n候选 ${data.expansion.rawDocumentCount} → ${data.expansion.joinedDocumentCount} 块（去重 ${data.expansion.duplicateDocumentCount}），检索 ${data.expansion.retrievalStatus}`;
   $('request-id').textContent = '审计 requestId：' + data.requestId;
   for (const ref of data.references) {
     const card = node('details', undefined, 'evidence-card');
@@ -85,7 +86,7 @@ async function send(event) {
   lock(true); clearEvidence(); appendTurn('user', question); $('question').value = '';
   $('result-status').textContent = '处理中'; $('feedback').textContent = '正在加载历史、检索资料并检查证据…';
   try {
-    const data = await request(`conversations/${encodeURIComponent(conversationId)}/messages`, { method: 'POST', headers: headers(), body: JSON.stringify({ question }) });
+    const data = await request(`conversations/${encodeURIComponent(conversationId)}/messages`, { method: 'POST', headers: headers(), body: JSON.stringify({ question, expansionMode: $('expansion-mode').value }) });
     if (!data || data.conversationId !== conversationId || data.transformation?.originalQuery !== question || !Object.hasOwn(labels, data.status)
       || typeof data.requestId !== 'string' || typeof data.answer !== 'string' || !Array.isArray(data.references)
       || data.references.some(r => !r || typeof r.content !== 'string' || !Number.isFinite(r.score))) throw new Error('本次响应格式异常，请检查服务。');

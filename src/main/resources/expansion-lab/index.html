@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>云杉客服 · 多路检索实验室</title>
+  <link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/embedding-lab.css">
+  <link rel="stylesheet" href="/query-lab.css"><link rel="stylesheet" href="/expansion-lab.css">
+  <script src="/expansion-lab.js" defer></script>
+</head>
+<body>
+<header><a class="brand" href="/">杉 <span>云杉客服</span></a><nav aria-label="章节导航"><a href="/internal/query-transformation">查询补全 ↗</a><a href="/internal/advisor-rag">多轮知识问答 ↗</a><a href="/internal/knowledge-admin">知识库管理 ↗</a></nav></header>
+<main>
+  <p class="eyebrow">CHAPTER 12 / MULTI QUERY</p>
+  <h1>能不能退、谁出运费、多久退款？<br><span>分开找，再一起核对。</span></h1>
+  <p class="intro">观察一个问题如何生成多条查询。每路找回的资料、重复的知识块和单路漏掉的候选，都摊开来看。</p>
+  <div class="expansion-layout">
+    <section class="query-panel controls" aria-labelledby="question-title">
+      <div class="panel-head"><h2 id="question-title">这次想问什么</h2><button id="new-session" type="button">新建会话</button></div>
+      <label for="demo-user">演示身份</label><select id="demo-user"><option value="1001">用户 1001</option><option value="2002">用户 2002</option><option value="guest">访客</option></select>
+      <p id="session-id" class="fine">正在创建知识会话…</p>
+      <div class="sample-row"><button data-question="商品签收十天后发现质量问题，还能不能退、运费谁承担、退款多久提交？">三件事</button><button data-question="退货运费谁承担？">只问运费</button><button data-question="软件还没有激活，能不能退、退货邮费谁承担？">保留否定词</button><button data-question="包裹两天没更新，怎么查、何时可以投诉？">物流与投诉</button></div>
+      <form id="expand-form">
+        <label for="question">当前问题</label><textarea id="question" rows="5" maxlength="2000" required>商品签收十天后发现质量问题，还能不能退、运费谁承担、退款多久提交？</textarea>
+        <label for="query-count">希望生成几条变体</label><select id="query-count"><option value="1">1 条</option><option value="3" selected>3 条</option><option value="5">5 条</option></select>
+        <label class="check"><input id="include-original" type="checkbox" checked> 保留补全后的完整问题</label>
+        <label class="check"><input id="compare" type="checkbox"> 对照单路与多路的真实检索</label>
+        <p id="cost-note" class="fine">默认只生成查询；不执行检索，也不生成客服回答。</p>
+        <button type="submit" class="primary">扩展检索问题</button>
+      </form>
+      <details><summary>给追问建立上文（可选）</summary><form id="history-form"><label for="history-question">上文问题</label><textarea id="history-question" rows="3" maxlength="2000" required placeholder="我买错了衣服，想退货，有什么条件？"></textarea><button type="submit">发送上文</button></form><p class="fine">通过真实单路知识问答建立历史，会调用模型；本页扩展实验只读历史。</p><div id="history-log" role="log"></div></details>
+    </section>
+    <section class="query-panel results" aria-labelledby="result-title" aria-busy="false" id="results">
+      <p class="eyebrow">检索路径</p><h2 id="result-title">一条完整问题，多个查找角度</h2>
+      <p id="feedback" role="status">准备好后，先看看模型生成了哪些查询。</p>
+      <div id="pipeline" class="pipeline"><p class="fine">先补全上文，再扩展角度。这里将展示本次实际查询。</p></div>
+      <div id="metrics" class="metrics"></div><p id="trace" class="fine"></p>
+      <details id="raw-details" hidden><summary>查看本次接口 JSON</summary><pre id="raw-result"></pre></details>
+    </section>
+  </div>
+  <section id="retrieval" class="query-panel comparisons" hidden>
+    <div class="panel-head"><h2>先看各路找到了什么</h2><span class="fine" id="route-settings">阈值 0.60</span></div>
+    <p id="retrieval-note" class="fine"></p><div id="branches"></div>
+    <h2 class="compare-title">合并以后，多了哪些候选？</h2>
+    <p id="difference" class="fine"></p>
+    <div class="query-pair"><div id="baseline"></div><div id="joined"></div></div>
+  </section>
+  <aside class="experiment-note"><strong>找到资料，不等于逐项有依据。</strong><p>查询变体不是严格的子问题清单；去重按文档 ID，保留最早命中的分数。同义但不同 ID 的内容会保留，跨查询分数不代表对总问题的重要性。没有实现重排或自动覆盖评分。</p><p>正式知识问答默认按有限主题规则自动选择单路/多路。此处选择只影响本次实验；想看最终答复，请到 <a href="/internal/advisor-rag">多轮知识问答</a> 选择“强制多路”。</p></aside>
+</main>
+</body>
+</html>
