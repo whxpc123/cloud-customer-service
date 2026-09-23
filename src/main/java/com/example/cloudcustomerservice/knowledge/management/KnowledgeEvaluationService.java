@@ -104,6 +104,8 @@ public class KnowledgeEvaluationService {
     public static Result compare(int index,Case test,AdvisorKnowledgeAnswerResponse response,long duration,String error) {
         if(error!=null || response==null || response.status()==KnowledgeAnswerStatus.TEMPORARILY_UNAVAILABLE)
             return new Result(index,test,response,duration,null,null,error==null?"问答服务暂不可用":error);
+        if (response.status()==KnowledgeAnswerStatus.BUSINESS_TOOL_REQUIRED)
+            return new Result(index,test,response,duration,null,null,"问题需要业务工具，本题未进入知识检索");
         if (response.status()==KnowledgeAnswerStatus.NEEDS_CLARIFICATION)
             return new Result(index,test,response,duration,null,null,"问题需要补充场景，本题未进入知识检索");
         boolean refusal=response.status()==KnowledgeAnswerStatus.NO_EVIDENCE;

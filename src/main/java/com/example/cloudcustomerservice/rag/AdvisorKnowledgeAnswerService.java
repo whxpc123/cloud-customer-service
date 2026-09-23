@@ -7,6 +7,7 @@ import com.example.cloudcustomerservice.rag.expansion.*;
 import com.example.cloudcustomerservice.rag.rerank.*;
 import com.example.cloudcustomerservice.rag.query.*;
 import java.util.UUID;
+import com.example.cloudcustomerservice.knowledge.search.*;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
@@ -73,14 +74,18 @@ public class AdvisorKnowledgeAnswerService {
         String requestId = UUID.randomUUID().toString();
         KnowledgeAnswerResponse result;
         try {
+            if(BusinessIdentifierExtractor.requiresTool(query))throw new HybridKnowledgeRetriever.BusinessToolRequiredException();
             ChatClientResponse response = client.prompt().user(query)
-                    .advisors(a -> a.param(RerankTrace.KEY, rerank).param(QueryExpansionTrace.KEY, expansion).param(QueryTransformationTrace.KEY, trace).param(ChatMemory.CONVERSATION_ID, memoryId)
+                    .advisors(a -> a.param(HybridKnowledgeRetriever.ENABLED,true).param(RerankTrace.KEY, rerank).param(QueryExpansionTrace.KEY, expansion).param(QueryTransformationTrace.KEY, trace).param(ChatMemory.CONVERSATION_ID, memoryId)
                             .param(VectorStoreDocumentRetriever.FILTER_EXPRESSION, filter)
                             .param(CustomerAdvisorContextKeys.REQUEST_ID, requestId)
                             .param(CustomerAdvisorContextKeys.TENANT_ID, tenantId)
                             .param(CustomerAdvisorContextKeys.USER_ID, userId == null ? "guest" : userId.toString()))
                     .call().chatClientResponse();
             result = new KnowledgeAnswerResponse(KnowledgeAnswerStatus.ANSWERED, extractAnswer(response), references(response));
+        } catch (HybridKnowledgeRetriever.BusinessToolRequiredException ex) {
+            result = new KnowledgeAnswerResponse(KnowledgeAnswerStatus.BUSINESS_TOOL_REQUIRED,
+                    "这类问题需要查询实时业务数据，请到首页普通客服选择身份后使用订单工具查询；知识库不能确认订单、物流或退款实时状态。",List.of());
         } catch (NeedsQueryClarificationException ex) {
             result = new KnowledgeAnswerResponse(KnowledgeAnswerStatus.NEEDS_CLARIFICATION,
                     "请补充具体商品或场景，例如是在问购买配送费、个人原因退货运费，还是质量问题退货运费？", List.of());

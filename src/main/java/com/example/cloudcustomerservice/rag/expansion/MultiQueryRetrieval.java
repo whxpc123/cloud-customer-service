@@ -21,6 +21,7 @@ public final class MultiQueryRetrieval {
     private final VectorStoreDocumentRetriever single, multi;
     private final DocumentJoiner joiner;
     private final VectorStore store;
+    private com.example.cloudcustomerservice.knowledge.search.HybridKnowledgeRetriever hybrid;
 
     /** 单路 Top 5、多路每路 Top 3，相同阈值 0.60；策略由服务端轨迹决定。 */
     public MultiQueryRetrieval(VectorStore store, DocumentJoiner joiner) {
@@ -30,12 +31,20 @@ public final class MultiQueryRetrieval {
         this.joiner = joiner;
     }
 
+    /** 生产装配开启混合能力；两参数构造保留前面章节的独立测试与实验语义。 */
+    public MultiQueryRetrieval(VectorStore store,DocumentJoiner joiner,com.example.cloudcustomerservice.knowledge.search.HybridKnowledgeRetriever hybrid) {
+        this(store,joiner);this.hybrid=hybrid;
+    }
+
     /** 复核每一条原始命中，防止错误租户的重复 ID 在去重时被隐藏。 */
     public List<Document> retrieve(Query query) {
         var expansion = trace(query);
         if (expansion.failed()) throw new IllegalStateException("Earlier retrieval failed");
         var transformation = (QueryTransformationTrace) query.context().get(QueryTransformationTrace.KEY);
         if (transformation != null && transformation.clarificationRequired()) return List.of();
+        if(Boolean.TRUE.equals(query.context().get(com.example.cloudcustomerservice.knowledge.search.HybridKnowledgeRetriever.ENABLED))
+                && com.example.cloudcustomerservice.knowledge.search.BusinessIdentifierExtractor.requiresTool(query.text()))
+            throw new com.example.cloudcustomerservice.knowledge.search.HybridKnowledgeRetriever.BusinessToolRequiredException();
         long started = System.nanoTime();
         // 旧字段只代表首路；完整多路查询从 expansion.retrievals 获取。
         if (transformation != null && transformation.retrievalQuery() == null) transformation.searched(query.text());
@@ -71,6 +80,11 @@ public final class MultiQueryRetrieval {
                 .forEach(e -> ordered.put(e.getKey(), e.getValue()));
         List<Document> joined = joiner.join(ordered);
         trace.joined(joined);
+        // 在向量多路合并后执行一次精确/词法召回；第十二、十三章对照实验仍保持向量候选语义。
+        if(hybrid!=null && Boolean.TRUE.equals(first.context().get(com.example.cloudcustomerservice.knowledge.search.HybridKnowledgeRetriever.ENABLED))) {
+            joined=hybrid.combine((String)first.context().get(CustomerAdvisorContextKeys.TENANT_ID),
+                    trace.snapshot().transformedQuery(),joined,24).fused();
+        }
         var result = trace.snapshot();
         log.info("[MULTI QUERY RETRIEVAL] requestId={} routes={} raw={} joined={} duplicates={} contextCharacters={} contextTokensEstimated={}",
                 first.context().get(CustomerAdvisorContextKeys.REQUEST_ID), result.retrievals().size(), result.rawDocumentCount(),

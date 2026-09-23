@@ -1,6 +1,7 @@
 package com.example.cloudcustomerservice.rag.query;
 
 import java.util.*;
+import com.example.cloudcustomerservice.knowledge.search.BusinessIdentifierExtractor;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,6 +95,14 @@ public final class SafeQueryTransformer implements QueryTransformer {
     private boolean preservesFacts(Query input, String output) {
         String userText = input.history().stream().filter(m -> m.getMessageType() == MessageType.USER)
                 .map(Message::getText).reduce("", (a,b) -> a + "\n" + b) + "\n" + input.text();
+        // 数字相同不代表型号相同：编码全值必须来自用户，当前明确编码不能在补全时消失。
+        var currentCodes=BusinessIdentifierExtractor.extract(input.text());
+        var outputCodes=BusinessIdentifierExtractor.extract(output);
+        var knownCodes=new HashSet<>(currentCodes);
+        input.history().stream().filter(m->m.getMessageType()==MessageType.USER)
+                .forEach(m->knownCodes.addAll(BusinessIdentifierExtractor.extract(m.getText())));
+        if(!knownCodes.containsAll(outputCodes)||!outputCodes.containsAll(currentCodes))return false;
+        if(referential(input.text()) && knownCodes.size()==1 && !outputCodes.containsAll(knownCodes))return false;
         for (Pattern qualifier : POLICY_QUALIFIERS) {
             if (qualifier.matcher(output).find() && !qualifier.matcher(userText).find()) return false;
         }

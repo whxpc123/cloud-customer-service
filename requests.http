@@ -793,3 +793,20 @@ Content-Type: application/json
 X-Demo-User-Id: 1001
 
 {"question":"退款提交需要多久？","expansionMode":"OFF","rerankEnabled":false}
+
+
+### 第十四章：真实三路混合检索（完整问题，无历史改写；不写记忆）
+POST http://127.0.0.1:18080/internal/hybrid-search/compare
+Content-Type: application/json
+
+{
+  "question": "CPN-88A7 退款后会返还吗？",
+  "topK": 10,
+  "rerankEnabled": false
+}
+
+### 第十四章：实时订单问题提示业务工具，不进入知识匹配
+POST http://127.0.0.1:18080/internal/hybrid-search/compare
+Content-Type: application/json
+
+{"question":"A10001 发货了吗？","topK":10,"rerankEnabled":false}

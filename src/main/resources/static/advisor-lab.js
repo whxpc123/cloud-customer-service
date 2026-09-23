@@ -4,7 +4,7 @@
  */
 'use strict';
 const $ = id => document.getElementById(id);
-const labels = { ANSWERED: '模型已返回 · 请核对依据', NO_EVIDENCE: '无证据 · 未调用回答模型', NEEDS_CLARIFICATION: '需要补充场景', TEMPORARILY_UNAVAILABLE: '服务暂不可用' };
+const labels = { BUSINESS_TOOL_REQUIRED: '需要业务工具查询', ANSWERED: '模型已返回 · 请核对依据', NO_EVIDENCE: '无证据 · 未调用回答模型', NEEDS_CLARIFICATION: '需要补充场景', TEMPORARILY_UNAVAILABLE: '服务暂不可用' };
 let busy = false, conversationId = null, sessionUser = '1001';
 
 /** 创建纯文本节点，避免资料或回答中的标签被解释为代码。 */
@@ -62,12 +62,12 @@ function showEvidence(data) {
   $('retrieval-query').textContent = '首路实际检索：' + (data.retrievalQuery ?? '未执行检索');
   if (data.transformation) $('retrieval-query').textContent += '\n原始问题：' + data.transformation.originalQuery + '\n转换：' + data.transformation.stages.map(s => `${s.name} ${s.status} (${s.durationMs} ms)`).join(' → ');
   if (data.reranking) $('retrieval-query').textContent += `\n重排：${data.reranking.status} · 最终 ${data.reranking.finalDocuments.length} 块 · 正文估算 ${data.reranking.estimatedContextTokens} tokens`;
-  if (data.expansion) $('retrieval-query').textContent += '\n扩展：' + data.expansion.status + '\n实际各路：' + data.expansion.retrievals.map(b => b.query).join(' | ') + `\n候选 ${data.expansion.rawDocumentCount} → ${data.expansion.joinedDocumentCount} 块（去重 ${data.expansion.duplicateDocumentCount}），检索 ${data.expansion.retrievalStatus}`;
+  if (data.expansion) $('retrieval-query').textContent += '\n扩展：' + data.expansion.status + '\n实际各路：' + data.expansion.retrievals.map(b => b.query).join(' | ') + `\n向量候选 ${data.expansion.rawDocumentCount} → ${data.expansion.joinedDocumentCount} 块（去重 ${data.expansion.duplicateDocumentCount}），检索 ${data.expansion.retrievalStatus}`;
   $('request-id').textContent = '审计 requestId：' + data.requestId;
   for (const ref of data.references) {
     const card = node('details', undefined, 'evidence-card');
     card.append(node('summary', `${ref.sourceName || ref.sourceId} · v${ref.sourceVersion} · 第 ${ref.chunkIndex} 块`),
-      node('pre', `向量 ${Number(ref.retrievalScore ?? ref.score).toFixed(4)} · 重排 ${ref.rerankScore == null ? "—" : Number(ref.rerankScore).toFixed(4)}\ndocumentId: ${ref.documentId}\nsourceId: ${ref.sourceId}`), node('p', ref.content));
+      node('pre', `${ref.hybrid?.rrfScore != null ? "RRF" : "向量"} ${Number(ref.retrievalScore ?? ref.score).toFixed(4)} · 重排 ${ref.rerankScore == null ? "—" : Number(ref.rerankScore).toFixed(4)}\n召回来源: ${(ref.hybrid?.retrievalSources || []).join(" + ") || "VECTOR"} · 精确优先: ${ref.hybrid?.exactMatch ? "是" : "否"}\ndocumentId: ${ref.documentId}\nsourceId: ${ref.sourceId}`), node('p', ref.content));
     $('references').append(card);
   }
   $('raw-result').textContent = JSON.stringify(data, null, 2); $('raw-details').hidden = false;

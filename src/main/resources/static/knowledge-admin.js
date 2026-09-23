@@ -23,6 +23,7 @@ const statuses = {
   ANSWERED: "模型已回答 · 请核对来源",
   NEEDS_CLARIFICATION: "需要补充场景",
   NO_EVIDENCE: "无证据 · 已拦截",
+  BUSINESS_TOOL_REQUIRED: "需要业务工具查询",
   TEMPORARILY_UNAVAILABLE: "服务暂不可用",
 };
 /** 创建文本节点；资料、模型文本和缓存内容都不解释为 HTML。 */
@@ -946,7 +947,7 @@ function renderTurn(parent, turn) {
   n.append(badge(r.status), markdown(r.answer));
   // 新轨迹可空以兼容旧评测记录，展示实际分路而不把计划查询冒充已执行。
   if (r.reranking) n.append(el("p", `重排：${r.reranking.status} · 最终 ${r.reranking.finalDocuments.length} 块 · 正文估算 ${r.reranking.estimatedContextTokens} tokens`, "trace"));
-  if (r.expansion) n.append(el("p", `多路状态：${r.expansion.status} · 检索 ${r.expansion.retrievalStatus}\n${r.expansion.retrievals.map(b => `${b.query}（${b.documents.length} 块）`).join("\n")}\n候选 ${r.expansion.rawDocumentCount} → ${r.expansion.joinedDocumentCount}，重复 ${r.expansion.duplicateDocumentCount}`, "trace"));
+  if (r.expansion) n.append(el("p", `多路状态：${r.expansion.status} · 检索 ${r.expansion.retrievalStatus}\n${r.expansion.retrievals.map(b => `${b.query}（${b.documents.length} 块）`).join("\n")}\n向量候选 ${r.expansion.rawDocumentCount} → ${r.expansion.joinedDocumentCount}，重复 ${r.expansion.duplicateDocumentCount}`, "trace"));
   n.append(
     el(
       "p",
@@ -957,9 +958,10 @@ function renderTurn(parent, turn) {
   r.references.forEach((ref, i) => {
     const d = el("details", undefined, "citation"),
       summary = el("summary");
-    summary.textContent = `[${i + 1}] ${ref.sourceName || ref.sourceId} · v${ref.sourceVersion} · 第 ${ref.chunkIndex} 块 · 向量 ${Number(ref.retrievalScore ?? ref.score).toFixed(4)} · 重排 ${ref.rerankScore == null ? "—" : Number(ref.rerankScore).toFixed(4)}`;
+    summary.textContent = `[${i + 1}] ${ref.sourceName || ref.sourceId} · v${ref.sourceVersion} · 第 ${ref.chunkIndex} 块 · ${ref.hybrid?.rrfScore != null ? "RRF" : "向量"} ${Number(ref.retrievalScore ?? ref.score).toFixed(4)} · 重排 ${ref.rerankScore == null ? "—" : Number(ref.rerankScore).toFixed(4)}`;
     const body = el("div");
     body.append(
+      el("p", `召回来源：${(ref.hybrid?.retrievalSources || []).join(" + ") || "VECTOR"} · 精确优先：${ref.hybrid?.exactMatch ? "是" : "否"}`, "trace"),
       markdown(ref.content),
       link("查看文档详情 ↗", "#doc/" + encodeURIComponent(ref.sourceId)),
     );

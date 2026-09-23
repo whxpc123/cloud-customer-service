@@ -9,6 +9,8 @@ public enum KnowledgeAnswerStatus {
      * 模型返回非空答复，包括拒答或冲突提示；未验证真实性。
      */
     ANSWERED,
+    /** 实时业务问题需转订单工具，未执行知识检索或最终回答生成。 */
+    BUSINESS_TOOL_REQUIRED,
     /** 问题中的指代缺少依据，未进行检索和最终回答生成。 */
     NEEDS_CLARIFICATION,
     /**

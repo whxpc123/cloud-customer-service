@@ -55,7 +55,7 @@ public class QueryExpansionConfiguration {
 
     /** 正式问答和实验共用检索及合并代码，保证页面数据不是另一套模拟链。 */
     @Bean
-    public MultiQueryRetrieval multiQueryRetrieval(VectorStore store, @Qualifier("customerDocumentJoiner") DocumentJoiner joiner) {
-        return new MultiQueryRetrieval(store, joiner);
+    public MultiQueryRetrieval multiQueryRetrieval(VectorStore store, @Qualifier("customerDocumentJoiner") DocumentJoiner joiner, com.example.cloudcustomerservice.knowledge.search.HybridKnowledgeRetriever hybrid) {
+        return new MultiQueryRetrieval(store, joiner, hybrid);
     }
 }

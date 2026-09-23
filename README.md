@@ -2,9 +2,9 @@
 
 根据《第一章：老板下午要看的 AI 客服》实现的 Java 学习项目。后续章节在这个项目上逐步增加能力，每章的改动与验收方式记录在 `docs/chapters/`。
 
-当前进度：**第十三章——重排序与上下文预算**。重排代码及降级流程已实现；本机还需配置百炼业务空间地址后才能验证真实 qwen3-rerank。
+当前进度：**第十四章——精确编码与混合检索**。正式问答增加编码元数据精确匹配、PostgreSQL 全文检索和 RRF 融合；云端重排仍待配置百炼业务空间地址。
 
-章节记录：[第一章](docs/chapters/01-first-chat.md) · [第二章](docs/chapters/02-system-prompt.md) · [第三章](docs/chapters/03-structured-output.md) · [第四章](docs/chapters/04-chat-memory.md) · [第五章](docs/chapters/05-tool-calling.md) · [第六章](docs/chapters/06-embedding-lab.md) · [第七章](docs/chapters/07-pgvector-knowledge.md) · [第八章](docs/chapters/08-document-etl.md) · [第九章](docs/chapters/09-manual-rag.md) · [第十章](docs/chapters/10-advisor-chain.md) · [第十章补充：知识管理台](docs/chapters/10-knowledge-management.md) · [第十一章](docs/chapters/11-query-transformation.md) · [第十二章](docs/chapters/12-query-expansion.md) · [第十三章](docs/chapters/13-reranking.md)。
+章节记录：[第一章](docs/chapters/01-first-chat.md) · [第二章](docs/chapters/02-system-prompt.md) · [第三章](docs/chapters/03-structured-output.md) · [第四章](docs/chapters/04-chat-memory.md) · [第五章](docs/chapters/05-tool-calling.md) · [第六章](docs/chapters/06-embedding-lab.md) · [第七章](docs/chapters/07-pgvector-knowledge.md) · [第八章](docs/chapters/08-document-etl.md) · [第九章](docs/chapters/09-manual-rag.md) · [第十章](docs/chapters/10-advisor-chain.md) · [第十章补充：知识管理台](docs/chapters/10-knowledge-management.md) · [第十一章](docs/chapters/11-query-transformation.md) · [第十二章](docs/chapters/12-query-expansion.md) · [第十三章](docs/chapters/13-reranking.md) · [第十四章](docs/chapters/14-hybrid-search.md)。
 
 每章对应独立 Git 提交和 `chapter-NN` 标签，具体变化见 [CHANGELOG](CHANGELOG.md)。第 1～3 章历史根据已实现代码于 2026-09-12 补建；后续每章验收完成后提交并推送。
 
@@ -24,6 +24,7 @@
 | [chapter-11](https://github.com/whxpc123/cloud-customer-service/tree/chapter-11) | 历史补全追问、模块化 RAG、查询与检索对照实验 | [与上一章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-10-admin...chapter-11) |
 | [chapter-12](https://github.com/whxpc123/cloud-customer-service/tree/chapter-12) | 按需多查询扩展、逐路检索、按 ID 合并、单路/多路可视化对照 | [与第十一章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-11...chapter-12) |
 | [chapter-13](https://github.com/whxpc123/cloud-customer-service/tree/chapter-13) | qwen3-rerank 接口、同候选 A/B 页面、上下文预算与降级；真实精排待配置 | [与第十二章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-12...chapter-13) |
+| [chapter-14](https://github.com/whxpc123/cloud-customer-service/tree/chapter-14) | 编码精确匹配、PostgreSQL 全文检索、RRF 融合、三路对照与引用来源 | [与第十三章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-13...chapter-14) |
 
 在 GitHub 选择对应标签查看该章完整代码，在 Compare 页面选择相邻标签查看改动。阅读历史版本可以使用独立工作目录，例如 `git worktree add ../chapter-01-view chapter-01`，避免覆盖当前开发目录。
 
@@ -108,7 +109,7 @@ curl --get 'http://localhost:18080/api/chat' \
 java -jar target/cloud-customer-service-0.0.1-SNAPSHOT.jar
 ```
 
-自动测试在需要调用的路径替换 ChatModel / EmbeddingModel，不访问百炼、不需要真实 Key，覆盖聊天回归、结构化转换、非法字段、异常兜底、角色隔离和日志。当前共有 198 项测试：普通运行通过 184 项、跳过 14 项需真实 pgvector 的集成测试；启用专用测试库后 198 项全部通过。覆盖工具执行、会话隔离、向量数学、批次边界、知识过滤、重复导入及异常保护。集成测试步骤见第七章文档。启动应用和运行 JAR 仍需真实 `DASHSCOPE_API_KEY`。
+自动测试在需要调用的路径替换 ChatModel / EmbeddingModel，不访问百炼、不需要真实 Key，覆盖聊天回归、结构化转换、非法字段、异常兜底、角色隔离和日志。当前共有 214 项测试：普通运行通过 195 项、跳过 19 项需真实 pgvector 的集成测试；启用专用测试库后 214 项全部通过。覆盖工具执行、会话隔离、向量数学、批次边界、知识过滤、重复导入及异常保护。集成测试步骤见第七章文档。启动应用和运行 JAR 仍需真实 `DASHSCOPE_API_KEY`。
 
 ## 目录与章节对应
 
@@ -322,3 +323,10 @@ IDEA 同步 Maven 后运行原 `CloudCustomerServiceApplication` 配置，打开
 新正式链每路 Top 6、阈值 0.45，合并后最多 24 条进入重排输入筛选，最终最多 6 块、正文估算 5000 tokens。扩展实验页继续保留第十二章历史参数。
 
 沿用 `DASHSCOPE_API_KEY`，另需 `DASHSCOPE_RERANK_BASE_URL` 指定百炼业务空间根地址。本机目前未配置，因此明确显示 `FALLBACK_NOT_CONFIGURED`，原顺序仍可继续问答。不能把降级结果或离线分数当成云端重排验收。配置方式、边界和测试见[第十三章说明](docs/chapters/13-reranking.md)。
+
+
+## 第十四章：精确编码与混合检索
+
+打开 <http://127.0.0.1:18080/internal/hybrid-search>，比较向量、关键词、编码精确匹配及 RRF 融合。正式知识问答默认使用新召回链，旧章节实验保持原对照语义。导入资料里的 CPN / SKU / POLICY 编码由数据库自动提取和索引，无须重建向量。
+
+精确命中优先，引用展示真实召回来源和不同阶段分数；归档资料退出所有召回。PostgreSQL simple 不提供中文分词，不称作 BM25；订单实时状态仍需业务工具。见 [第十四章实现与验收](docs/chapters/14-hybrid-search.md)。

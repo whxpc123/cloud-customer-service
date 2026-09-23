@@ -28,3 +28,10 @@
 `V3__knowledge_evaluations.sql` 新建 `ai.knowledge_evaluation_runs`，保存租户、题集标题、输入 JSON、每题结果 JSON、运行状态和时间。结果是本次回答/来源快照，之后文档归档或重新导入不会改写它。
 
 单实例后台队列最多一个执行、两个等待，每题结束更新结果；异常/不可用不会计作正确拒答。进程重启把遗留 `QUEUED/RUNNING` 标为 `INTERRUPTED` 并保留已完成题目，用户可复制题集重新运行。不是多实例任务调度器。
+
+
+## V4：编码与全文检索
+
+`V4__hybrid_search.sql` 在写入前重建 metadata.businessCodes（CPN / SKU / POLICY 编码数组），回填现有行；STORED search_vector 生成列自动同步正文和元数据。全文 tsvector 与编码 JSON 分别用 GIN 索引。不改向量维度、不重新调用模型，归档/恢复和 upsert 继续走同一事务。
+
+精确查询使用 JSON 数组包含关系，全文查询采用 simple / websearch_to_tsquery / ts_rank_cd。两者都执行租户、发布状态、知识库、语言限制。simple 不是中文分词器，ts_rank_cd 不等于 BM25；多版本同时发布时不按字符串猜测最新有效规则。首次回填建索引会占用数据库资源，大库需维护窗口。详见第十四章文档。

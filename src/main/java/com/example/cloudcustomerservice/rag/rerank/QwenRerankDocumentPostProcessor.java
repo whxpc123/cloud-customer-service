@@ -40,7 +40,8 @@ public final class QwenRerankDocumentPostProcessor implements DocumentPostProces
         }
         if(eligible.isEmpty()) return finish(trace,"SKIPPED_INPUT_LIMIT",start,null,0,List.of());
         try {
-            int n=Math.min(trace.options().topN(),eligible.size());
+            boolean exactPriority=eligible.stream().anyMatch(d->Boolean.TRUE.equals(d.getMetadata().get("exactMatch")));
+            int n=exactPriority ? eligible.size() : Math.min(trace.options().topN(),eligible.size());
             var response=gateway.rerank(text,eligible.stream().map(Document::getText).toList(),n);
             // Gateway 可替换，处理器也验证契约，避免其他实现绕过索引和数量保护。
             if(response.scores().size()!=n) throw new IllegalStateException("Incomplete ranking");
@@ -51,6 +52,10 @@ public final class QwenRerankDocumentPostProcessor implements DocumentPostProces
                 Document d=eligible.get(score.index()); var metadata=metadata(d,false);
                 metadata.put("rerankScore",score.relevance());metadata.put("rerankRank",result.size()+1);metadata.put("rerankModel","qwen3-rerank");
                 result.add(d.mutate().metadata(metadata).score(score.relevance()).build());
+            }
+            if(exactPriority) {
+                result.sort(Comparator.comparing(d->!Boolean.TRUE.equals(d.getMetadata().get("exactMatch"))));
+                result=new ArrayList<>(result.subList(0,Math.min(trace.options().topN(),result.size())));
             }
             Set<String> chosen=new HashSet<>(result.stream().map(Document::getId).toList());
             eligible.stream().filter(d->!chosen.contains(d.getId())).forEach(d->trace.exclude(d,"RERANK","TOP_N"));

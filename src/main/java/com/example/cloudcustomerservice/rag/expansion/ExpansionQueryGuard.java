@@ -35,6 +35,9 @@ public final class ExpansionQueryGuard {
         if (candidate.isBlank() || candidate.length() > 2000 || candidate.contains("\n")
                 || candidate.contains("```") || candidate.contains("<") || candidate.contains(">")) return false;
         if (!candidate.matches("(?s).*(谁|哪|如何|是否|什么|几|多少|多久|怎么|能否|可否|吗|？|\\?).*")) return false;
+        // 型号前缀和字母同样属于事实，不能只依赖数字保护。
+        if(!new java.util.HashSet<>(com.example.cloudcustomerservice.knowledge.search.BusinessIdentifierExtractor.extract(original))
+                .equals(new java.util.HashSet<>(com.example.cloudcustomerservice.knowledge.search.BusinessIdentifierExtractor.extract(candidate))))return false;
         Set<String> facts = tokens(original), output = tokens(candidate);
         // 不仅禁止新增数字，也保留当前查询中的编号和时间，避免拆分时丢掉限定条件。
         if (!facts.equals(output)) return false;
