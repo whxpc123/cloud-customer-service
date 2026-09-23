@@ -2,9 +2,9 @@
 
 根据《第一章：老板下午要看的 AI 客服》实现的 Java 学习项目。后续章节在这个项目上逐步增加能力，每章的改动与验收方式记录在 `docs/chapters/`。
 
-当前进度：**第十四章——精确编码与混合检索**。正式问答增加编码元数据精确匹配、PostgreSQL 全文检索和 RRF 融合；云端重排仍待配置百炼业务空间地址。
+当前进度：**第十五章——政策与订单事实的只读售后预检查**。先检查订单归属，再检索适用政策版本，返回事实、证据、检查结论；当前仅为本地教学模式，没有真实订单登录或退款执行。
 
-章节记录：[第一章](docs/chapters/01-first-chat.md) · [第二章](docs/chapters/02-system-prompt.md) · [第三章](docs/chapters/03-structured-output.md) · [第四章](docs/chapters/04-chat-memory.md) · [第五章](docs/chapters/05-tool-calling.md) · [第六章](docs/chapters/06-embedding-lab.md) · [第七章](docs/chapters/07-pgvector-knowledge.md) · [第八章](docs/chapters/08-document-etl.md) · [第九章](docs/chapters/09-manual-rag.md) · [第十章](docs/chapters/10-advisor-chain.md) · [第十章补充：知识管理台](docs/chapters/10-knowledge-management.md) · [第十一章](docs/chapters/11-query-transformation.md) · [第十二章](docs/chapters/12-query-expansion.md) · [第十三章](docs/chapters/13-reranking.md) · [第十四章](docs/chapters/14-hybrid-search.md)。
+章节记录：[第一章](docs/chapters/01-first-chat.md) · [第二章](docs/chapters/02-system-prompt.md) · [第三章](docs/chapters/03-structured-output.md) · [第四章](docs/chapters/04-chat-memory.md) · [第五章](docs/chapters/05-tool-calling.md) · [第六章](docs/chapters/06-embedding-lab.md) · [第七章](docs/chapters/07-pgvector-knowledge.md) · [第八章](docs/chapters/08-document-etl.md) · [第九章](docs/chapters/09-manual-rag.md) · [第十章](docs/chapters/10-advisor-chain.md) · [第十章补充：知识管理台](docs/chapters/10-knowledge-management.md) · [第十一章](docs/chapters/11-query-transformation.md) · [第十二章](docs/chapters/12-query-expansion.md) · [第十三章](docs/chapters/13-reranking.md) · [第十四章](docs/chapters/14-hybrid-search.md) · [第十五章](docs/chapters/15-after-sale-precheck.md)。
 
 每章对应独立 Git 提交和 `chapter-NN` 标签，具体变化见 [CHANGELOG](CHANGELOG.md)。第 1～3 章历史根据已实现代码于 2026-09-12 补建；后续每章验收完成后提交并推送。
 
@@ -25,6 +25,7 @@
 | [chapter-12](https://github.com/whxpc123/cloud-customer-service/tree/chapter-12) | 按需多查询扩展、逐路检索、按 ID 合并、单路/多路可视化对照 | [与第十一章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-11...chapter-12) |
 | [chapter-13](https://github.com/whxpc123/cloud-customer-service/tree/chapter-13) | qwen3-rerank 接口、同候选 A/B 页面、上下文预算与降级；真实精排待配置 | [与第十二章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-12...chapter-13) |
 | [chapter-14](https://github.com/whxpc123/cloud-customer-service/tree/chapter-14) | 编码精确匹配、PostgreSQL 全文检索、RRF 融合、三路对照与引用来源 | [与第十三章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-13...chapter-14) |
+| [chapter-15](https://github.com/whxpc123/cloud-customer-service/tree/chapter-15) | 只读售后预检查、适用政策版本、事实证据卡与本地会话归属 | [与第十四章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-14...chapter-15) |
 
 在 GitHub 选择对应标签查看该章完整代码，在 Compare 页面选择相邻标签查看改动。阅读历史版本可以使用独立工作目录，例如 `git worktree add ../chapter-01-view chapter-01`，避免覆盖当前开发目录。
 
@@ -109,7 +110,7 @@ curl --get 'http://localhost:18080/api/chat' \
 java -jar target/cloud-customer-service-0.0.1-SNAPSHOT.jar
 ```
 
-自动测试在需要调用的路径替换 ChatModel / EmbeddingModel，不访问百炼、不需要真实 Key，覆盖聊天回归、结构化转换、非法字段、异常兜底、角色隔离和日志。当前共有 214 项测试：普通运行通过 195 项、跳过 19 项需真实 pgvector 的集成测试；启用专用测试库后 214 项全部通过。覆盖工具执行、会话隔离、向量数学、批次边界、知识过滤、重复导入及异常保护。集成测试步骤见第七章文档。启动应用和运行 JAR 仍需真实 `DASHSCOPE_API_KEY`。
+自动测试在需要调用的路径替换 ChatModel / EmbeddingModel，不访问百炼、不需要真实 Key，覆盖聊天回归、结构化转换、非法字段、异常兜底、角色隔离和日志。当前共有 234 项测试：普通运行通过 213 项、跳过 21 项需真实 pgvector 的集成测试；启用专用测试库后 234 项全部通过。覆盖工具执行、会话隔离、向量数学、批次边界、知识过滤、重复导入及异常保护。集成测试步骤见第七章文档。启动应用和运行 JAR 仍需真实 `DASHSCOPE_API_KEY`。
 
 ## 目录与章节对应
 
@@ -330,3 +331,10 @@ IDEA 同步 Maven 后运行原 `CloudCustomerServiceApplication` 配置，打开
 打开 <http://127.0.0.1:18080/internal/hybrid-search>，比较向量、关键词、编码精确匹配及 RRF 融合。正式知识问答默认使用新召回链，旧章节实验保持原对照语义。导入资料里的 CPN / SKU / POLICY 编码由数据库自动提取和索引，无须重建向量。
 
 精确命中优先，引用展示真实召回来源和不同阶段分数；归档资料退出所有召回。PostgreSQL simple 不提供中文分词，不称作 BM25；订单实时状态仍需业务工具。见 [第十四章实现与验收](docs/chapters/14-hybrid-search.md)。
+
+
+## 第十五章：政策与订单事实的只读预检查
+
+打开 <http://127.0.0.1:18080/internal/after-sale>，固定本地教学账户 1001，可尝试 A10001 质量问题/个人原因退货、A10002 不可访问、A10005 缺少适用版本。页面分别展示用户诉求、订单事实、政策来源和程序结论。
+
+本入口只在回环地址及 local,knowledge 模式开放，用服务器 Session 注册表验证会话归属，不接受演示身份头切换。没有接入真实登录/订单系统，不能作为生产权限体系。没有创建申请、批准或执行退款；模型解释与确定性检查状态分开。详见 [第十五章实现与验收](docs/chapters/15-after-sale-precheck.md)。

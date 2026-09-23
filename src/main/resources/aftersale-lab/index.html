@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>云杉客服 · 售后预检查</title><link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/embedding-lab.css"><link rel="stylesheet" href="/query-lab.css"><link rel="stylesheet" href="/rerank-lab.css"><link rel="stylesheet" href="/aftersale-lab.css"><script src="/aftersale-lab.js" defer></script></head>
+<body><header><a class="brand" href="/">杉 <span>云杉客服</span></a><nav aria-label="章节导航"><a href="/internal/hybrid-search">混合检索 ↗</a><a href="/internal/knowledge-admin">知识库管理 ↗</a></nav></header>
+<main><p class="eyebrow">CHAPTER 15 / READ-ONLY PRECHECK</p><h1>政策是依据，<br><span>订单事实也要核对。</span></h1><p class="intro">先检查订单归属，再查适用政策，最后核对程序能确定的条件。把已确认的事实与尚缺的条件放在一起。</p>
+<aside class="rank-notice"><strong>本地教学模式 · 只读 · 不执行退款</strong><p>固定演示账户 1001，未连接真实登录或订单系统。订单签收日期为 2026-08-20，普通商品的样例无理由截止时间为 2026-08-27 23:59:59 +08:00；检查时间取当前服务器时钟。政策、日期与结论仅用于课程演示。</p></aside>
+<div class="rank-comparison"><section class="query-panel"><div class="panel-head"><h2>围绕一笔订单提问</h2><button type="button" id="new-session">新会话</button></div><p class="fine" id="session">建立本地会话…</p>
+<label for="example">教学场景</label><select id="example"><option value="quality">A10001 · 用户反馈质量问题，未核验</option><option value="mind">A10001 · 个人原因，期限已过</option><option value="foreign">A10002 · 无权访问</option><option value="missing">A10005 · 指定版本未加载</option><option value="confirmed">A10004 · 质量已核验，仍需审核</option></select>
+<form id="chat-form"><label for="question">客户问题</label><textarea id="question" required maxlength="4000" rows="4">A10001 的商品有质量问题，我能退吗？</textarea><div class="actions"><button id="send" class="primary">查询并预检查</button><button type="button" id="clear">清空本会话</button></div></form><p class="fine">每次询问重新查订单；历史只用来理解指代。若历史包含多笔订单，请明确这次的编号。政策使用 refund-policy / 3.2；未导入或归档后会返回依据不足，不自动植入资料。</p><p id="feedback" role="status"></p><div id="messages" aria-live="polite"></div></section>
+<section class="query-panel"><h2>本轮检查记录</h2><p class="fine">以下状态来自 Java 实际执行结果；模型解释不是审批或执行凭证。</p><div id="assessments" aria-live="polite"><p>还没有本轮检查记录。</p></div><details id="raw-box" hidden><summary>查看本轮接口 JSON</summary><pre id="raw"></pre></details></section></div>
+</main></body></html>

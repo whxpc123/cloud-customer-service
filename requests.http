@@ -810,3 +810,33 @@ POST http://127.0.0.1:18080/internal/hybrid-search/compare
 Content-Type: application/json
 
 {"question":"A10001 发货了吗？","topK":10,"rerankEnabled":false}
+
+
+### 第十五章：建立本地教学 Session（保留响应 Cookie，不传 X-Demo-User-Id）
+GET http://127.0.0.1:18080/internal/after-sale/session
+
+> {% client.global.set("afterSaleCsrf", response.body.csrfToken); %}
+
+### 第十五章：在当前 Session 注册会话
+POST http://127.0.0.1:18080/internal/after-sale/conversations
+X-AfterSale-CSRF: {{afterSaleCsrf}}
+
+> {% client.global.set("afterSaleConversationId", response.body.conversationId); %}
+
+### 第十五章：查询订单事实和适用政策，只读预检查
+POST http://127.0.0.1:18080/internal/after-sale/conversations/{{afterSaleConversationId}}/messages
+X-AfterSale-CSRF: {{afterSaleCsrf}}
+Content-Type: application/json
+
+{"message":"A10001 的商品有质量问题，我能退吗？"}
+
+### 第十五章：缺少适用政策版本，不可用相似版本替代
+POST http://127.0.0.1:18080/internal/after-sale/conversations/{{afterSaleConversationId}}/messages
+X-AfterSale-CSRF: {{afterSaleCsrf}}
+Content-Type: application/json
+
+{"message":"A10005 的商品有质量问题，我能退吗？"}
+
+### 第十五章：清空当前已登记会话，不能清除别的浏览器 Session 的会话
+DELETE http://127.0.0.1:18080/internal/after-sale/conversations/{{afterSaleConversationId}}/memory
+X-AfterSale-CSRF: {{afterSaleCsrf}}
