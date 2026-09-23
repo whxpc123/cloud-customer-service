@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>云杉客服 · 查询转换实验室</title>
+  <link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/embedding-lab.css">
+  <link rel="stylesheet" href="/query-lab.css"><script src="/query-lab.js" defer></script>
+</head>
+<body>
+<header><a class="brand" href="/">杉 <span>云杉客服</span></a><nav aria-label="章节导航"><a href="/internal/advisor-rag">多轮知识问答 ↗</a><a href="/internal/knowledge-admin">知识库管理 ↗</a></nav></header>
+<main>
+  <p class="eyebrow">CHAPTER 11 / QUERY TRANSFORMATION</p>
+  <h1>“那运费呢？”<br><span>先把问题说完整。</span></h1>
+  <p class="intro">给同一句追问换一段上文，观察检索问题怎样变化。转换只补全问题，运费规则仍要从资料中查。</p>
+  <div class="query-layout">
+    <section class="query-panel" aria-labelledby="session-title">
+      <div class="panel-head"><h2 id="session-title">会话上文</h2><button id="new-session" type="button">新建会话</button></div>
+      <label for="demo-user">演示身份</label><select id="demo-user"><option value="1001">用户 1001</option><option value="2002">用户 2002</option><option value="guest">访客</option></select>
+      <p id="session-id" class="fine">正在创建会话…</p>
+      <div class="sample-row"><button data-sample="我买错了衣服，想申请无理由退货。">个人原因退货</button><button data-sample="收到的商品坏了，我想退货。">质量问题退货</button><button data-sample="软件还没有激活。">未激活软件</button><button data-sample="我的订单号是 A10001。">订单号</button></div>
+      <form id="history-form"><label for="history-question">先发一轮完整问题</label><textarea id="history-question" rows="3" maxlength="2000" required placeholder="我买错了衣服，想申请无理由退货。"></textarea><button class="primary" type="submit">发送并建立真实会话历史</button></form>
+      <p class="fine">这一操作会执行知识问答；实验转换本身不会写入历史。订单样例仅观察编号保留，不查询订单。</p>
+      <div id="history-log" role="log" aria-live="polite"><p class="fine">也可以保持空历史，直接测试含糊追问。</p></div>
+    </section>
+    <section class="query-panel" aria-labelledby="query-title">
+      <h2 id="query-title">检索前，先转换</h2>
+      <form id="transform-form"><label for="question">当前追问</label><textarea id="question" rows="3" maxlength="2000" required>那运费呢？</textarea>
+        <label class="check"><input id="rewrite" type="checkbox"> 压缩后再优化表达（Rewrite，额外一次转换）</label>
+        <label class="check"><input id="compare" type="checkbox"> 比较原问题与转换问题的 Top 5（额外两次向量检索）</label>
+        <button class="primary" type="submit">观察查询转换</button>
+      </form>
+      <p id="feedback" role="status"></p>
+      <div id="result" aria-live="polite" aria-busy="false">
+        <div class="query-pair"><article><p class="eyebrow">原始追问</p><p id="original-query">等待转换</p></article><article class="standalone"><p class="eyebrow">独立检索问题</p><p id="transformed-query">先建立上文，再观察这一句如何补全。</p></article></div>
+        <p id="trace-summary" class="fine"></p><div id="stages"></div>
+        <details id="raw-details" hidden><summary>查看本次接口 JSON</summary><pre id="raw-result"></pre></details>
+      </div>
+    </section>
+  </div>
+  <section class="query-panel comparisons" id="comparison" hidden><h2>同一个知识库，两条查询</h2><p class="fine">两侧均为 Top 5、相似度阈值 0.60、同一租户的已发布中文售后资料。分数不是事实可信度，命中也不证明改写正确。</p><div class="query-pair"><div id="original-hits"></div><div id="transformed-hits"></div></div></section>
+  <p class="fine">历史窗口最多 20 条消息，刷新后新建会话，重启应用后记忆丢失。默认知识问答只启用 Compression；此处 Rewrite 开关不会更改正式流程。</p>
+</main>
+</body>
+</html>

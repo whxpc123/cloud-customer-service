@@ -3,7 +3,7 @@ package com.example.cloudcustomerservice.config;
 import com.example.cloudcustomerservice.ai.advisor.*;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
-import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
+import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.beans.factory.annotation.*;
@@ -20,7 +20,7 @@ public class KnowledgeChatClientConfiguration {
     @Bean("knowledgeConversationChatClient")
     public ChatClient knowledgeConversationChatClient(ChatModel model, RequestAuditAdvisor audit,
             @Qualifier("customerMemoryAdvisor") MessageChatMemoryAdvisor memory,
-            @Qualifier("customerKnowledgeAdvisor") QuestionAnswerAdvisor rag, EvidenceRequiredAdvisor gate,
+            @Qualifier("customerModularRagAdvisor") RetrievalAugmentationAdvisor rag, EvidenceRequiredAdvisor gate,
             @Value("${app.ai.log-payload:false}") boolean logPayload) {
         return ChatClient.builder(new PayloadLoggingChatModel(model, logPayload, "knowledgeConversationChatClient"))
                 .defaultOptions(ChatOptions.builder().temperature(0.1).build())

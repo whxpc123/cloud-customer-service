@@ -8,7 +8,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.ai.chat.client.*;
 import org.springframework.ai.chat.client.advisor.api.*;
-import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
+import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
+import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.model.*;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -28,7 +29,7 @@ class RequestAuditAdvisorTest {
         return new HashMap<>(Map.of(CustomerAdvisorContextKeys.REQUEST_ID, "r-1",
                 CustomerAdvisorContextKeys.TENANT_ID, "tenant-yunshan",
                 ChatMemory.CONVERSATION_ID, "knowledge/tenant-yunshan/guest/c-1",
-                QuestionAnswerAdvisor.FILTER_EXPRESSION, filters.publishedAfterSales("tenant-yunshan")));
+                VectorStoreDocumentRetriever.FILTER_EXPRESSION, filters.publishedAfterSales("tenant-yunshan")));
     }
 
     /** 合法上下文向后传一次，原响应对象与 Context 保持不变，日志只含审计字段。 */
@@ -47,7 +48,7 @@ class RequestAuditAdvisorTest {
     /** requestId、tenantId、会话键、动态过滤器缺任一项，都应在记忆/检索/模型之前被拒绝。 */
     @Test void missingRequiredContextNeverContinues() {
         for (String key : List.of(CustomerAdvisorContextKeys.REQUEST_ID, CustomerAdvisorContextKeys.TENANT_ID,
-                ChatMemory.CONVERSATION_ID, QuestionAnswerAdvisor.FILTER_EXPRESSION)) {
+                ChatMemory.CONVERSATION_ID, VectorStoreDocumentRetriever.FILTER_EXPRESSION)) {
             var values = context(); values.remove(key); var chain = mock(CallAdvisorChain.class);
             assertThatIllegalArgumentException().isThrownBy(() -> advisor.adviseCall(new ChatClientRequest(new Prompt("q"), values), chain));
             verifyNoInteractions(chain);
@@ -58,7 +59,7 @@ class RequestAuditAdvisorTest {
     @Test void rejectsInvalidIdentifiersAndMismatchedFiltersWithoutEcho(CapturedOutput output) {
         for (var entry : Map.of(CustomerAdvisorContextKeys.REQUEST_ID, "BAD_MARKER\nINJECT",
                 CustomerAdvisorContextKeys.TENANT_ID, "tenant' OR true", ChatMemory.CONVERSATION_ID, "knowledge/other/guest/c-1",
-                QuestionAnswerAdvisor.FILTER_EXPRESSION, "status == 'PUBLISHED'").entrySet()) {
+                VectorStoreDocumentRetriever.FILTER_EXPRESSION, "status == 'PUBLISHED'").entrySet()) {
             var values = context(); values.put(entry.getKey(), entry.getValue()); var chain = mock(CallAdvisorChain.class);
             assertThatIllegalArgumentException().isThrownBy(() -> advisor.adviseCall(new ChatClientRequest(new Prompt("q"), values), chain));
             verifyNoInteractions(chain);
@@ -74,7 +75,7 @@ class RequestAuditAdvisorTest {
         assertThatThrownBy(() -> advisor.adviseCall(request, chain)).isSameAs(failure);
         doThrow(new NoKnowledgeEvidenceException()).when(chain).nextCall(request);
         assertThatThrownBy(() -> advisor.adviseCall(request, chain)).isInstanceOf(NoKnowledgeEvidenceException.class);
-        assertThat(output.getAll()).contains("status=FAILED", "errorType=IllegalStateException", "status=NO_EVIDENCE", "modelCalled=false")
+        assertThat(output.getAll()).contains("status=FAILED", "errorType=IllegalStateException", "status=NO_EVIDENCE", "generationCalled=false")
                 .doesNotContain("PRIVATE_PROVIDER_ERROR");
     }
 

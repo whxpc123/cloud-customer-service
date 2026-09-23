@@ -629,7 +629,7 @@ Content-Type: application/json
 {"question":" "}
 
 
-### 第十章补充 1：管理台（需要 local,knowledge；临时验收版本端口 18082）
+### 第十章补充 1：管理台（需要 local,knowledge；当前统一端口 18080）
 GET http://localhost:18080/internal/knowledge-admin
 
 ### 第十章补充 2：已发布文档分页，先从 items 中选取要查看的 sourceId
@@ -676,3 +676,44 @@ GET http://localhost:18080/internal/knowledge-admin/evaluations/{{knowledgeEvalu
 
 ### 第十章补充 10：最近 50 次评测摘要
 GET http://localhost:18080/internal/knowledge-admin/evaluations
+
+
+### 第十一章 1：查询转换实验室
+GET http://localhost:18080/internal/query-transformation
+
+### 第十一章 2：创建知识会话，后续请求身份保持一致
+POST http://localhost:18080/internal/advisor-rag/conversations
+
+> {% client.global.set("queryConversationId", response.body.conversationId); %}
+
+### 第十一章 3：建立真实上文（会调用知识问答模型）
+POST http://localhost:18080/internal/advisor-rag/conversations/{{queryConversationId}}/messages
+Content-Type: application/json
+X-Demo-User-Id: 1001
+
+{"question":"我买错了衣服，想申请无理由退货，有什么条件？"}
+
+### 第十一章 4：只读压缩实验，compare 会新增两次向量检索，不写历史
+POST http://localhost:18080/internal/query-transformation/{{queryConversationId}}/compress
+Content-Type: application/json
+X-Demo-User-Id: 1001
+
+{"question":"那运费呢？","rewrite":false,"compare":true}
+
+### 第十一章 5：可选 Compression → Rewrite，不改变正式知识问答开关
+POST http://localhost:18080/internal/query-transformation/{{queryConversationId}}/compress
+Content-Type: application/json
+X-Demo-User-Id: 1001
+
+{"question":"那运费呢？","rewrite":true,"compare":false}
+
+### 第十一章 6：原问答接口现在返回原话、实际查询与转换阶段
+POST http://localhost:18080/internal/advisor-rag/conversations/{{queryConversationId}}/messages
+Content-Type: application/json
+X-Demo-User-Id: 1001
+
+{"question":"那运费呢？"}
+
+### 第十一章 7：先清空，再发送含糊追问应返回 NEEDS_CLARIFICATION
+DELETE http://localhost:18080/internal/advisor-rag/conversations/{{queryConversationId}}/memory
+X-Demo-User-Id: 1001

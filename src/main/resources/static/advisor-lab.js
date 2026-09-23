@@ -4,7 +4,7 @@
  */
 'use strict';
 const $ = id => document.getElementById(id);
-const labels = { ANSWERED: '模型已返回 · 请核对依据', NO_EVIDENCE: '无证据 · 未调用聊天模型', TEMPORARILY_UNAVAILABLE: '服务暂不可用' };
+const labels = { ANSWERED: '模型已返回 · 请核对依据', NO_EVIDENCE: '无证据 · 未调用回答模型', NEEDS_CLARIFICATION: '需要补充场景', TEMPORARILY_UNAVAILABLE: '服务暂不可用' };
 let busy = false, conversationId = null, sessionUser = '1001';
 
 /** 创建纯文本节点，避免资料或回答中的标签被解释为代码。 */
@@ -59,7 +59,8 @@ async function newSession() {
 /** 显示实际检索问题及 Context 返回的来源；查看历史只是切换展示，不重新调用模型。 */
 function showEvidence(data) {
   clearEvidence(); $('result-status').textContent = labels[data.status];
-  $('retrieval-query').textContent = '本次实际检索：' + data.retrievalQuery;
+  $('retrieval-query').textContent = '本次实际检索：' + (data.retrievalQuery ?? '未执行检索');
+  if (data.transformation) $('retrieval-query').textContent += '\n原始问题：' + data.transformation.originalQuery + '\n转换：' + data.transformation.stages.map(s => `${s.name} ${s.status} (${s.durationMs} ms)`).join(' → ');
   $('request-id').textContent = '审计 requestId：' + data.requestId;
   for (const ref of data.references) {
     const card = node('details', undefined, 'evidence-card');
@@ -85,7 +86,7 @@ async function send(event) {
   $('result-status').textContent = '处理中'; $('feedback').textContent = '正在加载历史、检索资料并检查证据…';
   try {
     const data = await request(`conversations/${encodeURIComponent(conversationId)}/messages`, { method: 'POST', headers: headers(), body: JSON.stringify({ question }) });
-    if (!data || data.conversationId !== conversationId || data.retrievalQuery !== question || !Object.hasOwn(labels, data.status)
+    if (!data || data.conversationId !== conversationId || data.transformation?.originalQuery !== question || !Object.hasOwn(labels, data.status)
       || typeof data.requestId !== 'string' || typeof data.answer !== 'string' || !Array.isArray(data.references)
       || data.references.some(r => !r || typeof r.content !== 'string' || !Number.isFinite(r.score))) throw new Error('本次响应格式异常，请检查服务。');
     appendTurn('assistant', data.answer, data); showEvidence(data); $('feedback').textContent = labels[data.status];

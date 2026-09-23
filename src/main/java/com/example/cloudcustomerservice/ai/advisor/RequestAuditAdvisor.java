@@ -10,7 +10,8 @@ import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
-import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
+import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
+import com.example.cloudcustomerservice.rag.query.NeedsQueryClarificationException;
 import org.springframework.ai.chat.memory.ChatMemory;
 
 /**
@@ -43,7 +44,7 @@ public final class RequestAuditAdvisor implements CallAdvisor {
             if (!memoryId.matches("[a-zA-Z0-9_/-]{1,240}") || !memoryId.startsWith("knowledge/" + tenantId + "/")) {
                 throw new IllegalArgumentException("Invalid knowledge conversationId");
             }
-            if (!expectedFilter.equals(request.context().get(QuestionAnswerAdvisor.FILTER_EXPRESSION))) {
+            if (!expectedFilter.equals(request.context().get(VectorStoreDocumentRetriever.FILTER_EXPRESSION))) {
                 throw new IllegalArgumentException("Missing or mismatched knowledge filter");
             }
         } catch (IllegalArgumentException ex) {
@@ -61,8 +62,12 @@ public final class RequestAuditAdvisor implements CallAdvisor {
             log.info("[AI AUDIT] requestId={} tenantId={} durationMs={} hasResponse={} status={}",
                     requestId, tenantId, elapsed(started), hasResponse, hasResponse ? "COMPLETED" : "EMPTY_RESPONSE");
             return response;
+        } catch (NeedsQueryClarificationException ex) {
+            log.info("[AI AUDIT] requestId={} tenantId={} durationMs={} status=NEEDS_CLARIFICATION generationCalled=false",
+                    requestId, tenantId, elapsed(started));
+            throw ex;
         } catch (NoKnowledgeEvidenceException ex) {
-            log.info("[AI AUDIT] requestId={} tenantId={} durationMs={} hasResponse=false status=NO_EVIDENCE modelCalled=false",
+            log.info("[AI AUDIT] requestId={} tenantId={} durationMs={} hasResponse=false status=NO_EVIDENCE generationCalled=false",
                     requestId, tenantId, elapsed(started));
             throw ex;
         } catch (RuntimeException ex) {

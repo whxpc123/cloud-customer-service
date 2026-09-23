@@ -8,23 +8,27 @@ import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
-import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
+import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
+import com.example.cloudcustomerservice.rag.query.*;
 import org.springframework.ai.document.Document;
 
 /**
- * 必须排在 QuestionAnswerAdvisor 之后，检查它放入 Context 的真实检索结果。
+ * 必须排在 RetrievalAugmentationAdvisor 之后，检查它放入 Context 的真实检索结果。
  * 不重复访问 VectorStore；无正文阻断生成，跨范围结果视为配置/存储异常并阻断。
  */
 public final class EvidenceRequiredAdvisor implements CallAdvisor {
     private static final Logger log = LoggerFactory.getLogger(EvidenceRequiredAdvisor.class);
 
     /**
-     * 证据正文此时已被 QAA 组装进 Prompt，但只有通过本方法才会到达模型及模型正文日志。
+     * 证据正文此时已被 QueryAugmenter 组装进 Prompt，但只有通过本方法才会到达模型及模型正文日志。
      * 范围复核延续第七章的防御：不能仅因为存储声称应用了过滤器就信任返回记录。
      */
     @Override
     public ChatClientResponse adviseCall(ChatClientRequest request, CallAdvisorChain chain) {
-        Object value = request.context().get(QuestionAnswerAdvisor.RETRIEVED_DOCUMENTS);
+        // 无法可靠补全指代时先追问，不把“未搜索”误报为“没有企业资料”。
+        if (request.context().get(QueryTransformationTrace.KEY) instanceof QueryTransformationTrace trace
+                && trace.clarificationRequired()) throw new NeedsQueryClarificationException();
+        Object value = request.context().get(RetrievalAugmentationAdvisor.DOCUMENT_CONTEXT);
         if (value == null || value instanceof List<?> list && list.isEmpty()) throw new NoKnowledgeEvidenceException();
         if (!(value instanceof List<?> values)) throw new IllegalStateException("Invalid evidence context");
         Object tenantId = request.context().get(CustomerAdvisorContextKeys.TENANT_ID);

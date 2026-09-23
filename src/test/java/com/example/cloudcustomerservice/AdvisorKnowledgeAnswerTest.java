@@ -12,7 +12,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.springframework.ai.chat.client.*;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
-import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
+import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
+import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.*;
 import org.springframework.ai.chat.model.*;
@@ -29,26 +30,29 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * 第十章完整同步链离线测试：真实 Audit、Memory、QAA、Gate、ChatClient，只有 VectorStore 与 ChatModel 是替身。
+ * 第十章完整同步链离线测试：真实 Audit、Memory、Modular RAG、Gate、ChatClient，只有 VectorStore 与 ChatModel 是替身。
  * 从同一次终结结果检查来源、调用次数、原始记忆和 HTTP 契约，不消耗真实百炼额度。
  */
 @ExtendWith(OutputCaptureExtension.class)
 class AdvisorKnowledgeAnswerTest {
     final String tenant="tenant-yunshan";
     final ChatModel model=mock(ChatModel.class);
+    final ChatModel transformerModel=mock(ChatModel.class);
+    final com.example.cloudcustomerservice.rag.config.CustomerModularRagConfiguration modular=new com.example.cloudcustomerservice.rag.config.CustomerModularRagConfiguration();
     final VectorStore store=mock(VectorStore.class);
     final ChatMemory memory=new ChatMemoryConfig().customerChatMemory();
     final KnowledgeFilterFactory filters=new KnowledgeFilterFactory();
     final CustomerAdvisorConfiguration advisors=new CustomerAdvisorConfiguration();
     final ChatClient client=new KnowledgeChatClientConfiguration().knowledgeConversationChatClient(model,advisors.requestAuditAdvisor(filters),
-            advisors.customerMemoryAdvisor(memory),advisors.customerKnowledgeAdvisor(store),advisors.evidenceRequiredAdvisor(),false);
+            advisors.customerMemoryAdvisor(memory),modular.customerModularRagAdvisor(modular.compression(modular.queryTransformerChatClientBuilder(transformerModel,false)), modular.customerDocumentRetriever(store),modular.customerQueryAugmenter()),advisors.evidenceRequiredAdvisor(),false);
     final AdvisorKnowledgeAnswerService service=new AdvisorKnowledgeAnswerService(client,filters,memory);
     final MockMvc mvc=MockMvcBuilders.standaloneSetup(new LocalAdvisorKnowledgeController(service)).build();
     final ObjectMapper mapper=new ObjectMapper();
 
     /** 模型配置探测不算业务调用；默认文档属于当前租户，默认模型返回简短中文。 */
     @BeforeEach void defaults() {
-        clearInvocations(model);when(store.similaritySearch(any(SearchRequest.class))).thenReturn(List.of(doc("符合条件可申请退货。")));
+        clearInvocations(model,transformerModel);
+        when(transformerModel.call(any(Prompt.class))).thenReturn(reply("消费者因买错衣服申请退货时，退货运费由谁承担？"));when(store.similaritySearch(any(SearchRequest.class))).thenReturn(List.of(doc("符合条件可申请退货。")));
         when(model.call(any(Prompt.class))).thenReturn(reply("如果情况经核实，按本次资料处理。"));
     }
     /** 本例的来源始终使用真实可校验 Document 字段。 */
@@ -77,8 +81,8 @@ class AdvisorKnowledgeAnswerTest {
         assertThat(output.getAll()).contains("requestId="+result.requestId(),"hasResponse=true").doesNotContain("完整问题","正文含");
     }
 
-    /** 第二轮模型能看到原始历史，但 QAA 的搜索词仍是当前“那运费呢”，没有偷偷加入改写模型。 */
-    @Test void memoryPrecedesRagWithoutRewritingQueryOrStoringEvidence() {
+    /** 第二轮先补全检索问题；最终模型和记忆仍保留用户原文，不把证据或转换结果写回历史。 */
+    @Test void memoryPrecedesCompressionWithoutStoringTransformedQueryOrEvidence() {
         String id=id();service.answer(tenant,id,1001L,"我买错衣服，想退货。");
         when(store.similaritySearch(any(SearchRequest.class))).thenReturn(List.of(doc("个人原因退货运费由消费者承担。")));
         service.answer(tenant,id,1001L,"那运费呢？");
@@ -86,7 +90,7 @@ class AdvisorKnowledgeAnswerTest {
         assertThat(prompts.getAllValues().get(1).getInstructions()).extracting(Message::getText).contains("我买错衣服，想退货。");
         assertThat(prompts.getAllValues().get(1).getContents()).contains("那运费呢？","个人原因退货运费由消费者承担。");
         var searches=ArgumentCaptor.forClass(SearchRequest.class);verify(store,times(2)).similaritySearch(searches.capture());
-        assertThat(searches.getAllValues()).extracting(SearchRequest::getQuery).containsExactly("我买错衣服，想退货。","那运费呢？");
+        assertThat(searches.getAllValues()).extracting(SearchRequest::getQuery).containsExactly("我买错衣服，想退货。","消费者因买错衣服申请退货时，退货运费由谁承担？");
         assertThat(memory.get(AdvisorKnowledgeAnswerService.memoryId(tenant,id,1001L))).extracting(Message::getText)
                 .containsExactly("我买错衣服，想退货。","如果情况经核实，按本次资料处理。","那运费呢？","如果情况经核实，按本次资料处理。");
     }
@@ -164,10 +168,10 @@ class AdvisorKnowledgeAnswerTest {
     @Test void explicitOrdersAndWrongOrderCounterexample() {
         assertThat(CustomerAdvisorOrders.AUDIT).isLessThan(CustomerAdvisorOrders.MEMORY);
         assertThat(advisors.customerMemoryAdvisor(memory).getOrder()).isEqualTo(CustomerAdvisorOrders.MEMORY);
-        assertThat(advisors.customerKnowledgeAdvisor(store).getOrder()).isEqualTo(CustomerAdvisorOrders.RAG);
+        assertThat(modular.customerModularRagAdvisor(modular.compression(modular.queryTransformerChatClientBuilder(transformerModel,false)), modular.customerDocumentRetriever(store),modular.customerQueryAugmenter()).getOrder()).isEqualTo(CustomerAdvisorOrders.RAG);
         assertThat(CustomerAdvisorOrders.MEMORY).isLessThan(CustomerAdvisorOrders.RAG);
         assertThat(CustomerAdvisorOrders.RAG).isLessThan(new EvidenceRequiredAdvisor().getOrder());
-        var wrongRag=QuestionAnswerAdvisor.builder(store).order(CustomerAdvisorOrders.EVIDENCE_GATE+1).build();
+        var wrongRag=RetrievalAugmentationAdvisor.builder().documentRetriever(modular.customerDocumentRetriever(store)).taskExecutor(new org.springframework.core.task.SyncTaskExecutor()).order(CustomerAdvisorOrders.EVIDENCE_GATE+1).build();
         var wrongClient=ChatClient.builder(model).defaultAdvisors(wrongRag,new EvidenceRequiredAdvisor()).build();
         var wrongService=new AdvisorKnowledgeAnswerService(wrongClient,filters,memory);clearInvocations(model);
         assertThat(wrongService.answer(tenant,id(),"q").status()).isEqualTo(KnowledgeAnswerStatus.NO_EVIDENCE);verifyNoInteractions(store);verify(model,never()).call(any(Prompt.class));
@@ -176,7 +180,7 @@ class AdvisorKnowledgeAnswerTest {
     /** 直接漏传会话 ID 的 ChatClient 请求必须在 Audit 阻断，验证不会落入框架默认共享窗口。 */
     @Test void missingConversationCannotUseFrameworkDefaultMemory() {
         assertThatThrownBy(()->client.prompt().user("q").advisors(a->a.param(CustomerAdvisorContextKeys.REQUEST_ID,"r-1")
-                .param(CustomerAdvisorContextKeys.TENANT_ID,tenant).param(QuestionAnswerAdvisor.FILTER_EXPRESSION,filters.publishedAfterSales(tenant)))
+                .param(CustomerAdvisorContextKeys.TENANT_ID,tenant).param(VectorStoreDocumentRetriever.FILTER_EXPRESSION,filters.publishedAfterSales(tenant)))
                 .call().chatClientResponse()).isInstanceOf(IllegalArgumentException.class);
         verifyNoInteractions(store,model);assertThat(memory.get(ChatMemory.DEFAULT_CONVERSATION_ID)).isEmpty();
     }

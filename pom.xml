@@ -82,6 +82,11 @@
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-advisors-vector-store</artifactId>
         </dependency>
+        <!-- 第十一章显式声明模块化 RAG，避免依赖传递关系隐藏教学组件。 -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-rag</artifactId>
+        </dependency>
         <!-- 第七章起使用 pgvector 检索，JDBC 与 PostgreSQL 驱动提供持久化和事务能力。 -->
         <dependency>
             <groupId>org.springframework.ai</groupId>

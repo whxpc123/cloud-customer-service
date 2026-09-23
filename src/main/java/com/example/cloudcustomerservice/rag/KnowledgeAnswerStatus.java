@@ -9,6 +9,8 @@ public enum KnowledgeAnswerStatus {
      * 模型返回非空答复，包括拒答或冲突提示；未验证真实性。
      */
     ANSWERED,
+    /** 问题中的指代缺少依据，未进行检索和最终回答生成。 */
+    NEEDS_CLARIFICATION,
     /**
      * 无可用证据，Java 跳过聊天生成。
      */

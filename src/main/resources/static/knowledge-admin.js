@@ -21,6 +21,7 @@ const statuses = {
   COMPLETED_WITH_ERRORS: "完成 · 有失败题",
   INTERRUPTED: "已中断",
   ANSWERED: "模型已回答 · 请核对来源",
+  NEEDS_CLARIFICATION: "需要补充场景",
   NO_EVIDENCE: "无证据 · 已拦截",
   TEMPORARILY_UNAVAILABLE: "服务暂不可用",
 };
@@ -753,7 +754,7 @@ function chatHeaders(user) {
 /** 同一时间只发送一个问题，锁定身份、切换和清空，避免对同会话并行调用。 */
 async function chatPage(token) {
   app.innerHTML =
-    '<div id="chat-heading"></div><div class="chat-layout"><aside class="chat-sessions"><button id="new-chat" class="primary">＋ 新建对话</button><div id="chat-list"></div><p class="muted">记录仅保留在当前标签页。应用重启会清空模型记忆，页面记录不会自动补送。</p></aside><section class="chat-main"><div class="chat-head"><span id="chat-title">知识问答</span><label>演示身份 <select id="chat-user"><option value="1001">用户 1001</option><option value="2002">用户 2002</option><option value="guest">访客</option></select></label><button id="chat-clear">清空模型记忆</button></div><div id="chat-history" class="chat-history" role="log"></div><form id="chat-form" class="chat-compose"><textarea id="chat-question" rows="3" maxlength="2000" required placeholder="输入问题，Enter 发送，Shift + Enter 换行"></textarea><div class="actions"><small>按当前问题搜索；来源可核对，回答未逐句验证。</small><button id="chat-send" class="primary">发送问题</button></div></form></section></div>';
+    '<div id="chat-heading"></div><div class="chat-layout"><aside class="chat-sessions"><button id="new-chat" class="primary">＋ 新建对话</button><div id="chat-list"></div><p class="muted">记录仅保留在当前标签页。应用重启会清空模型记忆，页面记录不会自动补送。</p></aside><section class="chat-main"><div class="chat-head"><span id="chat-title">知识问答</span><label>演示身份 <select id="chat-user"><option value="1001">用户 1001</option><option value="2002">用户 2002</option><option value="guest">访客</option></select></label><button id="chat-clear">清空模型记忆</button></div><div id="chat-history" class="chat-history" role="log"></div><form id="chat-form" class="chat-compose"><textarea id="chat-question" rows="3" maxlength="2000" required placeholder="输入问题，Enter 发送，Shift + Enter 换行"></textarea><div class="actions"><small>结合历史补全追问后检索；来源可核对，回答未逐句验证。</small><button id="chat-send" class="primary">发送问题</button></div></form></section></div>';
   $("chat-heading").append(
     heading("知识问答", "带着上文继续提问，展开每轮实际检索的资料。"),
   );
@@ -946,7 +947,7 @@ function renderTurn(parent, turn) {
   n.append(
     el(
       "p",
-      `requestId: ${r.requestId}\n实际搜索：${r.retrievalQuery}`,
+      `requestId: ${r.requestId}\n实际搜索：${r.retrievalQuery ?? "未执行检索"}\n原始问题：${r.transformation?.originalQuery ?? "旧记录未保存"}\n转换：${r.transformation?.stages.map(s => `${s.name} ${s.status} (${s.durationMs} ms)`).join(" → ") ?? "旧记录未保存"}`,
       "trace",
     ),
   );

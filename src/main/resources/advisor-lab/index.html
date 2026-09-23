@@ -12,13 +12,13 @@
   <script src="/advisor-lab.js" defer></script>
 </head>
 <body>
-<header><a href="/" class="brand">杉 <span>云杉客服</span></a><nav aria-label="章节导航"><a href="/internal/knowledge">导入与检索 ↗</a><a href="/internal/rag">第九章 · 单次问答 ↗</a><a href="/">客服工作台 ↗</a><a href="/internal/knowledge-admin">知识库管理 ↗</a></nav></header>
+<header><a href="/" class="brand">杉 <span>云杉客服</span></a><nav aria-label="章节导航"><a href="/internal/knowledge">导入与检索 ↗</a><a href="/internal/rag">第九章 · 单次问答 ↗</a><a href="/">客服工作台 ↗</a><a href="/internal/knowledge-admin">知识库管理 ↗</a><a href="/internal/query-transformation">查询转换实验 ↗</a></nav></header>
 <main>
-  <p class="eyebrow">CHAPTER 10 / ADVISOR CHAIN</p>
+  <p class="eyebrow">CHAPTER 11 / MODULAR RAG · ADVISOR CHAIN</p>
   <h1>带着上下文，<span>继续问资料。</span></h1>
   <p class="intro">同一会话可以连续追问；每轮重新检索知识，无证据时停止聊天生成。先导入资料，再观察“记得上文”和“搜对资料”的区别。</p>
   <!-- 此处展示配置顺序，不是伪装成真实实时进度的动画。实际结果见下方证据和审计 ID。 -->
-  <ol class="advisor-chain" aria-label="配置的请求处理顺序"><li>审计检查</li><li>加载记忆</li><li>检索资料</li><li>证据检查</li><li>模型回答</li></ol>
+  <ol class="advisor-chain" aria-label="配置的请求处理顺序"><li>审计检查</li><li>加载记忆</li><li>补全查询</li><li>检索资料</li><li>证据检查</li><li>模型回答</li></ol>
   <p class="chain-caption">请求从左向右进入，响应按相反顺序返回。普通客服与订单工具继续使用原来的调用链。</p>
   <div class="lab-grid">
     <section class="inputs" aria-label="知识会话">
@@ -40,7 +40,7 @@
     <section class="output" id="result-panel" aria-label="本轮依据" aria-busy="false">
       <div class="section-heading"><h2>本轮依据</h2><span id="result-status">等待提问</span></div>
       <p id="retrieval-query" class="retrieval-query">发送后查看实际用于搜索的问题。</p>
-      <p class="fine">本章检索的仍是当前问题原文，不会自动把“那运费呢”改写成完整的退货问题；调整检索问题的能力在下一章实现。</p>
+      <p class="fine">先用历史补全检索问题，再搜索本次资料。原始消息继续保存于记忆；无历史的含糊追问会要求澄清。</p>
       <p id="request-id" class="request-id"></p>
       <div id="references"></div>
       <details id="raw-details" hidden><summary>查看这轮接口 JSON</summary><pre id="raw-result"></pre></details>

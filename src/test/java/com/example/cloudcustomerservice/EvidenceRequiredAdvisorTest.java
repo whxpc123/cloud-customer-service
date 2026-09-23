@@ -6,7 +6,8 @@ import java.util.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.client.*;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
-import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
+import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
+import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.chat.prompt.Prompt;
 import static org.assertj.core.api.Assertions.*;
@@ -27,7 +28,7 @@ class EvidenceRequiredAdvisorTest {
     ChatClientRequest request(Object documents) {
         var context = new HashMap<String,Object>(); context.put(CustomerAdvisorContextKeys.TENANT_ID,"tenant-yunshan");
         context.put(CustomerAdvisorContextKeys.REQUEST_ID,"r-1");
-        if (documents != null) context.put(QuestionAnswerAdvisor.RETRIEVED_DOCUMENTS,documents);
+        if (documents != null) context.put(RetrievalAugmentationAdvisor.DOCUMENT_CONTEXT,documents);
         return new ChatClientRequest(new Prompt("q"),context);
     }
 
