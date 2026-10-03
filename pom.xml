@@ -28,6 +28,8 @@
     <!-- BOM 只管理版本、不自动引入依赖；下面 dependencies 才声明实际使用的组件。 -->
     <dependencyManagement>
         <dependencies>
+            <!-- Testcontainers 传递旧 compress 会覆盖 Tika/POI 所需 API；统一到前章运行时已用版本。 -->
+            <dependency><groupId>org.apache.commons</groupId><artifactId>commons-compress</artifactId><version>1.28.0</version></dependency>
             <dependency>
                 <groupId>org.springframework.ai</groupId>
                 <artifactId>spring-ai-bom</artifactId>
@@ -124,6 +126,9 @@
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-database-postgresql</artifactId>
         </dependency>
+        <!-- 第十九章只在显式验收时启动临时 pgvector 容器，不连接或清空业务库。 -->
+        <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-testcontainers</artifactId><scope>test</scope></dependency>
+        <dependency><groupId>org.testcontainers</groupId><artifactId>postgresql</artifactId><scope>test</scope></dependency>
         <!-- test 作用域不进入正式运行依赖，提供 JUnit、Mockito、AssertJ 与 MockMvc。 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

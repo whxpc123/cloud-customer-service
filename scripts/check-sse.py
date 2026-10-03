@@ -33,7 +33,9 @@ def stream(client, path, question=None, last_id=None):
         payload = json.dumps({'question': question}).encode()
     response = client.opener.open(urllib.request.Request(client.base + path, data=payload, headers=headers), timeout=45)
     assert response.headers['Content-Type'].startswith('text/event-stream')
-    assert response.headers['X-Accel-Buffering'] == 'no'
+    # Nginx 消费 X-Accel-* 控制头，默认不向客户端转发；代理验收以事件实际到达为准。
+    if client.base.endswith(':18080'):
+        assert response.headers['X-Accel-Buffering'] == 'no'
     return response
 
 

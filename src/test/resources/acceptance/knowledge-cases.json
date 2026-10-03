@@ -1,0 +1,8 @@
+{
+  "datasetVersion":"acceptance-v1",
+  "cases":[
+    {"caseId":"RAG-FREIGHT-001","question":"衣服尺寸不合适，退货邮费谁承担？","acceptableEvidenceGroups":[["refund-policy@3.2#2"]],"requiredMeaning":["个人原因退货运费原则上由消费者承担"],"forbiddenMeaning":["商城承担所有退货运费","订单已经批准退款"]},
+    {"caseId":"RAG-MULTI-002","question":"普通商品无理由退货有什么条件、退货运费谁承担、审核通过后退款多久提交？","acceptableEvidenceGroups":[["refund-policy@3.2#1"],["refund-policy@3.2#2"],["refund-timing@1.0#1"]],"requiredMeaning":["七日和商品完好条件","按原因区分运费","审核通过后两个工作日内提交，到账未承诺"],"forbiddenMeaning":["立即到账","自动批准退款"]},
+    {"caseId":"RAG-UNKNOWN-003","question":"你们老板最喜欢喝哪一种咖啡？","acceptableEvidenceGroups":[],"expectedRefusal":true,"requiredMeaning":["没有资料说明，不能猜测"],"forbiddenMeaning":["编造咖啡偏好"]}
+  ]
+}

@@ -1,0 +1,273 @@
+{
+  "runId": "20261004-002941-fa737f66",
+  "startedAt": "2026-10-03T16:29:41.859991+00:00",
+  "finishedAt": "2026-10-03T16:32:15.424665+00:00",
+  "javaTests": {
+    "PASS": 325,
+    "FAIL": 0,
+    "NOT_EXECUTED": 0
+  },
+  "hardGates": {
+    "identity_and_scope": "PASS",
+    "readonly_after_sale": "PASS",
+    "handoff_idempotency_and_locks": "PASS",
+    "late_answer_not_published": "PASS",
+    "failure_contracts": "PASS",
+    "http_stream_auth_cancel_error": "PASS",
+    "nginx_http_stream": "PASS"
+  },
+  "engineeringGate": "PASS",
+  "productionRelease": "BLOCKED",
+  "liveContracts": {
+    "evidenceScope": "PASS",
+    "greeting": "PASS",
+    "ownOrder": "PASS",
+    "foreignOrder": "PASS",
+    "readOnlyAssessment": "PASS",
+    "handoff": "PASS"
+  },
+  "rag": {
+    "cases": [
+      {
+        "caseId": "RAG-FREIGHT-001",
+        "requestStatus": "PASS",
+        "elapsedMs": 3291,
+        "stages": {
+          "vectorBranches": {
+            "status": "PASS",
+            "covered": 1,
+            "required": 1,
+            "rate": 1.0,
+            "complete": true
+          },
+          "hybridCandidates": {
+            "status": "PASS",
+            "covered": 1,
+            "required": 1,
+            "rate": 1.0,
+            "complete": true
+          },
+          "ranked": {
+            "status": "PASS",
+            "covered": 1,
+            "required": 1,
+            "rate": 1.0,
+            "complete": true
+          },
+          "finalPrompt": {
+            "status": "PASS",
+            "covered": 1,
+            "required": 1,
+            "rate": 1.0,
+            "complete": true
+          }
+        },
+        "rerankStatus": "FALLBACK_NOT_CONFIGURED",
+        "businessStatus": "ANSWERED",
+        "expectedRefusal": false,
+        "semanticReview": "NOT_EXECUTED",
+        "note": "证据覆盖不是回答完整性；自然语言拒答也不能仅凭 NO_EVIDENCE 状态判分"
+      },
+      {
+        "caseId": "RAG-MULTI-002",
+        "requestStatus": "PASS",
+        "elapsedMs": 5506,
+        "stages": {
+          "vectorBranches": {
+            "status": "PASS",
+            "covered": 3,
+            "required": 3,
+            "rate": 1.0,
+            "complete": true
+          },
+          "hybridCandidates": {
+            "status": "PASS",
+            "covered": 3,
+            "required": 3,
+            "rate": 1.0,
+            "complete": true
+          },
+          "ranked": {
+            "status": "PASS",
+            "covered": 3,
+            "required": 3,
+            "rate": 1.0,
+            "complete": true
+          },
+          "finalPrompt": {
+            "status": "PASS",
+            "covered": 3,
+            "required": 3,
+            "rate": 1.0,
+            "complete": true
+          }
+        },
+        "rerankStatus": "FALLBACK_NOT_CONFIGURED",
+        "businessStatus": "ANSWERED",
+        "expectedRefusal": false,
+        "semanticReview": "NOT_EXECUTED",
+        "note": "证据覆盖不是回答完整性；自然语言拒答也不能仅凭 NO_EVIDENCE 状态判分"
+      },
+      {
+        "caseId": "RAG-UNKNOWN-003",
+        "requestStatus": "PASS",
+        "elapsedMs": 400,
+        "stages": {
+          "vectorBranches": {
+            "status": "NOT_APPLICABLE",
+            "covered": 0,
+            "required": 0,
+            "rate": null,
+            "complete": null
+          },
+          "hybridCandidates": {
+            "status": "NOT_APPLICABLE",
+            "covered": 0,
+            "required": 0,
+            "rate": null,
+            "complete": null
+          },
+          "ranked": {
+            "status": "NOT_APPLICABLE",
+            "covered": 0,
+            "required": 0,
+            "rate": null,
+            "complete": null
+          },
+          "finalPrompt": {
+            "status": "NOT_APPLICABLE",
+            "covered": 0,
+            "required": 0,
+            "rate": null,
+            "complete": null
+          }
+        },
+        "rerankStatus": "SKIPPED_EMPTY",
+        "businessStatus": "NO_EVIDENCE",
+        "expectedRefusal": true,
+        "semanticReview": "NOT_EXECUTED",
+        "note": "证据覆盖不是回答完整性；自然语言拒答也不能仅凭 NO_EVIDENCE 状态判分"
+      }
+    ],
+    "groupCoverage": 1.0,
+    "completeQuestionRate": 1.0,
+    "scoredQuestions": 2,
+    "semanticReview": "NOT_EXECUTED"
+  },
+  "performance": {
+    "rag": {
+      "count": 3,
+      "concurrency": 1,
+      "p50Ms": 3291,
+      "p95Ms": 5506,
+      "capacityConclusion": "NOT_EVALUATED",
+      "modelCalls": null,
+      "tokens": null,
+      "databaseQueries": null
+    },
+    "formalByQuestion": [
+      {
+        "question": "你好",
+        "elapsedMs": 44
+      },
+      {
+        "question": "A10001 发货了吗？",
+        "elapsedMs": 796
+      },
+      {
+        "question": "A10002 发货了吗？",
+        "elapsedMs": 857
+      },
+      {
+        "question": "A10001 的商品有质量问题，能退吗？",
+        "elapsedMs": 5861
+      },
+      {
+        "question": "我要转人工",
+        "elapsedMs": 13
+      }
+    ],
+    "note": "小样本、单并发；异类请求不合并计算统一延迟，未统计值为 null"
+  },
+  "releaseBlockers": [
+    "旧实验 API 保留教学权限，未统一生产认证",
+    "真实订单/客服消息通道未接入",
+    "云端精排业务空间尚待配置与验收",
+    "代表性语义人工评审及效果门槛未约定",
+    "生产并发容量、监控、灰度及回滚演练未执行"
+  ],
+  "manifest": {
+    "baseCommit": "c33b9829a23ba7a7f84a52f5662d55d9eeb39820",
+    "dirty": true,
+    "contentSha256": "10d19a6b786bd08a4ea925c9934455e452ce64b4d3ab581f117964f015992a0b",
+    "versionsFromPom": {
+      "springBoot": "3.5.8",
+      "springAi": "1.1.2",
+      "springAiAlibaba": "1.1.2.2"
+    },
+    "fixtureClock": "2026-08-30T10:00:00+08:00",
+    "scope": "local teaching system; no production release approval",
+    "java": "openjdk version \"17.0.20.1\" 2026-08-18\nOpenJDK Runtime Environment Temurin-17.0.20.1+1 (build 17.0.20.1+1)\nOpenJDK 64-Bit Server VM Temurin-17.0.20.1+1 (build 17.0.20.1+1, mixed mode, sharing)"
+  },
+  "database": {
+    "image": "pgvector/pgvector:0.8.2-pg17@sha256:feb68f4f15446397d8cac7f4fe48fe4586de83160d1fc48b46283312d1a33966",
+    "postgres": "PostgreSQL 17.10 (Debian 17.10-1.pgdg12+1) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit",
+    "migrations": [
+      {
+        "version": "1",
+        "script": "V1__create_knowledge_vector_store.sql",
+        "checksum": 1440174675,
+        "success": true
+      },
+      {
+        "version": "2",
+        "script": "V2__knowledge_originals.sql",
+        "checksum": -2015151407,
+        "success": true
+      },
+      {
+        "version": "3",
+        "script": "V3__knowledge_evaluations.sql",
+        "checksum": -438264138,
+        "success": true
+      },
+      {
+        "version": "4",
+        "script": "V4__hybrid_search.sql",
+        "checksum": -1922393063,
+        "success": true
+      },
+      {
+        "version": "5",
+        "script": "V5__human_handoff.sql",
+        "checksum": 500111546,
+        "success": true
+      }
+    ]
+  },
+  "configuration": {
+    "embeddingModel": "text-embedding-v4",
+    "expansionMode": "AUTO",
+    "chunking": "manual-1 fixtures; TokenTextSplitter default for upload",
+    "rerankRequested": true,
+    "embeddingDimensions": "1024",
+    "chatModel": "qwen-plus"
+  },
+  "additionalTests": {
+    "nginxHttp": 9,
+    "liveExperiment": 1,
+    "javascriptParser": 122,
+    "pythonReport": 11
+  },
+  "providerRevision": "未取得供应商内部版本；模型别名不是冻结版本",
+  "nginxVersion": "1.31.6",
+  "proxyModelObservation": {
+    "turnId": "4866eee2-1a77-428a-88ac-dba12ee8d3a1",
+    "deltas": 16,
+    "firstFragmentMs": 285,
+    "elapsedMs": 1480,
+    "terminal": "turn.completed",
+    "characters": 162,
+    "hasNewline": true
+  }
+}

@@ -45,14 +45,32 @@ class SseHttpIntegrationTest {
     @MockitoBean ChatModel model;
     final List<Stream> open=new ArrayList<>();
     Client customer,other,agent;
+    int clientPort;
+    Process nginx;
+    final boolean proxy="true".equals(System.getenv("RUN_NGINX_TESTS"));
+    /** 第十九章可选第二轮：真实本机 Nginx 代理到随机 Tomcat 端口，不放宽应用回环权限。 */
+    void startProxy()throws Exception{
+        clientPort=port;if(!proxy)return;
+        try(var socket=new ServerSocket(0,0,InetAddress.getLoopbackAddress())){clientPort=socket.getLocalPort();}
+        var prefix=java.nio.file.Files.createTempDirectory("cs-acceptance-nginx-");
+        var config=prefix.resolve("nginx.conf");
+        java.nio.file.Files.writeString(config,"pid nginx.pid; error_log error.log; events {} http { access_log off; server { listen 127.0.0.1:"+clientPort+
+            "; location / { proxy_pass http://127.0.0.1:"+port+"; proxy_http_version 1.1; proxy_set_header Host $http_host; proxy_set_header Connection \"\"; proxy_buffering off; proxy_cache off; proxy_read_timeout 60s; gzip off; } } }");
+        nginx=new ProcessBuilder(System.getenv().getOrDefault("NGINX_BINARY","nginx"),"-p",prefix+"/","-c",config.toString(),"-g","daemon off;")
+            .redirectErrorStream(true).redirectOutput(prefix.resolve("process.log").toFile()).start();
+        await().atMost(Duration.ofSeconds(5)).until(()->{try(var socket=new Socket()){socket.connect(new InetSocketAddress("127.0.0.1",clientPort),100);return nginx.isAlive();}catch(IOException e){return false;}});
+    }
     @BeforeEach void setup()throws Exception{
         assertThat(jdbc.queryForObject("select current_database()",String.class)).isEqualTo("cloud_customer_service_test");
         jdbc.update("delete from ai.cs_message");jdbc.update("delete from ai.cs_conversation");
+        startProxy();
         customer=new Client("customer1001");other=new Client("customer2002");agent=new Client("support9001");
     }
     @AfterEach void cleanup()throws Exception{
-        for(var stream:open)stream.close();
-        await().atMost(Duration.ofSeconds(6)).untilAsserted(()->assertThat(connections.active()).isZero());
+        try{
+            for(var stream:open)stream.close();
+            await().atMost(Duration.ofSeconds(6)).untilAsserted(()->assertThat(connections.active()).isZero());
+        }finally{if(nginx!=null){nginx.destroy();if(!nginx.waitFor(3,TimeUnit.SECONDS))nginx.destroyForcibly();}}
         jdbc.update("delete from ai.cs_message");jdbc.update("delete from ai.cs_conversation");
     }
     String create()throws Exception{return customer.json("/api/handoff/conversations","POST",null,201).get("conversationId").asText();}
@@ -69,7 +87,7 @@ class SseHttpIntegrationTest {
             assertThat(client.send(request,HttpResponse.BodyHandlers.discarding()).statusCode()).isEqualTo(204);
             csrf=json("/internal/handoff/session","GET",null,200).get("csrfToken").asText();
         }
-        HttpRequest.Builder base(String path){return HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+port+path)).timeout(Duration.ofSeconds(5));}
+        HttpRequest.Builder base(String path){return HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+clientPort+path)).timeout(Duration.ofSeconds(5));}
         JsonNode json(String path,String method,String data,int expected)throws Exception{
             var b=base(path).header("Content-Type","application/json");if(csrf!=null)b.header("X-CSRF-TOKEN",csrf);
             var r=client.send(b.method(method,data==null?HttpRequest.BodyPublishers.noBody():HttpRequest.BodyPublishers.ofString(data)).build(),HttpResponse.BodyHandlers.ofString());
@@ -106,7 +124,8 @@ class SseHttpIntegrationTest {
         assertThat(stream.response.statusCode()).isEqualTo(200);
         assertThat(stream.response.headers().firstValue("Content-Type").orElse("")).startsWith("text/event-stream");
         assertThat(stream.response.headers().firstValue("Cache-Control")).contains("no-store");
-        assertThat(stream.response.headers().firstValue("X-Accel-Buffering")).contains("no");
+        // Nginx 消费 X-Accel-* 控制头，默认不回传；代理时检查真实首帧和后续行为。
+        if(!proxy)assertThat(stream.response.headers().firstValue("X-Accel-Buffering")).contains("no");
         assertThat(json.readTree(stream.next().data()).get("mode").asText()).isEqualTo("BOT");
         customer.json("/api/handoff/conversations/"+id+"/handoff","POST",null,200);
         assertThat(json.readTree(stream.next().data()).get("mode").asText()).isEqualTo("WAITING_HUMAN");

@@ -938,3 +938,9 @@ Accept: text/event-stream
 X-CSRF-TOKEN: {{handoffCsrf}}
 
 {"question":"请用三行解释 SSE，每行说明一个要点。"}
+
+
+### 第十九章：继续使用正式入口（验收工具不增加绕过身份的公开测试 API）
+# 离线 / 代理 / 真实模型分别执行：python3 scripts/accept-stage1.py [--proxy] [--live]
+# 结果在 .local/acceptance/<runId>/，未执行不是通过。完整表见 docs/chapters/19-stage1-acceptance.md。
+GET http://127.0.0.1:18080/internal/routing

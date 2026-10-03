@@ -2,9 +2,9 @@
 
 根据《第一章：老板下午要看的 AI 客服》实现的 Java 学习项目。后续章节在这个项目上逐步增加能力，每章的改动与验收方式记录在 `docs/chapters/`。
 
-当前进度：**第十八章——SSE 状态订阅与模型流式实验**。统一客服页自动接收数据库接待状态，新增真实逐段输出、取消和明确完成/失败事件的独立模型实验页。正式业务回答继续保留完整校验与发布门，未接入真人消息通道、生产 IAM 或退款执行。
+当前进度：**第十九章——第一阶段统一验收**。新增临时数据库事务与权限验收、真实模型固定题集、Nginx 流式复测及带配置哈希的验收报告。工程测试与生产发布门槛分开，真实订单、生产 IAM、语义人工评审和容量验收仍有缺口。
 
-章节记录：[第一章](docs/chapters/01-first-chat.md) · [第二章](docs/chapters/02-system-prompt.md) · [第三章](docs/chapters/03-structured-output.md) · [第四章](docs/chapters/04-chat-memory.md) · [第五章](docs/chapters/05-tool-calling.md) · [第六章](docs/chapters/06-embedding-lab.md) · [第七章](docs/chapters/07-pgvector-knowledge.md) · [第八章](docs/chapters/08-document-etl.md) · [第九章](docs/chapters/09-manual-rag.md) · [第十章](docs/chapters/10-advisor-chain.md) · [第十章补充：知识管理台](docs/chapters/10-knowledge-management.md) · [第十一章](docs/chapters/11-query-transformation.md) · [第十二章](docs/chapters/12-query-expansion.md) · [第十三章](docs/chapters/13-reranking.md) · [第十四章](docs/chapters/14-hybrid-search.md) · [第十五章](docs/chapters/15-after-sale-precheck.md) · [第十六章](docs/chapters/16-customer-routing.md) · [第十七章](docs/chapters/17-human-handoff.md) · [第十八章](docs/chapters/18-sse-streaming.md)。
+章节记录：[第一章](docs/chapters/01-first-chat.md) · [第二章](docs/chapters/02-system-prompt.md) · [第三章](docs/chapters/03-structured-output.md) · [第四章](docs/chapters/04-chat-memory.md) · [第五章](docs/chapters/05-tool-calling.md) · [第六章](docs/chapters/06-embedding-lab.md) · [第七章](docs/chapters/07-pgvector-knowledge.md) · [第八章](docs/chapters/08-document-etl.md) · [第九章](docs/chapters/09-manual-rag.md) · [第十章](docs/chapters/10-advisor-chain.md) · [第十章补充：知识管理台](docs/chapters/10-knowledge-management.md) · [第十一章](docs/chapters/11-query-transformation.md) · [第十二章](docs/chapters/12-query-expansion.md) · [第十三章](docs/chapters/13-reranking.md) · [第十四章](docs/chapters/14-hybrid-search.md) · [第十五章](docs/chapters/15-after-sale-precheck.md) · [第十六章](docs/chapters/16-customer-routing.md) · [第十七章](docs/chapters/17-human-handoff.md) · [第十八章](docs/chapters/18-sse-streaming.md) · [第十九章](docs/chapters/19-stage1-acceptance.md)。
 
 每章对应独立 Git 提交和 `chapter-NN` 标签，具体变化见 [CHANGELOG](CHANGELOG.md)。第 1～3 章历史根据已实现代码于 2026-09-12 补建；后续每章验收完成后提交并推送。
 
@@ -29,6 +29,7 @@
 | [chapter-16](https://github.com/whxpc123/cloud-customer-service/tree/chapter-16) | 统一入口、有限路由、唯一处理器分派与会话隔离 | [与第十五章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-15...chapter-16) |
 | [chapter-17](https://github.com/whxpc123/cloud-customer-service/tree/chapter-17) | 持久化受理、客服领取/结束、正式消息与版本发布门 | [与第十六章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-16...chapter-17) |
 | [chapter-18](https://github.com/whxpc123/cloud-customer-service/tree/chapter-18) | SSE 接待快照、独立模型流、取消与协议校验 | [与第十七章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-17...chapter-18) |
+| [chapter-19](https://github.com/whxpc123/cloud-customer-service/tree/chapter-19) | 临时数据库验收、证据组评分、真实代理测试与发布门槛报告 | [与第十八章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-18...chapter-19) |
 
 在 GitHub 选择对应标签查看该章完整代码，在 Compare 页面选择相邻标签查看改动。阅读历史版本可以使用独立工作目录，例如 `git worktree add ../chapter-01-view chapter-01`，避免覆盖当前开发目录。
 
@@ -113,7 +114,7 @@ curl --get 'http://localhost:18080/api/chat' \
 java -jar target/cloud-customer-service-0.0.1-SNAPSHOT.jar
 ```
 
-自动测试在需要调用的路径替换 ChatModel / EmbeddingModel，不访问百炼、不需要真实 Key，覆盖聊天回归、结构化转换、非法字段、异常兜底、角色隔离和日志。当前共有 318 项 Java 测试；启用专用测试库后 318 项全部通过，含 53 项 PostgreSQL 集成测试。未设置 RUN_PGVECTOR_TESTS 时默认跳过这 53 项。前端 SSE 解析另有 122 项测试，通过 `node --test scripts/tests/sse-client.test.mjs` 运行（仅此开发测试需要 Node，应用启动不需要）。覆盖工具执行、会话隔离、向量数学、批次边界、知识过滤、重复导入及异常保护。集成测试步骤见第七章文档。启动应用和运行 JAR 仍需真实 `DASHSCOPE_API_KEY`。
+自动测试在需要调用的路径替换 ChatModel / EmbeddingModel，不访问百炼、不需要真实 Key，覆盖聊天回归、结构化转换、非法字段、异常兜底、角色隔离和日志。当前默认范围有 325 项 Java 测试；53 项旧章节数据库集成测试由 RUN_PGVECTOR_TESTS 开启，7 项临时数据库验收由 RUN_ACCEPTANCE_TESTS 开启，未启用时明确跳过。新增测试不需要真实模型 Key。前端 SSE 解析另有 122 项测试，通过 `node --test scripts/tests/sse-client.test.mjs` 运行（仅此开发测试需要 Node，应用启动不需要）。覆盖工具执行、会话隔离、向量数学、批次边界、知识过滤、重复导入及异常保护。集成测试步骤见第七章文档。启动应用和运行 JAR 仍需真实 `DASHSCOPE_API_KEY`。
 
 ## 目录与章节对应
 
@@ -367,3 +368,12 @@ IDEA 同步 Maven 后运行原 `CloudCustomerServiceApplication` 配置，打开
 打开 <http://127.0.0.1:18080/internal/stream-lab>，使用统一客服页已登录的本地账户，观察模型真实片段、首片段耗时与完成事件，也可以停止接收并保留草稿。这是没有 Memory / RAG / 业务工具的独立实验，正式客服链保留原有证据检查和发布门。
 
 318 项 Java 测试及 122 项前端解析测试通过；真实模型、浏览器状态自动更新、取消和桌面/手机布局已验收。当前 18080 由终端启动，IDEA 自动切换仍失败；Nginx 仅提供参考配置，未做实际代理验收。协议、代码入口、资源边界和复测命令见[第十八章说明](docs/chapters/18-sse-streaming.md)。
+
+
+## 第十九章：第一阶段统一验收
+
+在项目终端执行 `python3 scripts/accept-stage1.py --proxy --live`，以 JDK 17、Docker、专用测试库、本机 Nginx 和现有 `DASHSCOPE_API_KEY` 进行完整验收。`--live` 会实际调用百炼；省略两个开关时只跑离线回归，报告将其余项目标为未执行。
+
+结果写入 `.local/acceptance/<运行编号>/`，含 Markdown/JSON、配置与 Prompt 内容哈希、迁移信息、逐题检索轨迹、结构化业务结果和耗时。报告评分器另有 11 项 Python 标准库测试，运行 `python3 -m unittest discover -s scripts/tests -p 'test_*.py'`；不新增应用运行依赖。
+
+本章复用正式客服链与已有页面。硬门槛不允许被平均通过率抵消；语义人工评审、真实订单/生产身份、云端精排和生产容量等未完成条件保留为发布阻塞。详见[实现与实际验收](docs/chapters/19-stage1-acceptance.md)及[公开汇总](docs/acceptance/chapter-19-summary.json)。
