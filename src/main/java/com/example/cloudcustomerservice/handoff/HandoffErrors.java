@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 /** 数据库或提交确认失败时只说无法确认；客户端通过 GET 状态或同会话重试恢复，不把超时当作失败凭证。 */
-@RestControllerAdvice(assignableTypes={com.example.cloudcustomerservice.agent.DraftAgentController.class,HumanHandoffController.class,LocalRoutingController.class,com.example.cloudcustomerservice.stream.ConversationStateStreamController.class,com.example.cloudcustomerservice.stream.LocalModelStreamController.class})
+@RestControllerAdvice(assignableTypes={com.example.cloudcustomerservice.agent.LocalDraftTaskController.class,com.example.cloudcustomerservice.agent.DraftAgentController.class,HumanHandoffController.class,LocalRoutingController.class,com.example.cloudcustomerservice.stream.ConversationStateStreamController.class,com.example.cloudcustomerservice.stream.LocalModelStreamController.class})
 @Profile("local & knowledge")
 public class HandoffErrors {
     @ExceptionHandler(ResponseStatusException.class) public ResponseEntity<Map<String,String>> status(ResponseStatusException e){return ResponseEntity.status(e.getStatusCode()).contentType(MediaType.APPLICATION_JSON).body(Map.of("message",e.getReason()==null?"请求无法完成":e.getReason()));}

@@ -2,9 +2,9 @@
 
 根据《第一章：老板下午要看的 AI 客服》实现的 Java 学习项目。后续章节在这个项目上逐步增加能力，每章的改动与验收方式记录在 `docs/chapters/`。
 
-当前进度：**第二十章——有界售后草稿 Agent**。使用真实 ReactAgent 在一次运行内核验订单与政策、读取模板、整理未经审核的候选；复用登录与接待状态保护。没有提交申请、执行退款或跨运行恢复。
+当前进度：**第二十一章——进程内任务续写与检查点隔离**。同一任务复用 Agent 与 MemorySaver，支持连续修改候选、查看状态和清理；每轮重新核验订单与政策。刷新页面可继续，应用重启后任务消失，没有提交申请或退款能力。
 
-章节记录：[第一章](docs/chapters/01-first-chat.md) · [第二章](docs/chapters/02-system-prompt.md) · [第三章](docs/chapters/03-structured-output.md) · [第四章](docs/chapters/04-chat-memory.md) · [第五章](docs/chapters/05-tool-calling.md) · [第六章](docs/chapters/06-embedding-lab.md) · [第七章](docs/chapters/07-pgvector-knowledge.md) · [第八章](docs/chapters/08-document-etl.md) · [第九章](docs/chapters/09-manual-rag.md) · [第十章](docs/chapters/10-advisor-chain.md) · [第十章补充：知识管理台](docs/chapters/10-knowledge-management.md) · [第十一章](docs/chapters/11-query-transformation.md) · [第十二章](docs/chapters/12-query-expansion.md) · [第十三章](docs/chapters/13-reranking.md) · [第十四章](docs/chapters/14-hybrid-search.md) · [第十五章](docs/chapters/15-after-sale-precheck.md) · [第十六章](docs/chapters/16-customer-routing.md) · [第十七章](docs/chapters/17-human-handoff.md) · [第十八章](docs/chapters/18-sse-streaming.md) · [第十九章](docs/chapters/19-stage1-acceptance.md) · [第二十章](docs/chapters/20-bounded-draft-agent.md)。
+章节记录：[第一章](docs/chapters/01-first-chat.md) · [第二章](docs/chapters/02-system-prompt.md) · [第三章](docs/chapters/03-structured-output.md) · [第四章](docs/chapters/04-chat-memory.md) · [第五章](docs/chapters/05-tool-calling.md) · [第六章](docs/chapters/06-embedding-lab.md) · [第七章](docs/chapters/07-pgvector-knowledge.md) · [第八章](docs/chapters/08-document-etl.md) · [第九章](docs/chapters/09-manual-rag.md) · [第十章](docs/chapters/10-advisor-chain.md) · [第十章补充：知识管理台](docs/chapters/10-knowledge-management.md) · [第十一章](docs/chapters/11-query-transformation.md) · [第十二章](docs/chapters/12-query-expansion.md) · [第十三章](docs/chapters/13-reranking.md) · [第十四章](docs/chapters/14-hybrid-search.md) · [第十五章](docs/chapters/15-after-sale-precheck.md) · [第十六章](docs/chapters/16-customer-routing.md) · [第十七章](docs/chapters/17-human-handoff.md) · [第十八章](docs/chapters/18-sse-streaming.md) · [第十九章](docs/chapters/19-stage1-acceptance.md) · [第二十章](docs/chapters/20-bounded-draft-agent.md) · [第二十一章](docs/chapters/21-in-process-task-memory.md)。
 
 每章对应独立 Git 提交和 `chapter-NN` 标签，具体变化见 [CHANGELOG](CHANGELOG.md)。第 1～3 章历史根据已实现代码于 2026-09-12 补建；后续每章验收完成后提交并推送。
 
@@ -31,6 +31,7 @@
 | [chapter-18](https://github.com/whxpc123/cloud-customer-service/tree/chapter-18) | SSE 接待快照、独立模型流、取消与协议校验 | [与第十七章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-17...chapter-18) |
 | [chapter-19](https://github.com/whxpc123/cloud-customer-service/tree/chapter-19) | 临时数据库验收、证据组评分、真实代理测试与发布门槛报告 | [与第十八章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-18...chapter-19) |
 | [chapter-20](https://github.com/whxpc123/cloud-customer-service/tree/chapter-20) | 一次运行内的有界 ReAct、只读核验、候选草稿与接待状态保护 | [与第十九章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-19...chapter-20) |
+| [chapter-21](https://github.com/whxpc123/cloud-customer-service/tree/chapter-21) | 进程内任务续写、检查点摘要、每轮重新核验、并发与失败隔离 | [与第二十章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-20...chapter-21) |
 
 在 GitHub 选择对应标签查看该章完整代码，在 Compare 页面选择相邻标签查看改动。阅读历史版本可以使用独立工作目录，例如 `git worktree add ../chapter-01-view chapter-01`，避免覆盖当前开发目录。
 
@@ -385,3 +386,10 @@ IDEA 同步 Maven 后运行原 `CloudCustomerServiceApplication` 配置，打开
 打开 <http://127.0.0.1:18080/internal/draft-agent>，先在统一客服页登录，再选择 BOT 会话和明确订单。Agent 自主选择核验工具、模板或停止；页面分开展示程序事实、候选文本和实际工具轨迹，也可以勾选只检查。
 
 每轮最多六次模型、八次工具调用，总等待上限 90 秒；工具身份和订单由服务器绑定。候选不进入正式记录，转人工或注销后迟到结果会隐藏。每次请求都是新运行，没有持久化任务、恢复、提交或退款能力。代码、接口、真实验证与边界见[第二十章说明](docs/chapters/20-bounded-draft-agent.md)。
+
+
+## 第二十一章：接着同一个任务继续
+
+打开 <http://127.0.0.1:18080/internal/draft-tasks>，用已有客户账户登录，创建一次任务，再逐轮补充或修改。页面显示稳定 taskId、递增轮次、每轮 runId 和只读检查点摘要；历史帮助理解，订单和政策每轮重新查询。
+
+同任务并发返回 409，异常后禁止盲目续跑。最多 100 个任务、每个 8 轮；清理只释放本地任务与检查点。应用重启会丢失任务，下一章再讨论持久化。接口、实现和验证见[第二十一章说明](docs/chapters/21-in-process-task-memory.md)。

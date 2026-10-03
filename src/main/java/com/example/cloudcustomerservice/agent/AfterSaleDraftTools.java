@@ -7,17 +7,17 @@ import java.util.function.*;
 import org.springframework.ai.tool.annotation.Tool;
 import static com.example.cloudcustomerservice.aftersale.AfterSaleModel.*;
 
-/** 每轮实例绑定服务器身份和用户指定的订单。工具参数为空，模型没有机会改用户、租户或订单。 */
+/** 实例绑定服务器身份和用户指定的订单。工具参数为空，模型没有机会改用户、租户或订单。 */
 public final class AfterSaleDraftTools {
     private final ReturnAssessmentService service;
     private final Actor actor;
     private final String orderNo;
     private final ReturnReason reason;
     private final boolean inspectionOnly;
-    private final DraftRunBudget budget;
+    private DraftRunBudget budget;
     private final List<String> events = new CopyOnWriteArrayList<>();
     private volatile Assessment assessment;
-    private final Function<Supplier<Assessment>,Assessment> lookup;
+    private Function<Supplier<Assessment>,Assessment> lookup;
     private volatile boolean inspected, templateRead, limitExceeded;
     private volatile int calls;
 
@@ -30,6 +30,12 @@ public final class AfterSaleDraftTools {
         this.lookup=lookup;
         this.service=service; this.actor=actor; this.orderNo=orderNo; this.reason=reason;
         this.inspectionOnly=inspectionOnly; this.budget=budget;
+    }
+    /** 仅服务器在持有任务执行权时调用，不注册为工具；重置普通 Java 字段，不清除 Graph 历史。 */
+    synchronized void beginTurn(DraftRunBudget budget,Function<Supplier<Assessment>,Assessment> lookup) {
+        this.budget=Objects.requireNonNull(budget);
+        this.lookup=Objects.requireNonNull(lookup);
+        assessment=null;inspected=false;templateRead=false;limitExceeded=false;calls=0;events.clear();
     }
     /** 缓存也计入八次调用预算；结果仅本轮有效，下一次运行重新查事实和政策。 */
     @Tool(name="inspectAfterSale", resultConverter=AfterSaleToolResultConverter.class,

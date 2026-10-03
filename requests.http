@@ -962,3 +962,39 @@ X-CSRF-TOKEN: {{handoffCsrf}}
 
 ### 第二十章页面：需要在统一客服页登录后才能执行任务
 GET http://127.0.0.1:18080/internal/draft-agent
+
+
+### 第二十一章：创建一次本地任务（沿用上方客户 Cookie、routingConversationId 和 handoffCsrf）
+POST http://127.0.0.1:18080/internal/draft-tasks/tasks
+Content-Type: application/json
+X-CSRF-TOKEN: {{handoffCsrf}}
+
+{
+  "conversationId": "{{routingConversationId}}",
+  "orderNo": "A10001",
+  "reason": "QUALITY_ISSUE"
+}
+
+> {% client.global.set("draftTaskId", response.body.taskId); %}
+
+### 只提交本轮补充，不重放历史；可以修改 message 后再次发送
+POST http://127.0.0.1:18080/internal/draft-tasks/tasks/{{draftTaskId}}/turns
+Content-Type: application/json
+X-CSRF-TOKEN: {{handoffCsrf}}
+
+{
+  "message": "请把描述改为外壳破损，重新核验并整理候选，保留质量未核验标记，不要提交。"
+}
+
+### 只读检查点摘要与最新结果，不会调用模型
+GET http://127.0.0.1:18080/internal/draft-tasks/tasks/{{draftTaskId}}
+
+### 当前账户在这个进程内的任务列表
+GET http://127.0.0.1:18080/internal/draft-tasks/tasks
+
+### 清理本地实验任务；不删除正式会话，已清理/重启后的旧 taskId 返回 404
+DELETE http://127.0.0.1:18080/internal/draft-tasks/tasks/{{draftTaskId}}
+X-CSRF-TOKEN: {{handoffCsrf}}
+
+### 第二十一章页面
+GET http://127.0.0.1:18080/internal/draft-tasks
