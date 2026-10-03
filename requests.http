@@ -1044,3 +1044,31 @@ X-CSRF-TOKEN: {{handoffCsrf}}
 
 ### 第二十二章页面
 GET http://127.0.0.1:18080/internal/draft-tasks
+
+
+### 第二十三章：先 GET 第二十二章任务，取得当前任务版本；只支持正常候选
+GET http://127.0.0.1:18080/internal/draft-tasks/tasks/{{persistentTaskId}}
+
+> {% if (response.status === 200) client.global.set("persistentTaskVersion", response.body.task.version); %}
+
+### 结构化整理并发布一个新版本：调用一次模型，不要自动重试
+POST http://127.0.0.1:18080/internal/draft-tasks/tasks/{{persistentTaskId}}/drafts
+Content-Type: application/json
+X-CSRF-TOKEN: {{handoffCsrf}}
+
+{"expectedTaskVersion":{{persistentTaskVersion}}}
+
+> {% if (response.status === 201) { client.global.set("seenDraftVersion", response.body.draftVersion); client.global.set("persistentTaskVersion", response.body.taskVersion); } %}
+
+### 查看明确版本：必须先核对正文；GET 不调用模型或重新查询订单
+GET http://127.0.0.1:18080/internal/draft-tasks/tasks/{{persistentTaskId}}/drafts/{{seenDraftVersion}}
+
+### 确认实际看见的版本，只确认描述/诉求；冲突不能改成最新编号后自动重试
+POST http://127.0.0.1:18080/internal/draft-tasks/tasks/{{persistentTaskId}}/draft-confirmations
+Content-Type: application/json
+X-CSRF-TOKEN: {{handoffCsrf}}
+
+{"draftVersion":{{seenDraftVersion}},"accepted":true}
+
+### 查看版本目录和历史确认；继续任务前重新 GET 当前 task.version
+GET http://127.0.0.1:18080/internal/draft-tasks/tasks/{{persistentTaskId}}/drafts

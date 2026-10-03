@@ -49,6 +49,8 @@
 
     <!-- 第八章读取器支持 Office、PDF、Markdown；纯文本 Reader 由 Spring AI 基础模块提供。 -->
     <dependencies>
+        <!-- 第二十三章显式校验模型整理结果；record 注解不会在 entity 转换后自动执行。 -->
+        <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-validation</artifactId></dependency>
         <!-- 第二十章沿用 Alibaba 版本，真正执行有界 ReAct 循环，不另引入第二套 Spring AI。 -->
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>

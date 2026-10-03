@@ -56,3 +56,11 @@
 同时创建与 Graph Core 1.1.2.2 PostgresSaver 实际 SQL 一致的 `public.graphthread` / `public.graphcheckpoint`。配置 threadId 对应 thread_name，表内 thread_id 为内部 UUID。state_data 是包裹 Base64 binaryPayload 的 JSONB，搭配 state_content_type 由默认 Jackson 状态序列化器还原类型；不等于明文消息数组，更不是加密。非 released 的 thread_name 有唯一索引；release 标记线程生命周期，不当成关闭连接使用。
 
 表由 Flyway 建立，保存器建表/删表开关均关闭。保存器连接信息来自应用同一 JdbcConnectionDetails，但官方 Builder 自建连接，不复用 Hikari 设置；当前适配器拒绝无法保留的 JDBC URL 参数，只验证本地单 PostgreSQL 地址。恢复前后都用新保存器核对数据库，不能只信 MemorySaver 基类缓存。详细恢复契约及测试见第二十二章文档。V1～V5 内容不变。
+
+## V7：不可变草稿与具体版本确认
+
+`V7__immutable_draft_revisions.sql` 为任务增加 draft_version，创建 `ai.cs_draft_revision` 与 `ai.cs_draft_confirmation`。正文以 task_id / draft_version 唯一定位，关联生成依据 basis_run_id；确认保存真实用户、数据库时间与 DRAFT_CONTENT_ONLY 范围。唯一约束拒绝同版多条回执，外键拒绝确认不存在的正文。触发器阻止原地 UPDATE 正文和确认；修改只能追加新版本，未提供删除 API。
+
+发布、读取和确认按会话行→任务行顺序短暂加锁，状态/版本检查与关联写入在同一事务；模型在事务外。任务 version 和 draft_version 分开递增，确认不修改 Agent 状态。新 runId、非正常候选状态、契约变化或发布新版使旧确认失效，历史回执保留。是否当前有效在服务端读取时计算，不另存可能过时的 confirmed 布尔值。
+
+本地数据库仍用管理账户，触发器不等于生产不可篡改审计；最小权限、备份、保留和授权删除未部署。V1～V6 内容不变。详见第二十三章说明。

@@ -28,6 +28,7 @@ public class PersistentProcessFixture {
                 try{
                     Files.writeString(Path.of(System.getenv("CH22_CALLS_FILE")),"call\n",StandardOpenOption.CREATE,StandardOpenOption.APPEND);
                     String all=prompt.getInstructions().toString();
+                    if(all.contains("你是售后草稿的文字整理器"))return DraftAgentTest.text("{\"userDescription\":\"右侧按钮按不动，质量尚未核验\",\"requestedHandling\":\"希望进入售后流程\"}");
                     if(all.contains("BLOCK_FOR_CRASH")){
                         Files.writeString(Path.of(System.getenv("CH22_BLOCK_FILE")),"started");new CountDownLatch(1).await();
                     }

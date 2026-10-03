@@ -1,8 +1,8 @@
 <!doctype html>
-<!-- 第二十二章：从数据库恢复业务快照，每轮携带当前版本；不把刷新页面变成再次调用模型。 -->
-<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>云杉 · 持久化任务</title><link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/embedding-lab.css"><link rel="stylesheet" href="/query-lab.css"><link rel="stylesheet" href="/routing-lab.css"><link rel="stylesheet" href="/draft-agent.css"><link rel="stylesheet" href="/draft-tasks.css"><script type="module" src="/persistent-draft-tasks.js"></script></head>
+<!-- 第二十三章：展示不可变版本，确认始终绑定当前页面实际读取的正文；不自动确认“最新”。 -->
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>云杉 · 草稿版本与确认</title><link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/embedding-lab.css"><link rel="stylesheet" href="/query-lab.css"><link rel="stylesheet" href="/routing-lab.css"><link rel="stylesheet" href="/draft-agent.css"><link rel="stylesheet" href="/draft-tasks.css"><link rel="stylesheet" href="/draft-revisions.css"><script type="module" src="/persistent-draft-tasks.js"></script></head>
 <body><header><a class="brand" href="/">杉 <span>云杉客服</span></a><nav aria-label="章节导航"><a href="/internal/routing">统一客服 / 登录 ↗</a><a href="/internal/local-draft-tasks">内存对照实验 ↗</a></nav></header>
-<main><div class="route-title"><div><p class="eyebrow">CHAPTER 22 / PERSISTENT TASKS</p><h1>重启以后，<span>接着修改。</span></h1></div><p>任务与检查点一起保存到数据库。<br>刷新只读已存结果，继续才会重新核验。</p></div>
+<main><div class="route-title"><div><p class="eyebrow">CHAPTER 23 / DRAFT REVISIONS</p><h1>你确认的，<span>是这一版。</span></h1></div><p>每一版草稿保留原文，每一次确认都有凭据。<br>内容确认不代表审核通过或提交成功。</p></div>
 <aside class="local-note"><strong>持久化候选实验</strong><span>正常完成后可跨重启继续；执行中断需核查，不自动重跑。每任务最多 8 轮、100 项活动任务，没有提交或退款能力。</span></aside>
 <div class="account-row"><p id="account-status" role="status">正在检查登录状态…</p><button id="refresh" type="button">刷新任务</button></div>
 <div class="draft-layout task-layout"><aside class="task-sidebar">
@@ -15,7 +15,23 @@
 <section class="query-panel result-panel" aria-busy="false" id="result"><div class="panel-head"><h2>任务工作区</h2><span id="status" class="tag">未选择任务</span></div>
 <p id="task-meta" class="fine">从左侧新建或选择任务，恢复最近完成的结果。</p><p id="message" role="status">选择任务后先读取当前版本和最近完成结果，再提交本轮补充。</p>
 <div class="run-metrics"><div><span>已使用轮次</span><strong id="turn-count">—</strong></div><div><span>上轮检查点数</span><strong id="checkpoint-count">—</strong></div><div><span>上轮历史消息数</span><strong id="message-count">—</strong></div></div><p id="state-detail" class="fine">这里是正常完成时确认保存的摘要；刷新不调用模型，也不重新执行图。</p>
-<form id="continue-form"><fieldset id="turn-inputs" disabled><label for="message-input">本轮要补充或修改什么？</label><textarea id="message-input" rows="4" maxlength="2000" required placeholder="例如：把描述改为外壳破损，保留未核验标记，不要提交。">商品使用时插头发热，请核验订单与政策，整理候选草稿，不要提交。</textarea><button class="primary" type="submit">继续此任务</button></fieldset></form>
+<!-- 用户先看到具体版本，再勾选内容确认；不在按钮点击后替换为服务端最新版本。 -->
+<section id="draft-review" class="draft-review" aria-labelledby="draft-heading">
+<div class="panel-head"><h2 id="draft-heading">草稿版本与内容确认</h2><span id="draft-badge" class="tag">尚无草稿</span></div>
+<p class="fine">正常完成候选后，点击整理保存。每次保存产生新版本，旧版本的正文和历史确认都会保留。</p>
+<button id="generate-draft" class="primary" type="button" disabled>整理并保存新版本</button>
+<div class="revision-picker"><label for="revision-select">查看具体草稿版本</label><select id="revision-select" disabled><option value="">尚无版本</option></select></div>
+<p id="draft-notice" role="status">选择已完成的任务后，可以整理为待核对的草稿。</p>
+<div id="revision-body" hidden>
+<p id="revision-meta" class="fine"></p>
+<div class="statement-fields"><div><h3>问题描述 · 请核对</h3><p id="user-description"></p></div><div><h3>申请诉求 · 请核对</h3><p id="requested-handling"></p></div></div>
+<div class="snapshot-box"><h3>当时的系统预检查</h3><p id="checked-summary"></p><p id="checked-time" class="fine"></p><ul id="policy-sources"></ul><details><summary>查看当时的事实与政策快照</summary><pre id="draft-facts"></pre></details></div>
+<p id="revision-notice" class="readonly"></p>
+<form id="confirm-form"><label class="accept-row"><input id="accept-draft" type="checkbox" required disabled><span id="accept-label">我已核对本版问题描述和申请诉求，确认其符合我的意思。</span></label><button id="confirm-draft" class="primary" type="submit" disabled>确认本版问题描述和申请诉求</button></form>
+<div id="confirmation-box" class="confirmation-box" hidden><h3 id="confirmation-heading"></h3><p id="confirmation-scope"></p><p id="confirmation-meta" class="fine"></p></div>
+<details><summary>本版草稿与确认回执 JSON</summary><pre id="draft-raw"></pre></details>
+</div></section>
+<h3>需要修改描述？继续一轮候选</h3><form id="continue-form"><fieldset id="turn-inputs" disabled><label for="message-input">本轮要补充或修改什么？</label><textarea id="message-input" rows="4" maxlength="2000" required placeholder="例如：把描述改为外壳破损，保留未核验标记，不要提交。">商品使用时插头发热，请核验订单与政策，整理候选草稿，不要提交。</textarea><button class="primary" type="submit">继续此任务</button></fieldset></form>
 <p class="fine">每轮最多 6 次模型、8 次工具调用，总等待上限 90 秒。说“已上传照片”仅记录用户声明，本实验没有图片读取能力。未确认完成时先刷新查询；需要恢复核查时不能普通续跑。</p>
 <p class="readonly">候选未经审核 · 未提交申请 · 未执行退款</p>
 <div id="candidate-box" hidden><h3>最近完成轮次的候选 · 未经审核</h3><pre id="candidate"></pre></div>
@@ -23,6 +39,6 @@
 <div id="run-box" hidden><h3>最近完成轮次的实际调用</h3><p id="run-detail" class="fine"></p><ol id="steps"></ol></div>
 <details><summary>检查点摘要与最新响应</summary><pre id="raw">尚无响应</pre></details>
 <div class="task-actions"><button id="discard" type="button" disabled>结束此任务</button><span class="fine">保留已存结果和检查点；结束后不能继续。</span></div>
-</section></div><p class="fine">本页使用 PostgreSQL 任务表和 PostgresSaver。登录会话仍在内存，重启后需要重新登录。expectedVersion 防止旧版本重复执行，不等于完整业务幂等；没有自动接管、失败节点恢复、正式草稿版本或审批流程。</p></main>
+</section></div><p class="fine">本页使用 PostgreSQL 任务表和 PostgresSaver。登录会话仍在内存，重启后需要重新登录。expectedVersion 防止旧版本重复执行，不等于完整业务幂等；草稿与确认记录也保存在数据库；没有自动故障接管、工具审批、申请提交或退款流程。</p></main>
 <dialog id="discard-dialog"><form method="dialog"><h2>结束这个持久化任务？</h2><p>任务将标记为 CLOSED，不再允许继续。已存候选和检查点保留供核查，不删除正式客服会话和知识库。</p><div class="dialog-actions"><button value="cancel">取消</button><button value="confirm">确认结束</button></div></form></dialog>
 </body></html>

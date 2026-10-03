@@ -2,9 +2,9 @@
 
 根据《第一章：老板下午要看的 AI 客服》实现的 Java 学习项目。后续章节在这个项目上逐步增加能力，每章的改动与验收方式记录在 `docs/chapters/`。
 
-当前进度：**第二十二章——业务任务与检查点持久化**。任务与 Graph 检查点均保存到 PostgreSQL；正常完成后重启应用、重新登录，仍可查看并继续同一任务。每轮重新核验事实；未确认完成的运行禁止自动重跑，没有提交申请或退款能力。
+当前进度：**第二十三章——不可变草稿与具体版本确认**。把正常候选整理成 V1、V2 等固定正文；用户确认精确绑定看到的那一版。旧版、运行中的任务或过期依据不能确认；历史记录跨重启保留。确认仅限问题描述与申请诉求，没有批准、提交或退款能力。
 
-章节记录：[第一章](docs/chapters/01-first-chat.md) · [第二章](docs/chapters/02-system-prompt.md) · [第三章](docs/chapters/03-structured-output.md) · [第四章](docs/chapters/04-chat-memory.md) · [第五章](docs/chapters/05-tool-calling.md) · [第六章](docs/chapters/06-embedding-lab.md) · [第七章](docs/chapters/07-pgvector-knowledge.md) · [第八章](docs/chapters/08-document-etl.md) · [第九章](docs/chapters/09-manual-rag.md) · [第十章](docs/chapters/10-advisor-chain.md) · [第十章补充：知识管理台](docs/chapters/10-knowledge-management.md) · [第十一章](docs/chapters/11-query-transformation.md) · [第十二章](docs/chapters/12-query-expansion.md) · [第十三章](docs/chapters/13-reranking.md) · [第十四章](docs/chapters/14-hybrid-search.md) · [第十五章](docs/chapters/15-after-sale-precheck.md) · [第十六章](docs/chapters/16-customer-routing.md) · [第十七章](docs/chapters/17-human-handoff.md) · [第十八章](docs/chapters/18-sse-streaming.md) · [第十九章](docs/chapters/19-stage1-acceptance.md) · [第二十章](docs/chapters/20-bounded-draft-agent.md) · [第二十一章](docs/chapters/21-in-process-task-memory.md) · [第二十二章](docs/chapters/22-persistent-task-checkpoints.md)。
+章节记录：[第一章](docs/chapters/01-first-chat.md) · [第二章](docs/chapters/02-system-prompt.md) · [第三章](docs/chapters/03-structured-output.md) · [第四章](docs/chapters/04-chat-memory.md) · [第五章](docs/chapters/05-tool-calling.md) · [第六章](docs/chapters/06-embedding-lab.md) · [第七章](docs/chapters/07-pgvector-knowledge.md) · [第八章](docs/chapters/08-document-etl.md) · [第九章](docs/chapters/09-manual-rag.md) · [第十章](docs/chapters/10-advisor-chain.md) · [第十章补充：知识管理台](docs/chapters/10-knowledge-management.md) · [第十一章](docs/chapters/11-query-transformation.md) · [第十二章](docs/chapters/12-query-expansion.md) · [第十三章](docs/chapters/13-reranking.md) · [第十四章](docs/chapters/14-hybrid-search.md) · [第十五章](docs/chapters/15-after-sale-precheck.md) · [第十六章](docs/chapters/16-customer-routing.md) · [第十七章](docs/chapters/17-human-handoff.md) · [第十八章](docs/chapters/18-sse-streaming.md) · [第十九章](docs/chapters/19-stage1-acceptance.md) · [第二十章](docs/chapters/20-bounded-draft-agent.md) · [第二十一章](docs/chapters/21-in-process-task-memory.md) · [第二十二章](docs/chapters/22-persistent-task-checkpoints.md) · [第二十三章](docs/chapters/23-immutable-draft-confirmation.md)。
 
 每章对应独立 Git 提交和 `chapter-NN` 标签，具体变化见 [CHANGELOG](CHANGELOG.md)。第 1～3 章历史根据已实现代码于 2026-09-12 补建；后续每章验收完成后提交并推送。
 
@@ -33,6 +33,7 @@
 | [chapter-20](https://github.com/whxpc123/cloud-customer-service/tree/chapter-20) | 一次运行内的有界 ReAct、只读核验、候选草稿与接待状态保护 | [与第十九章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-19...chapter-20) |
 | [chapter-21](https://github.com/whxpc123/cloud-customer-service/tree/chapter-21) | 进程内任务续写、检查点摘要、每轮重新核验、并发与失败隔离 | [与第二十章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-20...chapter-21) |
 | [chapter-22](https://github.com/whxpc123/cloud-customer-service/tree/chapter-22) | 任务与检查点双持久化、版本 CAS、跨进程续写与未完成保护 | [与第二十一章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-21...chapter-22) |
+| [chapter-23](https://github.com/whxpc123/cloud-customer-service/tree/chapter-23) | 结构化草稿、不可变版本、具体内容确认、旧版与并发保护 | [与第二十二章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-22...chapter-23) |
 
 在 GitHub 选择对应标签查看该章完整代码，在 Compare 页面选择相邻标签查看改动。阅读历史版本可以使用独立工作目录，例如 `git worktree add ../chapter-01-view chapter-01`，避免覆盖当前开发目录。
 
@@ -117,7 +118,7 @@ curl --get 'http://localhost:18080/api/chat' \
 java -jar target/cloud-customer-service-0.0.1-SNAPSHOT.jar
 ```
 
-自动测试在需要调用的路径替换 ChatModel / EmbeddingModel，不访问百炼、不需要真实 Key，覆盖聊天回归、结构化转换、非法字段、异常兜底、角色隔离和日志。当前全量范围有 391 项 Java 测试，其中 92 项需要真实 PostgreSQL；通过 `RUN_PGVECTOR_TESTS=true RUN_ACCEPTANCE_TESTS=true ./mvnw package` 开启全部数据库验证，未启用时明确跳过。新增测试不需要真实模型 Key。前端 SSE 解析另有 122 项测试，通过 `node --test scripts/tests/sse-client.test.mjs` 运行（仅此开发测试需要 Node，应用启动不需要）。覆盖工具执行、会话隔离、向量数学、批次边界、知识过滤、重复导入及异常保护。集成测试步骤见第七章文档。启动应用和运行 JAR 仍需真实 `DASHSCOPE_API_KEY`。
+自动测试在需要调用的路径替换 ChatModel / EmbeddingModel，不访问百炼、不需要真实 Key，覆盖聊天回归、结构化转换、非法字段、异常兜底、角色隔离和日志。当前全量范围有 420 项 Java 测试，其中 112 项需要真实 PostgreSQL；通过 `RUN_PGVECTOR_TESTS=true RUN_ACCEPTANCE_TESTS=true ./mvnw package` 开启全部数据库验证，未启用时明确跳过。新增测试不需要真实模型 Key。前端 SSE 解析另有 122 项测试，通过 `node --test scripts/tests/sse-client.test.mjs` 运行（仅此开发测试需要 Node，应用启动不需要）。覆盖工具执行、会话隔离、向量数学、批次边界、知识过滤、重复导入及异常保护。集成测试步骤见第七章文档。启动应用和运行 JAR 仍需真实 `DASHSCOPE_API_KEY`。
 
 ## 目录与章节对应
 
@@ -403,3 +404,14 @@ IDEA 同步 Maven 后运行原 `CloudCustomerServiceApplication` 配置，打开
 每轮重建 Agent / Tools / PostgresSaver，同一任务使用稳定的内部 threadId；通过新保存器确认检查点已实际落库后才保存完成状态。续写必须携带当前 `expectedVersion`，旧版本或并发请求返回 409。模型错误、存储不一致、超时或崩溃不会自动重跑；RUNNING / RECOVERY_REQUIRED 保留供核查。结束任务保留数据库历史。
 
 391 项 Java 测试通过，含 92 项真实数据库验证及两个独立 JVM 的强制终止/恢复验证。仍是本地教学系统，没有自动故障接管、任意节点恢复、正式版本化草稿、审批或业务提交。代码、API、真实模型重启验证和运行边界见[第二十二章说明](docs/chapters/22-persistent-task-checkpoints.md)。
+
+
+## 第二十三章：确认用户实际看见的版本
+
+在 <http://127.0.0.1:18080/internal/draft-tasks> 正常完成一轮候选后，点击“整理并保存新版本”。模型只提取问题描述和申请诉求，Java 显式校验；订单和预检查快照由服务端填入。页面显示具体版本、事实时间、政策来源，再由用户勾选并确认。
+
+新正文总是新版本，旧确认不会继承。两个窗口的旧版本确认返回 409，页面加载新内容供重新核对，绝不自动确认另一版。当前同版重复请求返回同一回执；开始新的 Agent 轮次立即让旧确认失效，历史正文和回执仍保留。
+
+420 项 Java 测试全部通过，含 112 项真实数据库验证。真实 Qwen 双窗口验收确认：旧 V1 被拒绝后，V2 仍未确认；显式核对 V2 才保存回执，实际应用重启后正文与回执一致，读取不调用模型。最终服务通过终端运行在 18080，IDEA 配置保留，但本次未在 IDEA 内启动。
+
+章节 API、数据库锁、模型边界、测试及真实页面验收见[第二十三章说明](docs/chapters/23-immutable-draft-confirmation.md)。这只是内容确认基础，未实现工具执行前审批、正式售后提交或退款。

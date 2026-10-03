@@ -41,7 +41,7 @@ public class PersistentDraftTaskService {
     private final ExecutorService runs=pool("persistent-task"),workers=pool("persistent-call");
     /** 外部只返回稳定业务信息和版本，不暴露内部 threadId、checkpointId 或凭证。 */
     public record Summary(UUID taskId,UUID conversationId,String orderNo,ReturnReason reason,String status,
-            long version,int turnNo,String agentProfile,boolean compatible,Instant createdAt,Instant updatedAt) { }
+            long version,int turnNo,long draftVersion,String agentProfile,boolean compatible,Instant createdAt,Instant updatedAt) { }
     public record View(Summary task,int lastCompletedTurn,DraftRun lastRun,StateSummary state) { }
     /** 保存上一正常完成轮次的业务结果与摘要；不会把 RUNNING 中的部分检查点解释成完成结果。 */
     public record Completed(int turnNo,DraftRun run,StateSummary state) { }
@@ -138,14 +138,14 @@ public class PersistentDraftTaskService {
     private View view(TaskRow task,boolean show) {
         Summary summary=summary(task);
         if(!show||task.status().equals("CLOSED")) {
-            summary=new Summary(summary.taskId(),summary.conversationId(),summary.orderNo(),summary.reason(),"CLOSED",summary.version(),summary.turnNo(),summary.agentProfile(),summary.compatible(),summary.createdAt(),summary.updatedAt());
+            summary=new Summary(summary.taskId(),summary.conversationId(),summary.orderNo(),summary.reason(),"CLOSED",summary.version(),summary.turnNo(),summary.draftVersion(),summary.agentProfile(),summary.compatible(),summary.createdAt(),summary.updatedAt());
             return new View(summary,0,null,StateSummary.empty());
         }
         if(task.lastResultJson()==null)return new View(summary,0,null,StateSummary.empty());
         try{var saved=json.readValue(task.lastResultJson(),Completed.class);return new View(summary,saved.turnNo(),saved.run(),saved.state());}
         catch(Exception ex){throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,"已存结果无法读取，请核查数据，未调用模型重建");}
     }
-    private Summary summary(TaskRow row){return new Summary(row.taskId(),row.conversationId(),row.orderNo(),row.reason(),row.status(),row.version(),row.turnNo(),row.agentProfile(),DraftTaskRepository.PROFILE.equals(row.agentProfile()),row.createdAt(),row.updatedAt());}
+    private Summary summary(TaskRow row){return new Summary(row.taskId(),row.conversationId(),row.orderNo(),row.reason(),row.status(),row.version(),row.turnNo(),row.draftVersion(),row.agentProfile(),DraftTaskRepository.PROFILE.equals(row.agentProfile()),row.createdAt(),row.updatedAt());}
     private StateSummary state(Checkpoint checkpoint,int count){
         Object value=checkpoint.getState().get("messages");if(!(value instanceof List<?> messages))throw new IllegalStateException("检查点消息结构不兼容");
         return new StateSummary(count,messages.size(),count(messages,UserMessage.class),count(messages,AssistantMessage.class),count(messages,ToolResponseMessage.class));

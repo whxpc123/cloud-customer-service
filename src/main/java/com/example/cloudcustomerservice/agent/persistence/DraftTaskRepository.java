@@ -18,11 +18,11 @@ public class DraftTaskRepository {
     /** 仅内部使用：包含恢复关联和完成快照，控制器不得直接序列化这条记录。 */
     public record TaskRow(UUID taskId,String tenantId,long userId,UUID conversationId,String threadId,
             String orderNo,ReturnReason reason,String agentProfile,String status,long version,int turnNo,
-            UUID runId,UUID lastCheckpointId,String lastResultJson,Instant createdAt,Instant updatedAt) { }
+            long draftVersion,UUID runId,UUID lastCheckpointId,String lastResultJson,Instant createdAt,Instant updatedAt) { }
     private static final RowMapper<TaskRow> ROW=(rs,n)->new TaskRow(rs.getObject("task_id",UUID.class),rs.getString("tenant_id"),
             rs.getLong("user_id"),rs.getObject("conversation_id",UUID.class),rs.getString("thread_id"),rs.getString("order_no"),
             ReturnReason.valueOf(rs.getString("reason")),rs.getString("agent_profile"),rs.getString("status"),rs.getLong("version"),
-            rs.getInt("turn_no"),rs.getObject("run_id",UUID.class),rs.getObject("last_checkpoint_id",UUID.class),
+            rs.getInt("turn_no"),rs.getLong("draft_version"),rs.getObject("run_id",UUID.class),rs.getObject("last_checkpoint_id",UUID.class),
             rs.getString("last_result_json"),rs.getTimestamp("created_at").toInstant(),rs.getTimestamp("updated_at").toInstant());
     private final JdbcTemplate jdbc;
     public DraftTaskRepository(JdbcTemplate jdbc){this.jdbc=jdbc;}

@@ -1,0 +1,10 @@
+/* 第二十三章：具体版本作为独立审阅区，陈述、历史事实与确认回执在视觉上分开。 */
+.draft-review{margin:24px 0 32px;padding:24px;border:1px solid #bed5d0;border-radius:12px;background:#f5faf8}
+.draft-review h2{font-size:19px}.revision-picker{margin-top:20px;display:grid;gap:7px}.revision-picker select{width:100%}
+.statement-fields{display:grid;gap:12px;margin:18px 0}.statement-fields>div{padding:16px;background:white;border:1px solid var(--line);border-radius:8px}
+.statement-fields h3{font-size:13px;color:var(--accent);margin:0 0 10px}.statement-fields p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.85}
+.snapshot-box{border-left:3px solid #98a8ad;padding:2px 0 2px 16px;margin:22px 0}.snapshot-box h3{font-size:14px}.snapshot-box ul{font-size:12px;color:var(--muted);padding-left:18px}
+.accept-row{display:flex;align-items:flex-start;gap:10px;font-size:13px;line-height:1.8;margin:20px 0 14px}.accept-row input{width:18px;height:18px;flex:0 0 18px;margin:3px 0 0;accent-color:var(--accent)}
+.confirmation-box{background:#e3f0eb;border:1px solid #bed5d0;padding:16px;border-radius:8px;margin:20px 0}.confirmation-box h3{margin:0 0 8px;font-size:15px}.confirmation-box p{line-height:1.8;overflow-wrap:anywhere}
+#draft-notice{font-size:13px;line-height:1.9}#revision-meta{overflow-wrap:anywhere}#confirm-draft{white-space:normal;text-align:left;line-height:1.5}
+@media(max-width:650px){.draft-review{padding:16px}.draft-review .panel-head{align-items:flex-start;gap:10px}.draft-review h2{font-size:17px}.statement-fields>div{padding:12px}}
