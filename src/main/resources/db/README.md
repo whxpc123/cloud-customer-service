@@ -46,3 +46,13 @@
 消息保存原文、角色、作者、接收版本、时间，以及正式机器人消息的完整 JSON 业务证据；按游标每页最多 100 条。client_message_id 对每个会话唯一，重复请求不会重复追加或重新生成。generation_started_at 为异常中断提供五分钟租约过期恢复，不是排队等待时间。memory_after 只重置模型读取窗口，永不删除正式记录或恢复机器人接待。
 
 两张表与知识向量、原件及评测完全独立；它们是 PostgreSQL 普通业务表，不将聊天记录自动导入向量知识库。登录 Session 仍在进程内，重启后重新登录才能按同一账户恢复数据库记录。
+
+## V6：业务任务与 Graph 检查点
+
+`V6__persistent_draft_tasks.sql` 新建 `ai.cs_draft_task`，保存客户/租户/正式会话、内部 threadId、固定订单和原因、契约版本、状态、CAS 版本、轮次、runId、最近正常 checkpointId 和结果快照 JSON。外键关联既有正式会话，结果和检查点关联必须同时为空或非空。任务不会自动写成正式聊天消息或知识向量。
+
+`DraftTaskRepository` 的短事务通过 expectedVersion + 正常状态 + 契约 + 会话版本领取一轮；正常完成再次条件更新结果和版本。Graph 的写入在另一个连接里提交，两者不是原子事务。无法确认完成时保存 RECOVERY_REQUIRED，标记失败或进程退出则保留 RUNNING；本章没有启动时重置/接管。查询只读业务结果快照，结束保留数据库历史。
+
+同时创建与 Graph Core 1.1.2.2 PostgresSaver 实际 SQL 一致的 `public.graphthread` / `public.graphcheckpoint`。配置 threadId 对应 thread_name，表内 thread_id 为内部 UUID。state_data 是包裹 Base64 binaryPayload 的 JSONB，搭配 state_content_type 由默认 Jackson 状态序列化器还原类型；不等于明文消息数组，更不是加密。非 released 的 thread_name 有唯一索引；release 标记线程生命周期，不当成关闭连接使用。
+
+表由 Flyway 建立，保存器建表/删表开关均关闭。保存器连接信息来自应用同一 JdbcConnectionDetails，但官方 Builder 自建连接，不复用 Hikari 设置；当前适配器拒绝无法保留的 JDBC URL 参数，只验证本地单 PostgreSQL 地址。恢复前后都用新保存器核对数据库，不能只信 MemorySaver 基类缓存。详细恢复契约及测试见第二十二章文档。V1～V5 内容不变。

@@ -20,6 +20,7 @@ class EmbeddingLabProfileTest {
      * 在非 local 环境尝试实验页面与 API，验证调试入口不会被默认环境公开。
      */
     @Test void labPageAndApisDoNotExistOutsideLocal() throws Exception {
+        mvc.perform(get("/internal/local-draft-tasks")).andExpect(status().isNotFound());
         mvc.perform(get("/internal/draft-tasks")).andExpect(status().isNotFound());
         mvc.perform(get("/internal/draft-tasks/tasks")).andExpect(status().isNotFound());
         mvc.perform(get("/internal/draft-agent")).andExpect(status().isNotFound());

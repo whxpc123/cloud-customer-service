@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import static com.example.cloudcustomerservice.agent.DraftTaskModel.*;
 
 /** 身份、会话和接待状态沿用已验证入口；只允许传业务 taskId，不收 threadId 或 checkpointId。 */
-@RestController @RequestMapping("/internal/draft-tasks") @Profile("local & knowledge")
+@RestController @RequestMapping("/internal/local-draft-tasks") @Profile("local & knowledge")
 public class LocalDraftTaskController {
     private final LocalDraftTaskService tasks;
     private final HumanHandoffService handoff;

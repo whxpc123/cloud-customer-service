@@ -965,7 +965,7 @@ GET http://127.0.0.1:18080/internal/draft-agent
 
 
 ### 第二十一章：创建一次本地任务（沿用上方客户 Cookie、routingConversationId 和 handoffCsrf）
-POST http://127.0.0.1:18080/internal/draft-tasks/tasks
+POST http://127.0.0.1:18080/internal/local-draft-tasks/tasks
 Content-Type: application/json
 X-CSRF-TOKEN: {{handoffCsrf}}
 
@@ -978,7 +978,7 @@ X-CSRF-TOKEN: {{handoffCsrf}}
 > {% client.global.set("draftTaskId", response.body.taskId); %}
 
 ### 只提交本轮补充，不重放历史；可以修改 message 后再次发送
-POST http://127.0.0.1:18080/internal/draft-tasks/tasks/{{draftTaskId}}/turns
+POST http://127.0.0.1:18080/internal/local-draft-tasks/tasks/{{draftTaskId}}/turns
 Content-Type: application/json
 X-CSRF-TOKEN: {{handoffCsrf}}
 
@@ -987,14 +987,60 @@ X-CSRF-TOKEN: {{handoffCsrf}}
 }
 
 ### 只读检查点摘要与最新结果，不会调用模型
-GET http://127.0.0.1:18080/internal/draft-tasks/tasks/{{draftTaskId}}
+GET http://127.0.0.1:18080/internal/local-draft-tasks/tasks/{{draftTaskId}}
 
 ### 当前账户在这个进程内的任务列表
-GET http://127.0.0.1:18080/internal/draft-tasks/tasks
+GET http://127.0.0.1:18080/internal/local-draft-tasks/tasks
 
 ### 清理本地实验任务；不删除正式会话，已清理/重启后的旧 taskId 返回 404
-DELETE http://127.0.0.1:18080/internal/draft-tasks/tasks/{{draftTaskId}}
+DELETE http://127.0.0.1:18080/internal/local-draft-tasks/tasks/{{draftTaskId}}
 X-CSRF-TOKEN: {{handoffCsrf}}
 
 ### 第二十一章页面
+GET http://127.0.0.1:18080/internal/local-draft-tasks
+
+
+### 第二十二章：持久化任务，创建只写业务表，不调用模型
+POST http://127.0.0.1:18080/internal/draft-tasks/tasks
+Content-Type: application/json
+X-CSRF-TOKEN: {{handoffCsrf}}
+
+{"conversationId":"{{routingConversationId}}","orderNo":"A10001","reason":"QUALITY_ISSUE"}
+
+> {% client.global.set("persistentTaskId", response.body.taskId); client.global.set("persistentTaskVersion", response.body.version); %}
+
+### 只发送本轮输入；必须使用最近读取的版本，禁止网络错误后自动重试
+POST http://127.0.0.1:18080/internal/draft-tasks/tasks/{{persistentTaskId}}/turns
+Content-Type: application/json
+X-CSRF-TOKEN: {{handoffCsrf}}
+
+{"expectedVersion":{{persistentTaskVersion}},"message":"商品右侧外壳开裂，请重新核验并整理候选，保留质量未核验标记，不要提交。"}
+
+> {% if (response.status === 200) client.global.set("persistentTaskVersion", response.body.task.version); %}
+
+### 重启后重新登录同一客户，刷新 CSRF；GET 只读已存业务结果，不执行图
+GET http://127.0.0.1:18080/internal/draft-tasks/tasks/{{persistentTaskId}}
+
+> {% if (response.status === 200) client.global.set("persistentTaskVersion", response.body.task.version); %}
+
+### 接着旧任务修改，只传新输入，历史由 PostgresSaver 恢复
+POST http://127.0.0.1:18080/internal/draft-tasks/tasks/{{persistentTaskId}}/turns
+Content-Type: application/json
+X-CSRF-TOKEN: {{handoffCsrf}}
+
+{"expectedVersion":{{persistentTaskVersion}},"message":"更正刚才的描述：不是外壳开裂，而是右侧按钮按不动。删除旧说法，重新核验并更新候选，不要提交。"}
+
+> {% if (response.status === 200) client.global.set("persistentTaskVersion", response.body.task.version); %}
+
+### 当前账户最近 100 个数据库任务，含结束记录
+GET http://127.0.0.1:18080/internal/draft-tasks/tasks
+
+### 结束正常任务：保留结果与检查点，不可继续；RUNNING/RECOVERY_REQUIRED 不允许这样解锁
+POST http://127.0.0.1:18080/internal/draft-tasks/tasks/{{persistentTaskId}}/close
+Content-Type: application/json
+X-CSRF-TOKEN: {{handoffCsrf}}
+
+{"expectedVersion":{{persistentTaskVersion}}}
+
+### 第二十二章页面
 GET http://127.0.0.1:18080/internal/draft-tasks

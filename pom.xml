@@ -121,7 +121,7 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <scope>runtime</scope>
+            <!-- 第二十二章用驱动的 DataSource 解析实际连接信息，编译期也需要该 API；版本保持原 BOM。 -->
         </dependency>
         <!-- Flyway 统一执行版本迁移；已应用迁移不可随意编辑，否则启动校验会失败。 -->
         <dependency>

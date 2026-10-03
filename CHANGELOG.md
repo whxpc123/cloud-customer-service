@@ -1,5 +1,16 @@
 # 章节变更记录
 
+## 第22章 · `chapter-22` · 任务与检查点双持久化
+
+- 主入口 `/internal/draft-tasks` 使用 PostgreSQL 业务任务表与真实 PostgresSaver，正常完成后可跨 JVM 重启查看和续写；旧内存实验移到 `/internal/local-draft-tasks`。
+- 每轮新建 Agent、工具与保存器，固定 taskId/threadId、更新 runId；检查点读取恢复类型化历史，订单与政策每轮重新核验。
+- 短事务 expectedVersion CAS 防止同任务并发和旧版本重放；运行前核对业务关联与终态，完成前用另一新 Saver 确认实际落库。GET 只读已存结果，不执行图。
+- V6 新建任务与框架兼容表，历史迁移不变；保存器与业务更新独立提交，未确认完成标记 RECOVERY_REQUIRED，崩溃后 RUNNING 不自动解锁。结束保留历史，不误用 release 关闭连接。
+- 继续当前身份、会话归属、BOT、迟到结果隐藏和有限调用预算。页面区分本轮状态与上一正常结果，未增加正式草稿版本、审批、提交或退款。
+- 全量 391 项 Java 测试通过，含 92 项真实数据库验证；新增 20 项持久化/HTTP 测试与 1 项强制终止、重启两个独立 JVM 的验证。
+- 真实 Qwen 两轮跨应用重启续写通过：同任务、不同 runId、两条用户历史，重启后的 GET 不调用模型；1280 / 390 px 页面检查通过。最终 18080 为终端启动，IDEA 自动切换项目仍未生效。
+- 详情：[第二十二章实现与实际重启验收](docs/chapters/22-persistent-task-checkpoints.md)。
+
 ## 第21章 · `chapter-21` · 进程内任务续写与检查点隔离
 
 - 新增 `/internal/draft-tasks`：创建一次任务、逐轮修改候选、列表与只读检查点摘要、显式清理。

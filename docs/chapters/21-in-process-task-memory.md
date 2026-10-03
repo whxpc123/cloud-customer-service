@@ -2,9 +2,11 @@
 
 同一售后任务现在可以连续补充和修改描述。第二十章仍保持每次新运行；第二十一章复用同一任务的 Agent、工具对象、MemorySaver 和内部 threadId，每轮生成新的 runId 与预算。章节没有引入数据库任务表，应用重启后无法恢复。
 
+> 第二十二章已将主入口切换为持久化版本。本说明中的 URL 已同步为当前内存对照实验地址；历史 `chapter-21` 标签仍使用 `/internal/draft-tasks`，下面的旧章验收数字对应当时版本。
+
 ## 打开与使用
 
-打开 <http://127.0.0.1:18080/internal/draft-tasks>，在统一客服页用本机 customer1001 / customer2002 登录。选 BOT 会话（可以新建），输入订单与初始原因，点击“创建任务”；创建本身不调用模型。然后连续点击“继续此任务”：
+打开 <http://127.0.0.1:18080/internal/local-draft-tasks>，在统一客服页用本机 customer1001 / customer2002 登录。选 BOT 会话（可以新建），输入订单与初始原因，点击“创建任务”；创建本身不调用模型。然后连续点击“继续此任务”：
 
 1. “商品使用时插头发热，请核验订单与政策，整理候选草稿，不要提交。”
 2. “刚才描述有误，改为外壳破损，删除插头发热的说法。重新核验后更新候选。”
@@ -58,7 +60,7 @@
 
 ## API 与状态
 
-所有 API 都在 `/internal/draft-tasks/tasks` 下，仅在 `local,knowledge` 同时启用时注册。页面本身可打开，操作要求客户登录；写请求需要登录后新取得的 CSRF token。
+所有 API 都在 `/internal/local-draft-tasks/tasks` 下，仅在 `local,knowledge` 同时启用时注册。页面本身可打开，操作要求客户登录；写请求需要登录后新取得的 CSRF token。
 
 | 方法 / 路径 | 请求 / 含义 |
 | --- | --- |
@@ -68,7 +70,7 @@
 | POST `/tasks/{taskId}/turns` | `{message}`，仅当前轮 1～2000 字符；一次显式运行 |
 | DELETE `/tasks/{taskId}` | 清理本地任务及检查点，204 |
 
-上表 `/tasks` 是相对于 `/internal/draft-tasks` 的路径。`requests.http` 提供完整 URL 与 IDEA HTTP Client 自动保存 taskId 的示例。
+上表 `/tasks` 是相对于 `/internal/local-draft-tasks` 的路径。`requests.http` 提供完整 URL 与 IDEA HTTP Client 自动保存 taskId 的示例。
 
 订单格式为 A 加五位数字；原因支持 QUALITY_ISSUE / CHANGE_OF_MIND / UNKNOWN。身份、订单和初始原因固定在任务里，续写不能靠提示词换单或换身份。要换业务范围就创建新任务。
 

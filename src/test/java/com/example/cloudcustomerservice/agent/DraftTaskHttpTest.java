@@ -48,7 +48,7 @@ class DraftTaskHttpTest {
     }
     String create()throws Exception{return owner.call("/api/handoff/conversations","POST","{}",201).path("conversationId").asText();}
     String body(String id)throws Exception{return json.writeValueAsString(Map.of("conversationId",id,"orderNo","A10001","reason","QUALITY_ISSUE"));}
-    String path(){return "/internal/draft-tasks/tasks";}
+    String path(){return "/internal/local-draft-tasks/tasks";}
     String task(String conversation)throws Exception{return owner.call(path(),"POST",body(conversation),201).path("taskId").asText();}
     String turn(){return "{\"message\":\"请整理候选，不要提交\"}";}
     HttpRequest.Builder base(String path){return HttpRequest.newBuilder(URI.create("http://127.0.0.1:"+port+path)).timeout(Duration.ofSeconds(12));}
