@@ -21,6 +21,8 @@ class EmbeddingLabProfileTest {
      */
     @Test void labPageAndApisDoNotExistOutsideLocal() throws Exception {
         mvc.perform(get("/internal/draft-tasks/tasks/00000000-0000-0000-0000-000000000000/drafts")).andExpect(status().isNotFound());
+        mvc.perform(get("/internal/draft-tasks/hitl")).andExpect(status().isNotFound());
+        mvc.perform(get("/internal/draft-tasks/hitl/executions")).andExpect(status().isNotFound());
         mvc.perform(get("/internal/local-draft-tasks")).andExpect(status().isNotFound());
         mvc.perform(get("/internal/draft-tasks")).andExpect(status().isNotFound());
         mvc.perform(get("/internal/draft-tasks/tasks")).andExpect(status().isNotFound());

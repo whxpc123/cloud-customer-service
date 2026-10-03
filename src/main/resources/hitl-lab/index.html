@@ -1,0 +1,19 @@
+<!doctype html>
+<!-- 第二十四章：审批卡展示服务端保留的实际操作，按钮只提交编号、版本和决策。 -->
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>云杉 · 工具执行前审批</title><link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/embedding-lab.css"><link rel="stylesheet" href="/query-lab.css"><link rel="stylesheet" href="/routing-lab.css"><link rel="stylesheet" href="/draft-agent.css"><link rel="stylesheet" href="/draft-tasks.css"><link rel="stylesheet" href="/hitl-lab.css"><script type="module" src="/hitl-lab.js"></script></head>
+<body><header><a class="brand" href="/">杉 <span>云杉客服</span></a><nav aria-label="章节导航"><a href="/internal/draft-tasks">草稿版本与确认 ↗</a><a href="/internal/routing">统一客服 / 登录 ↗</a></nav></header>
+<main><div class="route-title"><div><p class="eyebrow">CHAPTER 24 / HUMAN IN THE LOOP</p><h1>内容确认之后，<span>再过一道门。</span></h1></div><p>先看清具体操作，再决定是否放行。<br>工具是否执行，以实际计数为准。</p></div>
+<aside class="local-note"><strong>仅模拟提交</strong><span>没有真实售后单、退款或附件发送。审批实验只保存在本次进程，重启后消失；已保存的草稿与内容确认仍在数据库中。</span></aside>
+<div class="account-row"><p id="account" role="status">正在检查登录…</p><button id="refresh" type="button">刷新实验</button></div>
+<div class="draft-layout task-layout"><aside class="task-sidebar"><section class="query-panel"><h2>选择已确认的草稿</h2><form id="start-form"><fieldset id="start-inputs" disabled><label for="task-select">准备任务</label><select id="task-select" required></select><label for="draft-select">具体草稿版本</label><select id="draft-select" required></select><div id="draft-preview" class="draft-preview"><p class="fine">先在草稿页完成候选、保存版本并确认内容。</p></div><button id="start" class="primary" type="submit" disabled>启动审批实验</button></fieldset></form><p class="fine">启动只让 Agent 提出操作并等待审批，不代表您已批准。本实验不会改变准备任务的运行编号。</p></section>
+<section class="query-panel"><h2>本次进程的实验</h2><div id="experiments" aria-label="审批实验列表"></div><p class="fine">最多保存 100 场；清理仅释放本地实验，不删除草稿。</p></section></aside>
+<section id="result" class="query-panel result-panel" aria-busy="false"><div class="panel-head"><h2>本次操作审阅</h2><span id="phase" class="tag">尚未开始</span></div><p id="notice" role="status">选择已确认的草稿，查看 Agent 实际提出的操作。</p>
+<ol class="approval-path" aria-label="审批流程"><li id="step-proposed">提出操作</li><li id="step-waiting">执行前暂停</li><li id="step-result">人工决策与结果</li></ol>
+<div class="execution-proof"><div><span>受保护工具实际执行次数</span><strong id="count">—</strong></div><p>批准前应为 0；模拟执行后为 1。<br>真实提交：<b>否</b>　退款执行：<b>否</b></p></div>
+<div id="card" hidden><p id="card-meta" class="fine"></p><div class="operation-title"><span>待审操作</span><h3>模拟提交售后申请</h3><p>只验证人工审批机制，不向正式售后系统发送内容。</p></div><div class="review-body"><h3 id="draft-heading"></h3><h4>问题描述</h4><p id="description"></p><h4>申请诉求</h4><p id="handling"></p><p id="facts" class="fine"></p><p class="readonly">内容确认只表示描述符合用户意思；本次批准只允许这一笔模拟操作。</p></div><p id="expiry" class="fine"></p>
+<div class="decision-actions"><button id="approve" class="primary" type="button" disabled>批准本次模拟操作</button><button id="reject" type="button" disabled>拒绝本次操作</button></div>
+<details><summary>查看具体工具调用与参数</summary><pre id="tool-call"></pre></details></div>
+<div id="receipt" class="decision-receipt" hidden><h3>服务器记录的决策与执行结果</h3><p id="receipt-text"></p></div>
+<details><summary>本场实验 JSON</summary><pre id="raw">尚无实验</pre></details><div class="task-actions"><button id="discard" type="button" disabled>清理本次实验</button></div><p class="fine">批准、拒绝均只消费一次；失败后先刷新查询，不自动重试。每场实验最多 4 次模型调用，每段等待最多 45 秒，审批卡有效期 10 分钟。</p></section></div></main>
+<dialog id="discard-dialog"><form method="dialog"><h2>清理这场本地实验？</h2><p>释放本次审批与检查点内存。该审批卡将不能恢复，数据库中的草稿和内容确认保留。</p><div class="dialog-actions"><button value="cancel">取消</button><button value="confirm">确认清理</button></div></form></dialog>
+</body></html>

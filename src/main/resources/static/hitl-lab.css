@@ -1,0 +1,9 @@
+/* 审阅页沿用云杉蓝灰与青绿色；横向门槛线对应真实的提出、暂停、决策阶段。 */
+.approval-path{display:flex;list-style:none;padding:0;margin:24px 0 0;border-top:2px solid #dce4e6;gap:18px}
+.approval-path li{flex:1;padding-top:12px;font-size:12px;color:#78898f}.approval-path li.active{border-top:3px solid var(--accent);margin-top:-3px;color:var(--ink);font-weight:700}
+.execution-proof{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:24px 0;margin-bottom:20px;border-bottom:1px solid var(--line)}
+.execution-proof span{display:block;font-size:12px;color:var(--muted)}.execution-proof strong{display:block;font-size:52px;line-height:1.2;font-family:ui-monospace,monospace;color:var(--accent)}.execution-proof p{font-size:13px;line-height:1.9;color:var(--muted)}
+.operation-title{border-left:4px solid var(--accent);padding:6px 18px;margin:24px 0}.operation-title span{font-size:12px;color:var(--muted)}.operation-title h3{font-size:22px;margin:8px 0}.operation-title p{font-size:13px}
+.review-body{background:#f5faf8;border:1px solid #cbded7;border-radius:10px;padding:20px}.review-body h3{margin-top:0}.review-body h4{font-size:12px;color:var(--accent);margin-bottom:6px}.review-body p,.draft-preview p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8}
+.draft-preview{margin:16px 0}.draft-preview p{font-size:13px}.decision-actions{display:flex;gap:12px;margin:20px 0;flex-wrap:wrap}.decision-receipt{padding:18px;margin-top:22px;background:#eaf1f4;border:1px solid var(--line);border-radius:8px}.decision-receipt p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.9}#card-meta{overflow-wrap:anywhere}#notice{line-height:1.8}#start{white-space:normal}
+@media(max-width:650px){.execution-proof{align-items:flex-start}.execution-proof strong{font-size:42px}.execution-proof p{max-width:155px}.review-body{padding:15px}.approval-path{gap:10px}}

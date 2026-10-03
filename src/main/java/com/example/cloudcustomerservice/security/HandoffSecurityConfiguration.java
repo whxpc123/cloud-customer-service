@@ -47,7 +47,7 @@ public class HandoffSecurityConfiguration {
                 .authorizeHttpRequests(a -> a
                     // 异步完成分派不再次执行控制器；原始请求已校验，状态轮询仍逐次检查 Session。
                     .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
-                    .requestMatchers(HttpMethod.GET, "/internal/routing", "/internal/handoff/session", "/internal/stream-lab", "/internal/draft-agent", "/internal/draft-tasks", "/internal/local-draft-tasks").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/internal/routing", "/internal/handoff/session", "/internal/stream-lab", "/internal/draft-agent", "/internal/draft-tasks", "/internal/draft-tasks/hitl", "/internal/local-draft-tasks").permitAll()
                     .requestMatchers("/internal/handoff/login").permitAll()
                     .requestMatchers("/api/support/**").hasAuthority("support:serve")
                     .requestMatchers("/internal/stream-lab/**").authenticated()

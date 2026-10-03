@@ -130,6 +130,7 @@ async function showDraft(version){
   if(c){$('confirmation-heading').textContent=view.confirmationEffective?`已记录对 V${view.draftVersion} 内容的确认`:`V${view.draftVersion} 曾经确认，当前已失效`;
     $('confirmation-scope').textContent='仅确认问题描述和申请诉求。不代表售后审核通过，没有提交申请或执行退款。';
     $('confirmation-meta').textContent=`确认人 ${c.confirmedBy} · ${new Date(c.confirmedAt).toLocaleString()} · 回执 ${c.confirmationId} · ${c.scope}`;}
+  $('hitl-link').hidden=!view.confirmationEffective;$('hitl-link').href=`/internal/draft-tasks/hitl?taskId=${view.taskId}&draftVersion=${view.draftVersion}`;
   $('draft-raw').textContent=JSON.stringify(view,null,2);controls();
 }
 $('revision-select').addEventListener('change',()=>operate(()=>showDraft(Number($('revision-select').value))));

@@ -1072,3 +1072,53 @@ X-CSRF-TOKEN: {{handoffCsrf}}
 
 ### 查看版本目录和历史确认；继续任务前重新 GET 当前 task.version
 GET http://127.0.0.1:18080/internal/draft-tasks/tasks/{{persistentTaskId}}/drafts
+
+
+### 第二十四章：读取已确认的具体草稿，记录 taskVersion（仍需现有登录 Cookie 与 CSRF）
+GET http://127.0.0.1:18080/internal/draft-tasks/tasks/{{persistentTaskId}}/drafts/{{seenDraftVersion}}
+
+> {% if (response.status === 200) client.global.set("persistentTaskVersion", response.body.taskVersion); %}
+
+### 创建独立审批实验：expectedTaskVersion 必须是上面实际查看的版本
+POST http://127.0.0.1:18080/internal/draft-tasks/hitl/executions
+Content-Type: application/json
+X-CSRF-TOKEN: {{handoffCsrf}}
+
+{"taskId":"{{persistentTaskId}}","draftVersion":{{seenDraftVersion}},"expectedTaskVersion":{{persistentTaskVersion}}}
+
+> {%
+  if (response.status === 201) {
+    client.global.set("executionId", response.body.executionId);
+    if (response.body.phase === "WAITING_APPROVAL" && response.body.card) {
+      client.global.set("approvalId", response.body.card.approvalId);
+      client.global.set("executionVersion", response.body.version);
+    }
+  }
+%}
+
+### 刷新实验，不执行模型；从卡片记录 approvalId 与实验 version
+GET http://127.0.0.1:18080/internal/draft-tasks/hitl/executions/{{executionId}}
+
+### 明确批准这张卡：不能把源任务版本当成实验 expectedVersion，不自动重试
+POST http://127.0.0.1:18080/internal/draft-tasks/hitl/executions/{{executionId}}/decision
+Content-Type: application/json
+X-CSRF-TOKEN: {{handoffCsrf}}
+
+{"approvalId":"{{approvalId}}","expectedVersion":{{executionVersion}},"decision":"APPROVE"}
+
+### 拒绝：应在另一场未消费的实验上使用；EDITED 不开放
+POST http://127.0.0.1:18080/internal/draft-tasks/hitl/executions/{{executionId}}/decision
+Content-Type: application/json
+X-CSRF-TOKEN: {{handoffCsrf}}
+
+{"approvalId":"{{approvalId}}","expectedVersion":{{executionVersion}},"decision":"REJECT"}
+
+### 当前客户的本地实验列表；服务重启后为空
+GET http://127.0.0.1:18080/internal/draft-tasks/hitl/executions
+
+### 清理一场非运行中的本地实验，保留原数据库任务与草稿
+DELETE http://127.0.0.1:18080/internal/draft-tasks/hitl/executions/{{executionId}}
+X-CSRF-TOKEN: {{handoffCsrf}}
+
+### 第二十四章页面
+GET http://127.0.0.1:18080/internal/draft-tasks/hitl
