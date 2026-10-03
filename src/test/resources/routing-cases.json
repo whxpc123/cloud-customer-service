@@ -1,0 +1,17 @@
+[
+  {"message":"你好","route":"SMALL_TALK","source":"RULE"},
+  {"message":"谢谢！","route":"SMALL_TALK","source":"RULE"},
+  {"message":"我要转人工！","route":"HUMAN_SERVICE","source":"RULE"},
+  {"message":"退货运费谁承担","route":"KNOWLEDGE","source":"MODEL"},
+  {"message":"人工客服几点上班","route":"KNOWLEDGE","source":"MODEL"},
+  {"message":"不要转人工，先解释退货规则","route":"KNOWLEDGE","source":"MODEL"},
+  {"message":"你好，我的 A10001 发货了吗","route":"ORDER_QUERY","source":"MODEL"},
+  {"message":"我这个 A10001 能不能退","route":"AFTER_SALE_PRECHECK","source":"MODEL"},
+  {"message":"我要查订单","route":"ORDER_QUERY","source":"MODEL"},
+  {"message":"我要退货","route":"AFTER_SALE_PRECHECK","source":"MODEL"},
+  {"message":"我不想和机器人说了，找个人处理","route":"HUMAN_SERVICE","source":"MODEL"},
+  {"message":"那个到底怎么办","route":"CLARIFY"},
+  {"message":"查订单，再告诉我开票规则","route":"CLARIFY","reasonCode":"MULTIPLE_INDEPENDENT_TASKS"},
+  {"message":"结合政策，看看我的 A10001 能不能退","route":"AFTER_SALE_PRECHECK","source":"MODEL"},
+  {"message":"帮我写一篇完全无关的小说","route":"OUT_OF_SCOPE","source":"MODEL"}
+]

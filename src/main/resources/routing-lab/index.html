@@ -1,0 +1,37 @@
+<!doctype html>
+<!-- 第十六章统一客服工作台：提问区与实际路由/业务证据分开；原章节入口继续用于对照。 -->
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>云杉客服 · 统一入口</title><link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/embedding-lab.css"><link rel="stylesheet" href="/query-lab.css"><link rel="stylesheet" href="/routing-lab.css"><script src="/routing-lab.js" defer></script></head>
+<body>
+<header><a class="brand" href="/">杉 <span>云杉客服</span></a><nav aria-label="章节导航"><a href="/internal/knowledge-admin">知识库管理 ↗</a><a href="/internal/after-sale">售后预检查 ↗</a></nav></header>
+<main>
+  <div class="route-title"><div><p class="eyebrow">CHAPTER 16 / CUSTOMER ROUTING</p><h1>一个入口，<span>各司其职。</span></h1></div><p>说出问题，让客服选择合适的流程。<br>每一轮都能查看实际分流和处理依据。</p></div>
+  <aside class="local-note"><strong>本地教学 · 演示账户 1001</strong><span>订单为固定样例；政策使用现有知识库。未连接真实登录或人工坐席，不执行退款。</span></aside>
+  <div class="route-layout">
+    <section class="query-panel chat-panel" aria-label="统一客服对话">
+      <div class="panel-head"><h2>和云杉客服聊聊</h2><div><button type="button" id="new-session">新会话</button><button type="button" id="clear">清空</button></div></div>
+      <p id="session" class="fine">正在建立本地会话…</p>
+      <div id="messages" aria-live="polite"><p class="empty">可以先说“你好”，或直接询问订单、政策和售后。后续追问沿用当前会话。</p></div>
+      <form id="chat-form">
+        <label for="example">选择一句试试</label>
+        <select id="example"><option value="hello">问候 · 你好</option><option value="policy">政策 · 退货运费谁承担</option><option value="order">订单 · A10001 发货了吗</option><option value="sale">售后 · A10001 有质量问题，能退吗</option><option value="missing">缺参 · 我要查订单</option><option value="negation">否定 · 不要转人工，先说退货规则</option><option value="multi">多任务 · 查订单，再问开票规则</option><option value="human">人工 · 我要转人工</option><option value="unrelated">范围外 · 写一篇小说</option></select>
+        <label for="question">客户问题</label><textarea id="question" required maxlength="2000" rows="3">你好</textarea>
+        <div class="actions"><button class="primary" id="send">发送并处理</button><button type="button" id="diagnose">仅诊断这句话</button></div>
+      </form>
+      <p id="feedback" role="status" class="fine">诊断只判断当前这一句，不读取历史、不执行业务、不写入对话。</p>
+    </section>
+    <section class="query-panel trace-panel" aria-label="本轮执行详情">
+      <div class="panel-head"><h2>本轮走哪条流程</h2><span id="trace-type" class="tag">等待提问</span></div>
+      <p class="fine">先校验会话，再做规则匹配 / 模型分类，最后只调用选中的处理器。</p>
+      <div class="route-map" id="route-map" aria-label="固定流程名单">
+        <span data-route="SMALL_TALK">问候</span><span data-route="KNOWLEDGE">知识问答</span><span data-route="ORDER_QUERY">订单查询</span><span data-route="AFTER_SALE_PRECHECK">售后预检查</span><span data-route="HUMAN_SERVICE">人工服务</span><span data-route="CLARIFY">澄清 / 兜底</span><span data-route="OUT_OF_SCOPE">范围说明</span>
+      </div>
+      <div id="decision"><p class="empty">发送后显示规则或模型的选择、原因与耗时。</p></div>
+      <div id="payload"></div>
+      <details id="raw-box" hidden><summary>本轮完整 JSON</summary><pre id="raw"></pre></details>
+    </section>
+  </div>
+  <details class="metrics-panel"><summary>本次启动以来的路由统计</summary><p class="fine">包含单轮诊断。次数只统计分类器尝试调用，不含下游模型或网络重试；这些指标不代表分类正确率。</p><button type="button" id="refresh-metrics">读取统计</button><div id="metrics"></div></details>
+  <p class="fine footer-note">会话保留最近十轮，重启或 Session 过期会清空；刷新页面建立新会话。人工未连接时不会假装排队。<a href="/">前五章客服实验 ↗</a></p>
+</main>
+</body></html>

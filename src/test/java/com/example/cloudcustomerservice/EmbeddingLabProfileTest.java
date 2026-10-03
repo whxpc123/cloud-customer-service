@@ -20,6 +20,9 @@ class EmbeddingLabProfileTest {
      * 在非 local 环境尝试实验页面与 API，验证调试入口不会被默认环境公开。
      */
     @Test void labPageAndApisDoNotExistOutsideLocal() throws Exception {
+        mvc.perform(get("/internal/routing")).andExpect(status().isNotFound());
+        mvc.perform(get("/internal/routing/session")).andExpect(status().isNotFound());
+        mvc.perform(post("/internal/routing/decide").contentType("application/json").content("{\"message\":\"你好\"}")).andExpect(status().isNotFound());
         mvc.perform(get("/internal/after-sale")).andExpect(status().isNotFound());
         mvc.perform(get("/internal/after-sale/session")).andExpect(status().isNotFound());
         mvc.perform(get("/internal/hybrid-search")).andExpect(status().isNotFound());

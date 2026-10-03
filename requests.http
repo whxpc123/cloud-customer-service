@@ -840,3 +840,57 @@ Content-Type: application/json
 ### 第十五章：清空当前已登记会话，不能清除别的浏览器 Session 的会话
 DELETE http://127.0.0.1:18080/internal/after-sale/conversations/{{afterSaleConversationId}}/memory
 X-AfterSale-CSRF: {{afterSaleCsrf}}
+
+
+### 第十六章：建立本地 Session（IDEA HTTP Client 自动保留 Cookie）
+GET http://127.0.0.1:18080/internal/routing/session
+
+> {% client.global.set("routingCsrf", response.body.csrfToken); %}
+
+### 第十六章：单轮诊断，不读历史、不执行业务；本例为规则，不调用模型
+POST http://127.0.0.1:18080/internal/routing/decide
+X-Routing-CSRF: {{routingCsrf}}
+Content-Type: application/json
+
+{"message":"我要转人工！"}
+
+### 第十六章：创建统一客服会话
+POST http://127.0.0.1:18080/internal/routing/conversations
+X-Routing-CSRF: {{routingCsrf}}
+
+> {% client.global.set("routingConversationId", response.body.conversationId); %}
+
+### 第十六章：缺参应进入订单处理器，再追问订单号
+POST http://127.0.0.1:18080/internal/routing/conversations/{{routingConversationId}}/messages
+X-Routing-CSRF: {{routingCsrf}}
+Content-Type: application/json
+
+{"message":"我要查订单"}
+
+### 第十六章：补充参数，沿用服务器历史
+POST http://127.0.0.1:18080/internal/routing/conversations/{{routingConversationId}}/messages
+X-Routing-CSRF: {{routingCsrf}}
+Content-Type: application/json
+
+{"message":"A10001"}
+
+### 第十六章：跨流程追问售后，保留完整检查记录
+POST http://127.0.0.1:18080/internal/routing/conversations/{{routingConversationId}}/messages
+X-Routing-CSRF: {{routingCsrf}}
+Content-Type: application/json
+
+{"message":"它有质量问题，能退吗？"}
+
+### 第十六章：多个独立任务不执行任一业务，先选择顺序
+POST http://127.0.0.1:18080/internal/routing/conversations/{{routingConversationId}}/messages
+X-Routing-CSRF: {{routingCsrf}}
+Content-Type: application/json
+
+{"message":"查订单，再告诉我开票规则"}
+
+### 第十六章：清空当前有权访问的统一会话
+DELETE http://127.0.0.1:18080/internal/routing/conversations/{{routingConversationId}}/memory
+X-Routing-CSRF: {{routingCsrf}}
+
+### 第十六章：本次进程启动以来统计（含诊断；不是正确率）
+GET http://127.0.0.1:18080/internal/routing/metrics

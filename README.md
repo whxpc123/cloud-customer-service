@@ -2,9 +2,9 @@
 
 根据《第一章：老板下午要看的 AI 客服》实现的 Java 学习项目。后续章节在这个项目上逐步增加能力，每章的改动与验收方式记录在 `docs/chapters/`。
 
-当前进度：**第十五章——政策与订单事实的只读售后预检查**。先检查订单归属，再检索适用政策版本，返回事实、证据、检查结论；当前仅为本地教学模式，没有真实订单登录或退款执行。
+当前进度：**第十六章——统一客服入口与受控流程路由**。先校验会话，再按规则、独立模型分类和 Java 检查选择唯一流程；保留知识引用、订单结果与售后检查记录。当前为本地教学模式，未接入真实登录、人工坐席或退款执行。
 
-章节记录：[第一章](docs/chapters/01-first-chat.md) · [第二章](docs/chapters/02-system-prompt.md) · [第三章](docs/chapters/03-structured-output.md) · [第四章](docs/chapters/04-chat-memory.md) · [第五章](docs/chapters/05-tool-calling.md) · [第六章](docs/chapters/06-embedding-lab.md) · [第七章](docs/chapters/07-pgvector-knowledge.md) · [第八章](docs/chapters/08-document-etl.md) · [第九章](docs/chapters/09-manual-rag.md) · [第十章](docs/chapters/10-advisor-chain.md) · [第十章补充：知识管理台](docs/chapters/10-knowledge-management.md) · [第十一章](docs/chapters/11-query-transformation.md) · [第十二章](docs/chapters/12-query-expansion.md) · [第十三章](docs/chapters/13-reranking.md) · [第十四章](docs/chapters/14-hybrid-search.md) · [第十五章](docs/chapters/15-after-sale-precheck.md)。
+章节记录：[第一章](docs/chapters/01-first-chat.md) · [第二章](docs/chapters/02-system-prompt.md) · [第三章](docs/chapters/03-structured-output.md) · [第四章](docs/chapters/04-chat-memory.md) · [第五章](docs/chapters/05-tool-calling.md) · [第六章](docs/chapters/06-embedding-lab.md) · [第七章](docs/chapters/07-pgvector-knowledge.md) · [第八章](docs/chapters/08-document-etl.md) · [第九章](docs/chapters/09-manual-rag.md) · [第十章](docs/chapters/10-advisor-chain.md) · [第十章补充：知识管理台](docs/chapters/10-knowledge-management.md) · [第十一章](docs/chapters/11-query-transformation.md) · [第十二章](docs/chapters/12-query-expansion.md) · [第十三章](docs/chapters/13-reranking.md) · [第十四章](docs/chapters/14-hybrid-search.md) · [第十五章](docs/chapters/15-after-sale-precheck.md) · [第十六章](docs/chapters/16-customer-routing.md)。
 
 每章对应独立 Git 提交和 `chapter-NN` 标签，具体变化见 [CHANGELOG](CHANGELOG.md)。第 1～3 章历史根据已实现代码于 2026-09-12 补建；后续每章验收完成后提交并推送。
 
@@ -26,6 +26,7 @@
 | [chapter-13](https://github.com/whxpc123/cloud-customer-service/tree/chapter-13) | qwen3-rerank 接口、同候选 A/B 页面、上下文预算与降级；真实精排待配置 | [与第十二章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-12...chapter-13) |
 | [chapter-14](https://github.com/whxpc123/cloud-customer-service/tree/chapter-14) | 编码精确匹配、PostgreSQL 全文检索、RRF 融合、三路对照与引用来源 | [与第十三章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-13...chapter-14) |
 | [chapter-15](https://github.com/whxpc123/cloud-customer-service/tree/chapter-15) | 只读售后预检查、适用政策版本、事实证据卡与本地会话归属 | [与第十四章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-14...chapter-15) |
+| [chapter-16](https://github.com/whxpc123/cloud-customer-service/tree/chapter-16) | 统一入口、有限路由、唯一处理器分派与会话隔离 | [与第十五章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-15...chapter-16) |
 
 在 GitHub 选择对应标签查看该章完整代码，在 Compare 页面选择相邻标签查看改动。阅读历史版本可以使用独立工作目录，例如 `git worktree add ../chapter-01-view chapter-01`，避免覆盖当前开发目录。
 
@@ -110,7 +111,7 @@ curl --get 'http://localhost:18080/api/chat' \
 java -jar target/cloud-customer-service-0.0.1-SNAPSHOT.jar
 ```
 
-自动测试在需要调用的路径替换 ChatModel / EmbeddingModel，不访问百炼、不需要真实 Key，覆盖聊天回归、结构化转换、非法字段、异常兜底、角色隔离和日志。当前共有 234 项测试：普通运行通过 213 项、跳过 21 项需真实 pgvector 的集成测试；启用专用测试库后 234 项全部通过。覆盖工具执行、会话隔离、向量数学、批次边界、知识过滤、重复导入及异常保护。集成测试步骤见第七章文档。启动应用和运行 JAR 仍需真实 `DASHSCOPE_API_KEY`。
+自动测试在需要调用的路径替换 ChatModel / EmbeddingModel，不访问百炼、不需要真实 Key，覆盖聊天回归、结构化转换、非法字段、异常兜底、角色隔离和日志。当前共有 273 项测试：普通运行通过 252 项、跳过 21 项需真实 pgvector 的集成测试；启用专用测试库后 273 项全部通过。覆盖工具执行、会话隔离、向量数学、批次边界、知识过滤、重复导入及异常保护。集成测试步骤见第七章文档。启动应用和运行 JAR 仍需真实 `DASHSCOPE_API_KEY`。
 
 ## 目录与章节对应
 
@@ -338,3 +339,11 @@ IDEA 同步 Maven 后运行原 `CloudCustomerServiceApplication` 配置，打开
 打开 <http://127.0.0.1:18080/internal/after-sale>，固定本地教学账户 1001，可尝试 A10001 质量问题/个人原因退货、A10002 不可访问、A10005 缺少适用版本。页面分别展示用户诉求、订单事实、政策来源和程序结论。
 
 本入口只在回环地址及 local,knowledge 模式开放，用服务器 Session 注册表验证会话归属，不接受演示身份头切换。没有接入真实登录/订单系统，不能作为生产权限体系。没有创建申请、批准或执行退款；模型解释与确定性检查状态分开。详见 [第十五章实现与验收](docs/chapters/15-after-sale-precheck.md)。
+
+## 第十六章：统一客服入口
+
+打开 <http://127.0.0.1:18080/internal/routing>，在同一个聊天窗口咨询政策、查询订单或进行只读售后预检查。右侧显示实际路由、规则/模型来源、原因、分类耗时与完整业务证据；也可以只诊断当前这一句。
+
+快捷问候和明确转人工不调用分类模型；缺订单号由选中的业务处理器追问；多个独立事项先澄清顺序。未接入人工坐席时明确显示未连接，不假装排队。分类器只读服务器近期历史，实际对话保存最近十轮，先验证 Session 归属再分派；固定演示账户不是生产登录。
+
+本章 273 项测试全通过；真实 Qwen 固定路由样本本次 15/15 匹配，并完成订单转售后追问、知识来源及不可访问/缺政策验证。这不是总体准确率。详见 [第十六章实现与验收](docs/chapters/16-customer-routing.md)，在线复测可显式运行 `python3 scripts/check-routing.py`（会消耗模型额度）。
