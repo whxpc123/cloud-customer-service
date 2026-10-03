@@ -49,6 +49,12 @@
 
     <!-- 第八章读取器支持 Office、PDF、Markdown；纯文本 Reader 由 Spring AI 基础模块提供。 -->
     <dependencies>
+        <!-- 第二十章沿用 Alibaba 版本，真正执行有界 ReAct 循环，不另引入第二套 Spring AI。 -->
+        <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-agent-framework</artifactId>
+            <version>${spring-ai-alibaba.version}</version>
+        </dependency>
         <!-- 第十八章保留 MVC，仅使用 SSE 编码、响应式模型客户端与 Flux，版本交给现有 BOM。 -->
         <dependency><groupId>org.springframework</groupId><artifactId>spring-webflux</artifactId></dependency>
         <dependency><groupId>io.projectreactor</groupId><artifactId>reactor-core</artifactId></dependency>

@@ -1,0 +1,25 @@
+<!doctype html>
+<!-- 第二十章独立审阅工作台：不把实验候选混入正式消息，也不暗示已产生业务申请。 -->
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>云杉 · 售后草稿实验</title><link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/embedding-lab.css"><link rel="stylesheet" href="/query-lab.css"><link rel="stylesheet" href="/routing-lab.css"><link rel="stylesheet" href="/draft-agent.css"><script type="module" src="/draft-agent.js"></script></head>
+<body><header><a class="brand" href="/">杉 <span>云杉客服</span></a><nav><a href="/internal/routing">统一客服 / 登录 ↗</a><a href="/internal/knowledge-admin">知识库管理 ↗</a></nav></header>
+<main><div class="route-title"><div><p class="eyebrow">CHAPTER 20 / BOUNDED AGENT</p><h1>从查清事实，<span>到整理草稿。</span></h1></div><p>观察一次任务如何调用工具、补齐依据、停止。<br>每次从空白开始，结果仅供实验审阅。</p></div>
+<aside class="local-note"><strong>候选草稿实验</strong><span>本地账户与订单样例。不会提交申请、批准退货或执行退款；结果不进入正式聊天记录。</span></aside>
+<p id="account-status" role="status">正在检查登录状态…</p>
+<div class="draft-layout"><section class="query-panel"><h2>本次要做的事</h2>
+<form id="draft-form"><fieldset id="inputs" disabled>
+<label for="conversation">机器人接待中的会话</label><div class="conversation-row"><select id="conversation" required><option value="">请选择会话</option></select><button id="new-conversation" type="button">新建会话</button></div>
+<p class="fine">只使用会话归属与接待状态，不读取历史来恢复任务。转人工后本实验停止展示结果。</p>
+<div class="input-row"><div><label for="order">订单号</label><input id="order" value="A10001" pattern="[Aa][0-9]{5}" maxlength="6" required></div><div><label for="reason">用户提出的原因</label><select id="reason"><option value="QUALITY_ISSUE">反馈质量问题</option><option value="CHANGE_OF_MIND">个人原因退货</option><option value="UNKNOWN">尚未明确</option></select></div></div>
+<label for="task">任务描述</label><textarea id="task" maxlength="2000" rows="5" required>请核验这笔订单的售后条件，按实际事实和适用政策整理一份候选申请草稿，列出还需确认的事项，不要提交。</textarea>
+<label class="check"><input type="checkbox" id="inspection-only"> 本次只检查，不整理草稿</label>
+<button id="run" class="primary" type="submit">开始本次任务</button></fieldset></form>
+<p class="fine">每轮最多 6 次模型调用、8 次工具调用，总等待上限 90 秒。重复提交会开始全新运行并再次调用模型，没有“继续上次”功能。</p>
+<details><summary>本地样例提示</summary><p class="fine">customer1001：A10001 质量尚未核验；A10002 不可访问；A10005 缺少适用政策版本。只有知识库存在对应版本，才可能生成候选。</p></details>
+</section>
+<section class="query-panel result-panel" aria-busy="false" id="result"><div class="panel-head"><h2>本轮结果</h2><span id="status" class="tag">尚未运行</span></div><p id="message" role="status">填写任务后开始。这里会显示服务器实际返回的结果。</p>
+<div class="run-metrics"><div><span>模型调用</span><strong id="model-count">—</strong></div><div><span>工具调用</span><strong id="tool-count">—</strong></div><div><span>本轮耗时</span><strong id="elapsed">—</strong></div></div>
+<p class="readonly">未提交申请 · 未执行退款</p><div id="candidate-box" hidden><h3>候选草稿 · 未经审核</h3><p class="fine">模型文本尚未完成事实与语义审核，仅供审阅。程序检查通过不代表获批或可直接发给客户。</p><pre id="candidate"></pre></div>
+<div id="assessment-box" hidden><h3>程序核验结果</h3><p id="assessment-status"></p><p id="assessment-message"></p><details><summary>订单事实与适用政策快照</summary><pre id="assessment"></pre></details></div>
+<h3>实际工具记录</h3><ol id="steps"><li>等待运行</li></ol><p class="fine">记录工具调用及缓存命中，不展示模型内部推理或虚构进度。</p>
+<details><summary>完整响应与运行编号</summary><pre id="raw">尚无响应</pre></details>
+</section></div><p class="fine footer-note">本次候选只显示在当前页面，刷新即消失；runId 仅用于关联日志，不能恢复任务。模型或网络超时不会自动重试；停止本地等待不保证远端立即停止计费。</p></main></body></html>

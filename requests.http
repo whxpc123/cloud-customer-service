@@ -944,3 +944,21 @@ X-CSRF-TOKEN: {{handoffCsrf}}
 # 离线 / 代理 / 真实模型分别执行：python3 scripts/accept-stage1.py [--proxy] [--live]
 # 结果在 .local/acceptance/<runId>/，未执行不是通过。完整表见 docs/chapters/19-stage1-acceptance.md。
 GET http://127.0.0.1:18080/internal/routing
+
+
+### 第二十章：有界售后草稿实验（沿用第十七章 Cookie 登录与 CSRF）
+# @name draftAgent
+POST http://127.0.0.1:18080/internal/draft-agent/runs
+Content-Type: application/json
+X-CSRF-TOKEN: {{handoffCsrf}}
+
+{
+  "conversationId": "{{routingConversationId}}",
+  "orderNo": "A10001",
+  "reason": "QUALITY_ISSUE",
+  "task": "先核验事实与政策，整理候选草稿并列出待确认事项，不要提交。",
+  "inspectionOnly": false
+}
+
+### 第二十章页面：需要在统一客服页登录后才能执行任务
+GET http://127.0.0.1:18080/internal/draft-agent
