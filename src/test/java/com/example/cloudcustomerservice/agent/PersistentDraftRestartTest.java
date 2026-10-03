@@ -20,6 +20,9 @@ import static org.assertj.core.api.Assertions.*;
 class PersistentDraftRestartTest {
     final ObjectMapper json=new ObjectMapper();
     Process child;
+    // 第27章复用进程夹具，可显式启用投递器；默认保留所有旧章的配置。
+    String profiles="local,knowledge";
+    Map<String,String> extraEnvironment=Map.of();
     Path work,ready,calls,blocked;
     PostgreSQLContainer<?> db;
     @Test void readyCompletedAndInterruptedTasksSurviveActualProcessRestart()throws Exception {
@@ -61,10 +64,11 @@ class PersistentDraftRestartTest {
         Files.deleteIfExists(ready);
         var builder=new ProcessBuilder(Path.of(System.getProperty("java.home"),"bin","java").toString(),"-DsocksNonProxyHosts=localhost|127.*|[::1]","-cp",
                 System.getProperty("surefire.test.class.path",System.getProperty("java.class.path")),PersistentProcessFixture.class.getName(),
-                "--spring.profiles.active=local,knowledge","--server.port=0","--app.ai.log-payload=false","--spring.config.import=optional:file:/nonexistent-ch22-test-config");
+                "--spring.profiles.active="+profiles,"--server.port=0","--app.ai.log-payload=false","--spring.config.import=optional:file:/nonexistent-ch22-test-config");
         var env=builder.environment();env.remove("DASHSCOPE_API_KEY");env.put("SPRING_AI_DASHSCOPE_API_KEY","offline-placeholder");
         env.put("SPRING_DATASOURCE_URL",db.getJdbcUrl());env.put("SPRING_DATASOURCE_USERNAME",db.getUsername());env.put("SPRING_DATASOURCE_PASSWORD",db.getPassword());
         env.put("HANDOFF_ACCOUNTS_CUSTOMER1001_PASSWORD","process-test-only-password");env.put("CH22_READY_FILE",ready.toString());env.put("CH22_CALLS_FILE",calls.toString());env.put("CH22_BLOCK_FILE",blocked.toString());
+        env.putAll(extraEnvironment);
         child=builder.redirectErrorStream(true).redirectOutput(work.resolve(label+".log").toFile()).start();awaitFile(ready,Duration.ofSeconds(50));return Integer.parseInt(Files.readString(ready));
     }
     void awaitFile(Path file,Duration timeout)throws Exception{long end=System.nanoTime()+timeout.toNanos();while(!Files.exists(file)&&child.isAlive()&&System.nanoTime()<end)Thread.sleep(100);assertThat(Files.exists(file)).as("子进程就绪文件；诊断目录 %s",work).isTrue();}

@@ -1,0 +1,8 @@
+# 仅显式启用 local,knowledge,outbox-delivery 时启动网络投递；缺少配置则启动失败。
+# 一个 AFTER_SALE_V1 契约必须始终指向同一业务接收系统，不能借改地址扩大历史授权。
+app:
+  outbox:
+    poll-delay-ms: 1000
+  remote-after-sale:
+    endpoint: ${REMOTE_AFTER_SALE_ENDPOINT}
+    token: ${REMOTE_AFTER_SALE_TOKEN}

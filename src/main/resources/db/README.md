@@ -73,3 +73,11 @@
 目标与决定不可改写，状态只允许待批准→批准/拒绝、批准→成功；申请正文和创建回执不可原地 UPDATE。`IdempotentSubmissionService` 统一按会话→任务→操作加锁，申请 INSERT、操作 SUCCEEDED、任务 CLOSED 在同一事务；成功回放先校验归属，再查已有回执，不受任务关闭和授权过期阻止。GET result 只读权威写库，没有结果仅表示尚未观察到成功。
 
 本章仅保存 `PENDING_REVIEW`，不代表资格审核、资金退款或外部系统接收。没有删除接口、远程调用或 Outbox。V1～V7 原文件不变。
+
+## V9：固定同步范围与 Transactional Outbox
+
+`cs_submit_operation.delivery_profile` 的默认值为 LOCAL_ONLY。迁移不外发任何历史申请。替换目标保护函数时，完整保留 V8 的接待版本、审批元数据和单向状态保护，并增加范围不可改写。
+
+`ai.cs_outbox` 在申请创建事务中写入，eventId 和 payload 固定；(application_id,destination,event_type) 唯一，组合外键关联申请/操作/租户。租约领取和回执/重试各自短事务；网络在事务外。状态 PENDING/SENDING/DELIVERED/REVIEW，过期租约可重领，最多 8 次。表的索引用于到期待发和过期领取扫描。
+
+用户状态与统计只读、按申请的 tenantId/userId 过滤。没有公开的删除、换号、重置/补发接口。数据库管理员仍是特权主体，触发器不等于生产审计权限体系。V1～V8 迁移文件保持原样。

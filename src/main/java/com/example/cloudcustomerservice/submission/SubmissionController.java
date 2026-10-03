@@ -3,6 +3,7 @@ package com.example.cloudcustomerservice.submission;
 import com.example.cloudcustomerservice.aftersale.AfterSaleModel.Actor;
 import com.example.cloudcustomerservice.stream.StreamIdentity;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.example.cloudcustomerservice.outbox.OutboxQueryService;
 import jakarta.servlet.http.*;
 import java.util.*;
 import java.util.function.Function;
@@ -18,8 +19,9 @@ import org.springframework.web.server.ResponseStatusException;
 public class SubmissionController {
     private final IdempotentSubmissionService service;
     private final SubmissionGraph graph;
-    public SubmissionController(IdempotentSubmissionService service,SubmissionGraph graph){this.service=service;this.graph=graph;}
-    public record Prepare(UUID taskId,Long draftVersion){@JsonAnySetter public void unknown(String key,Object value){throw new IllegalArgumentException("多余字段");}}
+    private final OutboxQueryService outbox;
+    public SubmissionController(IdempotentSubmissionService service,SubmissionGraph graph,OutboxQueryService outbox){this.service=service;this.graph=graph;this.outbox=outbox;}
+    public record Prepare(UUID taskId,Long draftVersion,IdempotentSubmissionService.DeliveryProfile deliveryProfile){@JsonAnySetter public void unknown(String key,Object value){throw new IllegalArgumentException("多余字段");}}
     public record Decide(IdempotentSubmissionService.Decision decision,Boolean accepted){@JsonAnySetter public void unknown(String key,Object value){throw new IllegalArgumentException("多余字段");}}
     public record Execute(){@JsonAnySetter public void unknown(String key,Object value){throw new IllegalArgumentException("执行不接受业务参数");}}
     @GetMapping(produces="text/html;charset=UTF-8") public Resource page(){return new ClassPathResource("submission/index.html");}
@@ -30,7 +32,7 @@ public class SubmissionController {
     @PostMapping("/operations") @PreAuthorize("hasAuthority('customer:chat')")
     public IdempotentSubmissionService.Operation prepare(@RequestBody Prepare input,HttpSession s,HttpServletResponse r){
         if(input.taskId()==null||input.draftVersion()==null)throw new IllegalArgumentException("需要任务和具体草稿版本");
-        return authorized(s,r,a->service.prepare(a,input.taskId(),input.draftVersion()));
+        return authorized(s,r,a->service.prepare(a,input.taskId(),input.draftVersion(),input.deliveryProfile()==null?IdempotentSubmissionService.DeliveryProfile.LOCAL_ONLY:input.deliveryProfile()));
     }
     @PostMapping("/operations/{id}/decision") @PreAuthorize("hasAuthority('customer:chat')")
     public IdempotentSubmissionService.Operation decide(@PathVariable UUID id,@RequestBody Decide input,HttpSession s,HttpServletResponse r){
@@ -42,6 +44,12 @@ public class SubmissionController {
     public SubmissionGraph.Execution execute(@PathVariable UUID id,@RequestBody Execute ignored,HttpSession s,HttpServletResponse r){return authorized(s,r,a->graph.execute(a,id));}
     @GetMapping("/operations/{id}/result") @PreAuthorize("hasAuthority('customer:chat')")
     public IdempotentSubmissionService.ResultQuery result(@PathVariable UUID id,HttpSession s,HttpServletResponse r){return authorized(s,r,a->service.result(a,id));}
+
+    /** 同步状态与本地回执分别读取，GET 永远不会开始发送。 */
+    @GetMapping("/operations/{id}/delivery") @PreAuthorize("hasAuthority('customer:chat')")
+    public OutboxQueryService.Delivery delivery(@PathVariable UUID id,HttpSession s,HttpServletResponse r){return authorized(s,r,a->outbox.delivery(a,id));}
+    @GetMapping("/delivery-summary") @PreAuthorize("hasAuthority('customer:chat')")
+    public OutboxQueryService.Summary summary(HttpSession s,HttpServletResponse r){return authorized(s,r,outbox::summary);}
 
     /** 前后复核当前 Session；即使响应阶段失效，客户端也只能用原 operationId 查回执。 */
     private <T>T authorized(HttpSession s,HttpServletResponse r,Function<Actor,T> work){

@@ -1176,3 +1176,25 @@ X-CSRF-TOKEN: {{handoffCsrf}}
 
 ### 只查询原创建回执；NOT_OBSERVED 不等于一定失败
 GET http://127.0.0.1:18080/internal/draft-tasks/submission/operations/{{submitOperationId}}/result
+
+### 第27章：明确创建并同步范围；省略 deliveryProfile 仍然只授权 LOCAL_ONLY
+# 使用一份新确认的任务 / 具体版本，不能将旧 LOCAL_ONLY 操作改为外发，并带当前客户 Session 与 CSRF。
+POST http://127.0.0.1:18080/internal/draft-tasks/submission/operations
+Content-Type: application/json
+X-CSRF-TOKEN: {{handoffCsrf}}
+
+{
+  "taskId": "{{submitTaskId}}",
+  "draftVersion": 1,
+  "deliveryProfile": "AFTER_SALE_V1"
+}
+
+> {% if (response.status === 200) client.global.set("submitOperationId", response.body.operationId); %}
+
+# 接着使用第26章的正文读取、明确批准和执行请求，编号沿用 submitOperationId。
+
+### 本地回执之外，单独读取同步状态；不会触发投递或新建事件
+GET http://127.0.0.1:18080/internal/draft-tasks/submission/operations/{{submitOperationId}}/delivery
+
+### 当前账户全部历史事件的数量、延迟与领取次数分布
+GET http://127.0.0.1:18080/internal/draft-tasks/submission/delivery-summary

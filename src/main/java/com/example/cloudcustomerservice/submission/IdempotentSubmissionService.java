@@ -3,6 +3,7 @@ package com.example.cloudcustomerservice.submission;
 import com.example.cloudcustomerservice.aftersale.AfterSaleModel.Actor;
 import com.example.cloudcustomerservice.agent.persistence.DraftTaskRepository;
 import com.fasterxml.jackson.databind.*;
+import com.example.cloudcustomerservice.outbox.OutboxWriter;
 import java.time.OffsetDateTime;
 import java.util.*;
 import org.springframework.context.annotation.Profile;
@@ -14,16 +15,18 @@ import org.springframework.web.server.ResponseStatusException;
 
 /**
  * 同库短事务中的提交服务。必须通过 Spring 代理调用，不能在工具中自行 new。
- * 不调用模型、订单微服务或外部售后平台；这里只登记一份等待审核的本地申请。
+ * 不调用模型、订单微服务或外部售后平台；这里只登记本地申请及已批准的固定投递意图。
  */
 @Service @Profile("local & knowledge")
 @Transactional(propagation=Propagation.REQUIRES_NEW,isolation=Isolation.READ_COMMITTED,timeout=5,rollbackFor=Exception.class)
 public class IdempotentSubmissionService {
     public enum Decision { APPROVE, REJECT }
+    /** 范围绑定准备操作并不可改写；旧客户端省略时只允许本地创建。 */
+    public enum DeliveryProfile { LOCAL_ONLY, AFTER_SALE_V1 }
     /** 操作身份始终稳定；expired 仅约束首次执行，不影响历史成功回放。 */
     public record Operation(UUID operationId,UUID taskId,long draftVersion,String action,String status,
             long receptionVersion,Long decidedBy,OffsetDateTime decidedAt,OffsetDateTime expiresAt,
-            OffsetDateTime createdAt,boolean expired,String orderNo) { }
+            OffsetDateTime createdAt,boolean expired,String orderNo,String deliveryProfile) { }
     /** 回执来自真实 INSERT 的数据库时间，不代表后续审核通过或资金退款。 */
     public record Receipt(UUID operationId,UUID applicationId,long draftVersion,OffsetDateTime createdAt,
             String result,boolean refundExecutedByThisOperation) { }
@@ -37,26 +40,37 @@ public class IdempotentSubmissionService {
     private static final RowMapper<Operation> OPERATION=(r,n)->new Operation(r.getObject("operation_id",UUID.class),r.getObject("task_id",UUID.class),
         r.getLong("draft_version"),r.getString("action"),r.getString("status"),r.getLong("reception_version"),
         (Long)r.getObject("decided_by"),r.getObject("decided_at",OffsetDateTime.class),r.getObject("expires_at",OffsetDateTime.class),
-        r.getObject("created_at",OffsetDateTime.class),r.getBoolean("expired"),r.getString("order_no"));
+        r.getObject("created_at",OffsetDateTime.class),r.getBoolean("expired"),r.getString("order_no"),r.getString("delivery_profile"));
     private static final RowMapper<Receipt> RECEIPT=(r,n)->new Receipt(r.getObject("operation_id",UUID.class),r.getObject("application_id",UUID.class),
         r.getLong("draft_version"),r.getObject("created_at",OffsetDateTime.class),"APPLICATION_CREATED_PENDING_REVIEW",false);
     private static final String OP_SELECT="select o.*, t.order_no, o.expires_at <= clock_timestamp() as expired from ai.cs_submit_operation o join ai.cs_draft_task t on t.task_id=o.task_id";
     private final JdbcTemplate jdbc;
     private final ObjectMapper json;
-    public IdempotentSubmissionService(JdbcTemplate jdbc,ObjectMapper json){this.jdbc=jdbc;this.json=json;}
+    private final OutboxWriter outbox;
+    public IdempotentSubmissionService(JdbcTemplate jdbc,ObjectMapper json,OutboxWriter outbox){this.jdbc=jdbc;this.json=json;this.outbox=outbox;}
 
     /** 同任务同版重复准备复用原编号，不能借重试重新计时、换号或批准。 */
     public Operation prepare(Actor actor,UUID taskId,long draftVersion) {
+        return prepare(actor,taskId,draftVersion,DeliveryProfile.LOCAL_ONLY);
+    }
+
+    /** 首次指定范围，重试必须相同；本方法与旧签名均由类级事务代理保护。 */
+    public Operation prepare(Actor actor,UUID taskId,long draftVersion,DeliveryProfile profile) {
+        Objects.requireNonNull(profile,"需要投递范围");
         if(draftVersion<=0)throw new IllegalArgumentException("需要具体的正数草稿版本");
         var locked=lockOwnedTask(actor,taskId);
         var ids=jdbc.queryForList("select operation_id from ai.cs_submit_operation where task_id=? and draft_version=?",UUID.class,taskId,draftVersion);
-        if(!ids.isEmpty())return ownedOperation(actor,ids.get(0),false);
+        if(!ids.isEmpty()){
+            var existing=ownedOperation(actor,ids.get(0),false);
+            if(!existing.deliveryProfile().equals(profile.name()))throw conflict("同一提交操作不能更换投递范围");
+            return existing;
+        }
         requireBot(locked,null);requireNoApplication(taskId);currentConfirmedBody(locked.task(),draftVersion);
         UUID id=UUID.randomUUID();
         jdbc.update("""
-            insert into ai.cs_submit_operation(operation_id,task_id,draft_version,reception_version,expires_at)
-            values(?,?,?,?,clock_timestamp()+interval '15 minutes')
-            """,id,taskId,draftVersion,locked.receptionVersion());
+            insert into ai.cs_submit_operation(operation_id,task_id,draft_version,reception_version,delivery_profile,expires_at)
+            values(?,?,?,?,?,clock_timestamp()+interval '15 minutes')
+            """,id,taskId,draftVersion,locked.receptionVersion(),profile.name());
         return ownedOperation(actor,id,false);
     }
 
@@ -88,6 +102,8 @@ public class IdempotentSubmissionService {
             insert into ai.cs_after_sale_application(application_id,operation_id,task_id,draft_version,tenant_id,user_id,order_no,body_snapshot)
             values(?,?,?,?,?,?,?,cast(? as jsonb)) returning operation_id,application_id,draft_version,created_at
             """,RECEIPT,UUID.randomUUID(),id,task.id(),op.draftVersion(),task.tenantId(),task.userId(),task.orderNo(),body);
+        // 必须加入当前创建事务：事件失败将连同申请、操作和任务一起回滚。
+        outbox.appendIfRequired(created.get(0).applicationId());
         requireOne(jdbc.update("update ai.cs_submit_operation set status='SUCCEEDED' where operation_id=? and status='APPROVED'",id));
         requireOne(jdbc.update("update ai.cs_draft_task set status='CLOSED',version=version+1,updated_at=clock_timestamp() where task_id=? and status='CANDIDATE_UNVALIDATED'",task.id()));
         return created.get(0);
