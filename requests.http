@@ -842,55 +842,80 @@ DELETE http://127.0.0.1:18080/internal/after-sale/conversations/{{afterSaleConve
 X-AfterSale-CSRF: {{afterSaleCsrf}}
 
 
-### 第十六章：建立本地 Session（IDEA HTTP Client 自动保留 Cookie）
-GET http://127.0.0.1:18080/internal/routing/session
+### 第十七章：登录前读取 CSRF（IDEA HTTP Client 自动保留 Cookie）
+# 先运行 python3 scripts/setup-handoff-accounts.py。
+# 将 .local/handoff-accounts.properties 的账户/密码放到本机 HTTP Client 私有环境变量。
+# handoffUsername=customer1001，handoffPassword=该账号的随机密码；绝不要提交密码。
+GET http://127.0.0.1:18080/internal/handoff/session
 
-> {% client.global.set("routingCsrf", response.body.csrfToken); %}
+> {% client.global.set("handoffCsrf", response.body.csrfToken); %}
 
-### 第十六章：单轮诊断，不读历史、不执行业务；本例为规则，不调用模型
+### 校验本地账号与密码，成功返回 204（先选择包含上述变量的私有环境）
+POST http://127.0.0.1:18080/internal/handoff/login
+X-CSRF-TOKEN: {{handoffCsrf}}
+Content-Type: application/x-www-form-urlencoded
+
+username={{handoffUsername}}&password={{handoffPassword}}
+
+### 登录后重新读取 CSRF，旧令牌失效
+GET http://127.0.0.1:18080/internal/handoff/session
+
+> {% client.global.set("handoffCsrf", response.body.csrfToken); %}
+
+### 单轮诊断：不读历史、不执行业务、不申请人工
 POST http://127.0.0.1:18080/internal/routing/decide
-X-Routing-CSRF: {{routingCsrf}}
+X-CSRF-TOKEN: {{handoffCsrf}}
 Content-Type: application/json
 
 {"message":"我要转人工！"}
 
-### 第十六章：创建统一客服会话
-POST http://127.0.0.1:18080/internal/routing/conversations
-X-Routing-CSRF: {{routingCsrf}}
+### 创建持久化会话（customer 账号）
+POST http://127.0.0.1:18080/api/handoff/conversations
+X-CSRF-TOKEN: {{handoffCsrf}}
 
 > {% client.global.set("routingConversationId", response.body.conversationId); %}
 
-### 第十六章：缺参应进入订单处理器，再追问订单号
+### 客户消息：首次提交生成 UUID，网络不明时保留同一 ID 重试；新消息必须换 ID
 POST http://127.0.0.1:18080/internal/routing/conversations/{{routingConversationId}}/messages
-X-Routing-CSRF: {{routingCsrf}}
+X-CSRF-TOKEN: {{handoffCsrf}}
 Content-Type: application/json
 
-{"message":"我要查订单"}
+{"message":"A10001 发货了吗？","clientMessageId":"{{$uuid}}"}
 
-### 第十六章：补充参数，沿用服务器历史
-POST http://127.0.0.1:18080/internal/routing/conversations/{{routingConversationId}}/messages
-X-Routing-CSRF: {{routingCsrf}}
-Content-Type: application/json
-
-{"message":"A10001"}
-
-### 第十六章：跨流程追问售后，保留完整检查记录
-POST http://127.0.0.1:18080/internal/routing/conversations/{{routingConversationId}}/messages
-X-Routing-CSRF: {{routingCsrf}}
-Content-Type: application/json
-
-{"message":"它有质量问题，能退吗？"}
-
-### 第十六章：多个独立任务不执行任一业务，先选择顺序
-POST http://127.0.0.1:18080/internal/routing/conversations/{{routingConversationId}}/messages
-X-Routing-CSRF: {{routingCsrf}}
-Content-Type: application/json
-
-{"message":"查订单，再告诉我开票规则"}
-
-### 第十六章：清空当前有权访问的统一会话
+### 重置模型上下文：保留正式记录；只有 BOT 且没有进行中的生成才允许
 DELETE http://127.0.0.1:18080/internal/routing/conversations/{{routingConversationId}}/memory
-X-Routing-CSRF: {{routingCsrf}}
+X-CSRF-TOKEN: {{handoffCsrf}}
 
-### 第十六章：本次进程启动以来统计（含诊断；不是正确率）
+### 申请人工：重复调用仍是同一张受理单，可在模型生成期间执行
+POST http://127.0.0.1:18080/api/handoff/conversations/{{routingConversationId}}/handoff
+X-CSRF-TOKEN: {{handoffCsrf}}
+
+### 查询数据库回执，HTTP 超时后用此接口确认状态
+GET http://127.0.0.1:18080/api/handoff/conversations/{{routingConversationId}}/handoff
+
+### 正式记录按 ID 分页，每页最多 100 条；下一页 after 使用返回的 nextCursor
+GET http://127.0.0.1:18080/api/handoff/conversations/{{routingConversationId}}/messages?after=0
+
+### 恢复当前客户最近 50 个会话
+GET http://127.0.0.1:18080/api/handoff/conversations
+
+### 退出当前账号，切换到 support9001 / support9002 后重新执行登录和获取新 CSRF
+POST http://127.0.0.1:18080/internal/handoff/logout
+X-CSRF-TOKEN: {{handoffCsrf}}
+
+### 客服待领取队列（必须 support:serve 权限，客户执行返回 403）
+GET http://127.0.0.1:18080/api/support/queue
+
+### 客服领取；相同客服重试幂等，其他客服已领取时返回 409
+POST http://127.0.0.1:18080/api/support/conversations/{{routingConversationId}}/accept
+X-CSRF-TOKEN: {{handoffCsrf}}
+
+### 客服读取交接上下文：等待中可读，领取后只有当前领取人可读
+GET http://127.0.0.1:18080/api/support/conversations/{{routingConversationId}}/messages?after=0
+
+### 结束接待；只允许当前领取客服，结束后客户需创建新会话
+POST http://127.0.0.1:18080/api/support/conversations/{{routingConversationId}}/close
+X-CSRF-TOKEN: {{handoffCsrf}}
+
+### 以客户身份查看路由统计（含诊断，不统计直接转人工 API，不代表正确率）
 GET http://127.0.0.1:18080/internal/routing/metrics

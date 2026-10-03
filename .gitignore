@@ -7,3 +7,8 @@ target/
 *.log
 
 .local/
+
+# 本机 HTTP Client 凭证与 Python 辅助脚本缓存
+http-client.private.env.json
+__pycache__/
+*.pyc

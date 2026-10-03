@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 import static com.example.cloudcustomerservice.routing.CustomerRouter.*;
 
-/** 统一入口固定分派表。身份/会话归属在控制器先检查，订单归属与证据规则仍由被选中的业务处理器检查。 */
+/** 机器人候选答案生成器。第十七章由 HandoffChatService 在数据库事务外调用，再经版本门正式发布；不能直接把返回值发送给客户。 */
 @Service
 @Profile("local & knowledge")
 public class RoutedCustomerService {
@@ -41,8 +41,8 @@ public class RoutedCustomerService {
     }
 
     /**
-     * 会话对象锁串行化发送/清空/过期。每轮将真实对话快照交给选中处理器的私有工作记忆，最后释放工作键。
-     * 内层 Advisor 可照常维护本轮上下文；外层只保存实际给客户的一问一答，不与同一记忆键重复追加。
+     * 对象锁只保护本轮临时窗口；数据库租约与行锁负责跨请求协调。正式历史快照交给处理器私有记忆，最后释放工作键。
+     * 内层 Advisor 可照常维护本轮上下文；此处只形成候选结果；HandoffChatService 必须通过数据库发布门后才能交给客户。
      */
     public Response answer(Actor actor, RoutingConversation conversation, String message) {
         // 验证发生在访问历史前；目前只支持本地样例租户，不能借旧订单仓库跨租户查询。
@@ -50,14 +50,6 @@ public class RoutedCustomerService {
         new Input(message, "");
         synchronized (conversation) {
             String requestId = UUID.randomUUID().toString();
-            if (conversation.mode != RoutingConversation.Mode.BOT) {
-                var result = new Response(requestId, conversation.id,
-                        new Decision(Route.HUMAN_SERVICE, Source.GUARD, "HUMAN_SESSION_OWNED"),
-                        new RoutingStatistics.Timing(0, 0), "HUMAN_CHANNEL_UNAVAILABLE",
-                        "当前会话已由人工流程接管，机器人不再回答。本地教学版未连接坐席通道，消息未转发。",
-                        null, null, null, conversation.mode.name());
-                conversation.append(message, result.answer()); return result;
-            }
             var diagnosis = classify(new Input(message, conversation.routingHistory()));
             Response response;
             try { response = dispatch(actor, conversation, message, requestId, diagnosis); }
@@ -79,8 +71,8 @@ public class RoutedCustomerService {
             case SMALL_TALK -> simple(requestId, c.id, d, "FIXED_REPLY", greeting(message), null);
             case OUT_OF_SCOPE -> simple(requestId, c.id, d, "OUT_OF_SCOPE",
                     "这里可以咨询云杉商城政策、查询本地样例订单和进行只读售后预检查。请提供商城相关问题。", null);
-            case HUMAN_SERVICE -> simple(requestId, c.id, d, "HUMAN_NOT_CONNECTED",
-                    "已识别您希望由人工接待。当前教学项目尚未接入人工坐席，未创建排队或转接，请使用您已知的官方人工渠道。", "NOT_CONNECTED");
+            case HUMAN_SERVICE -> simple(requestId, c.id, d, "HANDOFF_REQUIRED",
+                    "人工申请需由接待状态服务确认。", null);
             case CLARIFY -> simple(requestId, c.id, d, d.decision().reasonCode(), clarify(d.decision().reasonCode()), null);
             case ORDER_QUERY -> {
                 var result = orders.answer(actor, message, c.history());

@@ -1,16 +1,18 @@
 <!doctype html>
-<!-- 第十六章统一客服工作台：提问区与实际路由/业务证据分开；原章节入口继续用于对照。 -->
+<!-- 第十七章统一客服工作台：持久化接待状态与正式消息；原章节入口继续用于对照。 -->
 <html lang="zh-CN">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>云杉客服 · 统一入口</title><link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/embedding-lab.css"><link rel="stylesheet" href="/query-lab.css"><link rel="stylesheet" href="/routing-lab.css"><script src="/routing-lab.js" defer></script></head>
 <body>
 <header><a class="brand" href="/">杉 <span>云杉客服</span></a><nav aria-label="章节导航"><a href="/internal/knowledge-admin">知识库管理 ↗</a><a href="/internal/after-sale">售后预检查 ↗</a></nav></header>
 <main>
-  <div class="route-title"><div><p class="eyebrow">CHAPTER 16 / CUSTOMER ROUTING</p><h1>一个入口，<span>各司其职。</span></h1></div><p>说出问题，让客服选择合适的流程。<br>每一轮都能查看实际分流和处理依据。</p></div>
-  <aside class="local-note"><strong>本地教学 · 演示账户 1001</strong><span>订单为固定样例；政策使用现有知识库。未连接真实登录或人工坐席，不执行退款。</span></aside>
+  <div class="route-title"><div><p class="eyebrow">CHAPTER 17 / HUMAN HANDOFF</p><h1>接待有状态，<span>交接有凭据。</span></h1></div><p>说出问题，让客服选择合适的流程。<br>申请、领取与结束，都以数据库回执为准。</p></div>
+  <aside class="local-note"><strong>本地账号登录 · 接待状态持久化</strong><span>订单仍为教学样例。已实现受理与领取 API，尚无坐席聊天通道、在线状态或预计等待时间。</span></aside>
+  <section id="login-panel" class="query-panel" hidden><h2>登录本地教学账户</h2><p class="fine">先运行 scripts/setup-handoff-accounts.py，在本机 .local/handoff-accounts.properties 查看密码。此处校验密码，不接受演示身份头。</p><form id="login-form"><label for="username">账号</label><input id="username" name="username" autocomplete="username" value="customer1001" required><label for="password">密码</label><input id="password" name="password" type="password" autocomplete="current-password" required><button class="primary" id="login">登录</button></form><p id="login-feedback" role="status"></p></section>
+  <section id="reception" class="query-panel" hidden><div class="panel-head"><h2 id="reception-mode">读取接待状态…</h2><button type="button" id="logout">退出登录</button></div><p id="account" class="fine"></p><label for="conversation-list">已保存的会话（最近 50 个）</label><select id="conversation-list"></select><p id="reception-message"></p><dl id="receipt" class="facts"></dl><div class="actions"><button type="button" id="handoff" class="primary">申请人工</button><button type="button" id="refresh-state">刷新状态与记录</button></div><p class="fine">模型回答尚未完成时也可申请人工。等待或接待期间，新消息只保存给该会话，不再调用机器人。</p></section>
   <div class="route-layout">
     <section class="query-panel chat-panel" aria-label="统一客服对话">
-      <div class="panel-head"><h2>和云杉客服聊聊</h2><div><button type="button" id="new-session">新会话</button><button type="button" id="clear">清空</button></div></div>
-      <p id="session" class="fine">正在建立本地会话…</p>
+      <div class="panel-head"><h2>和云杉客服聊聊</h2><div><button type="button" id="new-session">新会话</button><button type="button" id="clear">重置上下文</button></div></div>
+      <p id="session" class="fine">请先登录，随后恢复已保存的会话。</p>
       <div id="messages" aria-live="polite"><p class="empty">可以先说“你好”，或直接询问订单、政策和售后。后续追问沿用当前会话。</p></div>
       <form id="chat-form">
         <label for="example">选择一句试试</label>
@@ -21,7 +23,7 @@
       <p id="feedback" role="status" class="fine">诊断只判断当前这一句，不读取历史、不执行业务、不写入对话。</p>
     </section>
     <section class="query-panel trace-panel" aria-label="本轮执行详情">
-      <div class="panel-head"><h2>本轮走哪条流程</h2><span id="trace-type" class="tag">等待提问</span></div>
+      <div class="panel-head"><h2>消息的流程与依据</h2><span id="trace-type" class="tag">等待提问</span></div>
       <p class="fine">先校验会话，再做规则匹配 / 模型分类，最后只调用选中的处理器。</p>
       <div class="route-map" id="route-map" aria-label="固定流程名单">
         <span data-route="SMALL_TALK">问候</span><span data-route="KNOWLEDGE">知识问答</span><span data-route="ORDER_QUERY">订单查询</span><span data-route="AFTER_SALE_PRECHECK">售后预检查</span><span data-route="HUMAN_SERVICE">人工服务</span><span data-route="CLARIFY">澄清 / 兜底</span><span data-route="OUT_OF_SCOPE">范围说明</span>
@@ -32,6 +34,6 @@
     </section>
   </div>
   <details class="metrics-panel"><summary>本次启动以来的路由统计</summary><p class="fine">包含单轮诊断。次数只统计分类器尝试调用，不含下游模型或网络重试；这些指标不代表分类正确率。</p><button type="button" id="refresh-metrics">读取统计</button><div id="metrics"></div></details>
-  <p class="fine footer-note">会话保留最近十轮，重启或 Session 过期会清空；刷新页面建立新会话。人工未连接时不会假装排队。<a href="/">前五章客服实验 ↗</a></p>
+  <p class="fine footer-note">正式记录保存在 PostgreSQL，刷新可恢复；模型只读取有限窗口。重置上下文不删除记录，CLOSED 需新建会话。<a href="/">前五章客服实验 ↗</a></p>
 </main>
 </body></html>

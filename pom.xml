@@ -47,6 +47,16 @@
 
     <!-- 第八章读取器支持 Office、PDF、Markdown；纯文本 Reader 由 Spring AI 基础模块提供。 -->
     <dependencies>
+        <!-- 第十七章：真实的本地密码验证、会话登录和方法级客服权限；不把演示请求头当认证。 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-tika-document-reader</artifactId>

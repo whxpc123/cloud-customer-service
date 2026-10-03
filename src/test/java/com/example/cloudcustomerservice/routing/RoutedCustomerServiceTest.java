@@ -32,11 +32,11 @@ class RoutedCustomerServiceTest {
         conversation=new RoutingConversation();
     }
     void select(Route route) { when(classifier.classify(any())).thenReturn(new Proposal(route,false,false)); }
-    @Test void fixedReplyAndHumanUnavailableAreSavedExactlyOnceWithoutModelOrHandlers() {
+    @Test void humanRouteReturnsCandidateOnlyWithoutClaimingHandoff() {
         service.answer(actor,conversation,"你好！");
         var r=service.answer(actor,conversation,"我要转人工");
-        assertThat(r.humanStatus()).isEqualTo("NOT_CONNECTED");
-        assertThat(conversation.mode).isEqualTo(RoutingConversation.Mode.BOT);
+        assertThat(r.humanStatus()).isNull();
+        assertThat(r.status()).isEqualTo("HANDOFF_REQUIRED");
         assertThat(conversation.history()).hasSize(4);
         assertThat(conversation.history().get(3).getText()).isEqualTo(r.answer());
         verifyNoInteractions(classifier,knowledge,afterSale,orders);
@@ -100,14 +100,6 @@ class RoutedCustomerServiceTest {
         assertThat(r.status()).isEqualTo("HANDLER_UNAVAILABLE"); assertThat(r.answer()).doesNotContain("secret");
         assertThat(memory.get(AdvisorKnowledgeAnswerService.memoryId(actor.tenantId(),conversation.workId,actor.userId()))).isEmpty();
         verifyNoInteractions(afterSale,orders);
-    }
-    @Test void humanOwnedConversationBypassesClassifierAndClearDoesNotReleaseOwnership() {
-        conversation.mode=RoutingConversation.Mode.HUMAN_ACTIVE;
-        var r=service.answer(actor,conversation,"查 A10001");
-        assertThat(r.routing().classifierCalls()).isZero();assertThat(r.status()).isEqualTo("HUMAN_CHANNEL_UNAVAILABLE");
-        service.clear(conversation);assertThat(conversation.history()).isEmpty();
-        assertThat(conversation.mode).isEqualTo(RoutingConversation.Mode.HUMAN_ACTIVE);
-        verifyNoInteractions(classifier,knowledge,afterSale,orders);
     }
     @Test void diagnosticAndOtherConversationsCannotReadOrChangeExistingHistory() {
         service.answer(actor,conversation,"你好"); select(Route.CLARIFY);

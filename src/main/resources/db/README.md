@@ -35,3 +35,14 @@
 `V4__hybrid_search.sql` 在写入前重建 metadata.businessCodes（CPN / SKU / POLICY 编码数组），回填现有行；STORED search_vector 生成列自动同步正文和元数据。全文 tsvector 与编码 JSON 分别用 GIN 索引。不改向量维度、不重新调用模型，归档/恢复和 upsert 继续走同一事务。
 
 精确查询使用 JSON 数组包含关系，全文查询采用 simple / websearch_to_tsquery / ts_rank_cd。两者都执行租户、发布状态、知识库、语言限制。simple 不是中文分词器，ts_rank_cd 不等于 BM25；多版本同时发布时不按字符串猜测最新有效规则。首次回填建索引会占用数据库资源，大库需维护窗口。详见第十四章文档。
+
+
+## V5：接待状态与正式消息
+
+`V5__human_handoff.sql` 增加 `ai.cs_conversation` 与 `ai.cs_message`，不修改 V1～V4。前者以租户/会话为主键，保存客户、受理号、接待模式、版本、领取客服与阶段时间；CHECK 约束拒绝模式和字段互相矛盾的行。受理号唯一，等待队列通过租户与 WAITING_HUMAN 部分索引查询，不维护另一份队列状态。
+
+`HumanHandoffService` 的短事务使用 SELECT FOR UPDATE 串行化申请、领取、结束、用户消息接收和机器人正式发布。变更与 SYSTEM 消息一起提交；消息写入失败会回滚状态变更。模型调用位于事务外，发布时复核 BOT、version 和 generation_id。交接清理租约，迟到的候选答案不保存、不返回。
+
+消息保存原文、角色、作者、接收版本、时间，以及正式机器人消息的完整 JSON 业务证据；按游标每页最多 100 条。client_message_id 对每个会话唯一，重复请求不会重复追加或重新生成。generation_started_at 为异常中断提供五分钟租约过期恢复，不是排队等待时间。memory_after 只重置模型读取窗口，永不删除正式记录或恢复机器人接待。
+
+两张表与知识向量、原件及评测完全独立；它们是 PostgreSQL 普通业务表，不将聊天记录自动导入向量知识库。登录 Session 仍在进程内，重启后重新登录才能按同一账户恢复数据库记录。

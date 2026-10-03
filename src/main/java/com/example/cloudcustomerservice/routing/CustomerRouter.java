@@ -31,7 +31,11 @@ public final class CustomerRouter {
     private final Classifier classifier;
     public CustomerRouter(Classifier classifier) { this.classifier = Objects.requireNonNull(classifier); }
 
-    /** 只剥离句尾标点并匹配完整命令：否定句、引用句和带业务问题的问候不会被快捷规则截断。 */
+    /** 确定的转人工命令可直接交接，避免被正在运行的机器人生成租约阻挡。 */
+    public static boolean isExplicitHumanCommand(String message) {
+        return message != null && HUMAN.contains(END.matcher(message.strip()).replaceAll(""));
+    }
+    /** 只剥离句尾标点并匹配完整命令，不会截断否定句、引用句和带业务问题的问候。 */
     public Decision route(Input input) {
         Objects.requireNonNull(input);
         String command = END.matcher(input.message()).replaceAll("");

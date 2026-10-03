@@ -10,7 +10,7 @@ spring:
     exclude: []
   # 路径相对启动工作目录，IDEA 配置把它固定为项目根目录；此文件缺失不会在导入阶段报错。
   config:
-    import: optional:file:.local/database.properties
+    import: optional:file:.local/database.properties,optional:file:.local/handoff-accounts.properties
   # 连接本机 Docker 数据库，也支持通过环境变量切换地址与用户名。
   datasource:
     url: ${KNOWLEDGE_DB_URL:jdbc:postgresql://127.0.0.1:15432/cloud_customer_service}

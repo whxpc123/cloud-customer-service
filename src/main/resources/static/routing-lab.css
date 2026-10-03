@@ -21,3 +21,6 @@
 @media(max-width:900px){.route-layout{grid-template-columns:1fr}.route-title>p{display:none}.local-note{display:block}.local-note span{display:block;margin-top:5px}}
 @media(max-width:520px){.query-panel{padding:18px}.panel-head h2{font-size:18px}.route-title{margin-bottom:18px}.local-note{padding:12px}.panel-head button{padding:7px 9px}.decision-grid,.facts{grid-template-columns:80px minmax(0,1fr)}header nav{gap:10px}header nav a{font-size:11px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+
+/* 第十七章账号与回执区：当前接待状态独立于历史机器人结果，手机端也保持可读。 */
+[hidden]{display:none!important}#login-panel,#reception{margin-top:20px}#login-form{display:flex;gap:12px;flex-wrap:wrap;align-items:center}#login-form input{min-width:0;max-width:100%;padding:10px;border:1px solid var(--line);border-radius:5px}#conversation-list{width:100%}#reception .actions{margin-top:12px}#reception-mode{color:var(--accent)}#receipt{max-width:700px}#reception-message{line-height:1.8}.turn.system{background:#fff4dc;color:#725829}.login-error{color:#a13b27}
