@@ -919,3 +919,22 @@ X-CSRF-TOKEN: {{handoffCsrf}}
 
 ### 以客户身份查看路由统计（含诊断，不统计直接转人工 API，不代表正确率）
 GET http://127.0.0.1:18080/internal/routing/metrics
+
+
+### 第十八章：状态订阅（客户登录后；只读快照，Last-Event-ID 不重放历史）
+GET http://127.0.0.1:18080/api/handoff/conversations/{{routingConversationId}}/events
+Accept: text/event-stream
+Last-Event-ID: 0
+
+### 第十八章：独立模型流实验页面
+GET http://127.0.0.1:18080/internal/stream-lab
+
+### 第十八章：一次真实模型流（客户或客服登录；复用第十七章登录后的新 CSRF）
+# 普通 HTTP Client 可能缓冲显示；逐段验收请用浏览器实验页。
+# 不进入正式业务、不写聊天历史，不要自动重试这个 POST。
+POST http://127.0.0.1:18080/internal/stream-lab/answer
+Content-Type: application/json
+Accept: text/event-stream
+X-CSRF-TOKEN: {{handoffCsrf}}
+
+{"question":"请用三行解释 SSE，每行说明一个要点。"}

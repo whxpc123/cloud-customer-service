@@ -1,0 +1,11 @@
+<!doctype html>
+<!-- 独立流式实验：生成草稿与正式业务消息保持明确的页面边界。 -->
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>云杉客服 · 流式传输实验</title><link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/embedding-lab.css"><link rel="stylesheet" href="/query-lab.css"><link rel="stylesheet" href="/routing-lab.css"><link rel="stylesheet" href="/stream-lab.css"><script type="module" src="/stream-lab.js"></script></head>
+<body><header><a class="brand" href="/">杉 <span>云杉客服</span></a><nav><a href="/internal/routing">统一客服 / 登录 ↗</a><a href="/internal/knowledge-admin">知识库管理 ↗</a></nav></header>
+<main><div class="route-title"><div><p class="eyebrow">CHAPTER 18 / STREAMING</p><h1>文字到了，<span>就让它出现。</span></h1></div><p>观察模型真正生成的片段。<br>开始、增量、完成与中断，都有明确状态。</p></div>
+<aside class="local-note"><strong>本地传输实验</strong><span>这里的文字是实验输出，不查询订单、不检索商城制度、不执行工具，也不保存正式聊天记录。</span></aside>
+<p id="account-status" role="status">正在检查登录…</p>
+<div class="stream-layout"><section class="query-panel"><h2>发起一次生成</h2><form id="stream-form"><label for="question">一般性问题</label><textarea id="question" maxlength="2000" rows="5" required>请用三行解释 SSE，每行说明一个要点。</textarea><div class="actions"><button id="start" class="primary" disabled>开始生成</button><button id="cancel" type="button" disabled>停止接收</button></div></form><p class="fine">需要第十七章的本地账户登录。断线不会自动重跑模型；停止接收也不能保证远端立刻停止计费。</p><dl class="facts"><dt>收到片段</dt><dd id="fragment-count">0</dd><dt>首片段耗时</dt><dd id="first-fragment">—</dd><dt>本轮耗时</dt><dd id="elapsed">—</dd></dl><p class="fine">计时从浏览器提交开始；片段不等于 Token。模型空闲 30 秒、总时长 2 分钟，输出有上限。</p></section>
+<section class="query-panel"><div class="panel-head"><h2>模型文字</h2><span id="output-kind" class="tag">尚未开始</span></div><p id="answer-status" role="status">准备好问题后开始。</p><pre id="answer-text" aria-label="模型输出"></pre><p class="fine">只有收到明确的完成事件，才标记文本输出结束；中断时保留已收到的草稿。</p></section></div>
+<details class="metrics-panel"><summary>查看本轮传输事件</summary><p class="fine">只显示实际收到的事件类型与序号。最多保留最近 80 条，心跳不显示为业务消息。</p><ol id="events"></ol></details>
+<p class="fine footer-note">正式客服仍保留完整业务校验与数据库发布门。人工状态通过 <a href="/internal/routing">统一客服页面</a> 的 GET SSE 订阅自动更新；此处的 POST 模型流独立于正式会话。</p></main></body></html>

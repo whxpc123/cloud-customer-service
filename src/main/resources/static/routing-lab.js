@@ -8,7 +8,8 @@ const reasons={EXACT_SMALL_TALK:'纯问候、感谢或告别',EXPLICIT_HUMAN_COM
 const examples={hello:'你好',policy:'退货运费由谁承担？',order:'A10001 发货了吗？',sale:'A10001 的商品有质量问题，能退吗？',missing:'我要查订单',negation:'不要转人工，先告诉我退货规则。',multi:'帮我查 A10001 发货没有，另外告诉我电子发票怎么开。',human:'我要转人工',unrelated:'帮我写一篇完全无关的小说。'};
 
 let csrf=null,csrfHeader='X-CSRF-TOKEN',account=null,conversation=null,receipt=null;
-let busy=false,handoffBusy=false,refreshing=false,cursor=0,epoch=0,pending=null;
+let busy=false,handoffBusy=false,cursor=0,epoch=0,pending=null,stateSource=null;
+const refreshJobs=new Map();
 const modes={BOT:'智能客服接待',WAITING_HUMAN:'等待人工领取',HUMAN_ACTIVE:'已由客服领取',CLOSED:'本次会话已结束'};
 /** 生成回答时仍允许申请人工；禁止切换会话，避免把结果挂到另一个会话。 */
 function controls(){
@@ -18,6 +19,7 @@ function controls(){
   for(const id of ['diagnose','clear'])$(id).disabled=busy||!active||receipt?.mode!=='BOT';
   $('handoff').disabled=handoffBusy||!active||receipt?.mode!=='BOT';
   $('refresh-state').disabled=!active;
+  $('reconnect-state').disabled=!active||receipt?.mode==='CLOSED';
   $('refresh-metrics').disabled=!ready;
   $('send').textContent=receipt&&['WAITING_HUMAN','HUMAN_ACTIVE'].includes(receipt.mode)?'保存补充消息':'发送并处理';
 }
@@ -68,7 +70,10 @@ function render(r,diagnostic=false){
 
 /** 当前接待卡只接受本会话的新版本；历史消息的路由不代表当前接待状态。 */
 function applyReceipt(r){
+  if(!Number.isSafeInteger(r.version)||r.version<0||!modes[r.mode])throw new Error('非法接待状态');
   if(r.conversationId!==conversation||(receipt&&r.version<receipt.version))return false;
+  if(receipt&&r.version===receipt.version)return true;
+  if(r.mode==='CLOSED'){closeStateStream();$('connection-status').textContent='本次会话已结束，状态连接已关闭。';}
   receipt=r;const option=Array.from($('conversation-list').options).find(o=>o.value===conversation);if(option)option.textContent=`${modes[r.mode]} · ${conversation.slice(0,8)}`;$('reception-mode').textContent=modes[r.mode];$('reception-message').textContent=r.message;
   const details=fields([['会话',r.conversationId],['受理编号',r.handoffId||'尚未申请'],['状态 / 版本',`${r.mode} / ${r.version}`],['领取客服',r.assignedAgentId||'尚未领取'],['受理时间',r.requestedAt||'—'],['领取时间',r.acceptedAt||'—'],['结束时间',r.closedAt||'—']]);
   $('receipt').replaceChildren(...details.childNodes);controls();return true;
@@ -82,25 +87,51 @@ function showMessage(m){
 }
 /** 分页读取正式记录。整页快照落后于已知版本时不推进游标，下次重读，避免网络乱序。 */
 async function refresh(){
-  if(!conversation||refreshing)return;
-  refreshing=true;const id=conversation,token=epoch;
-  try{
+  if(!conversation)return;
+  const id=conversation,token=epoch;
+  // 同一页面代次的重复刷新排队；切换会话可立即启动新读取，旧响应由代次检查丢弃。
+  if(refreshJobs.has(token)){await refreshJobs.get(token);if(token===epoch)return refresh();return;}
+  const job=(async()=>{
     let more=true;
     while(more){
       const data=await request(`/api/handoff/conversations/${id}/messages?after=${cursor}`);
       if(token!==epoch||id!==conversation)return;
-      if(!applyReceipt(data.receipt))return;
+      if(!applyReceipt(data.receipt))continue;
       data.messages.forEach(showMessage);cursor=data.nextCursor;more=data.hasMore;
     }
-  }finally{refreshing=false;}
+  })();
+  refreshJobs.set(token,job);try{await job;}finally{refreshJobs.delete(token);}
+}
+/** GET EventSource 只订阅状态。重连读取当前快照，不启动模型，也不承诺补发每个历史事件。 */
+function closeStateStream(){stateSource?.close();stateSource=null;}
+function subscribeState(){
+  closeStateStream();if(!conversation||receipt?.mode==='CLOSED')return;
+  const id=conversation,token=epoch,source=new EventSource(`/api/handoff/conversations/${id}/events`);
+  stateSource=source;$('connection-status').textContent='正在连接状态流…';
+  const current=()=>token===epoch&&source===stateSource;
+  source.onopen=()=>{if(current())$('connection-status').textContent='状态连接已建立 · 服务器每轮约 2 秒查询数据库';};
+  source.addEventListener('conversation.state',event=>{
+    if(!current())return;
+    try{
+      const next=JSON.parse(event.data),before=receipt?.version;
+      if(applyReceipt(next)&&before!==next.version)refresh().catch(e=>{$('feedback').textContent=e.message;});
+    }catch{closeStateStream();$('connection-status').textContent='状态事件格式异常，请重新连接。';}
+  });
+  source.addEventListener('stream.failure',event=>{
+    if(!current())return;closeStateStream();$('connection-status').textContent='状态同步已停止，请检查登录并重新连接。';
+  });
+  source.onerror=async()=>{
+    if(!current())return;$('connection-status').textContent='连接中断，正在尝试重新连接…';
+    // 原生 EventSource 不提供 HTTP 状态；单次查询登录，避免退出后无限重连。
+    try{const s=await request('/internal/handoff/session');if(current()&&!s.authenticated){closeStateStream();account=null;controls();$('login-panel').hidden=false;$('connection-status').textContent='登录已失效，请重新登录。';csrf=s.csrfToken;csrfHeader=s.csrfHeader;}}catch{/* 保留自动重连提示，不宣称业务失败。 */}
+  };
 }
 async function selectConversation(id){
-  epoch++;conversation=id;receipt=null;cursor=0;pending=null;
+  closeStateStream();epoch++;conversation=id;receipt=null;cursor=0;pending=null;
   sessionStorage.setItem('handoff-last-conversation',id);
   $('conversation-list').value=id;$('session').textContent=`账户 ${account.username} · 会话 ${id}`;
   $('messages').replaceChildren(node('p','正在读取正式记录…','empty'));resetTrace();controls();
-  // 旧读取完成后才开始下一次，旧结果由 epoch 拒绝；轮询会补齐本次读取。
-  await refresh();
+  await refresh();subscribeState();
   if(!$('messages').querySelector('.turn'))$('messages').replaceChildren(node('p','暂无正式消息，可以开始咨询。','empty'));
 }
 async function loadConversations(preferred){
@@ -150,7 +181,7 @@ $('login-form').addEventListener('submit',async e=>{
   }catch(error){$('login-feedback').textContent=error.message;}finally{$('login').disabled=false;}
 });
 $('logout').addEventListener('click',async()=>{
-  try{await request('/internal/handoff/logout','POST');epoch++;conversation=null;receipt=null;account=null;cursor=0;pending=null;
+  try{closeStateStream();await request('/internal/handoff/logout','POST');epoch++;conversation=null;receipt=null;account=null;cursor=0;pending=null;
     $('messages').replaceChildren();$('receipt').replaceChildren();$('account').textContent='';$('session').textContent='请先登录。';resetTrace();await initialize();
   }catch(e){$('feedback').textContent=e.message;}
 });
@@ -160,6 +191,9 @@ $('handoff').addEventListener('click',async()=>{
   catch(e){$('feedback').textContent=`暂时无法确认申请状态：${e.message} 请刷新查询或再次申请，不会重复生成受理单。`;try{await refresh();}catch{/* 保留未知状态提示，不宣称受理失败。 */}}
   finally{handoffBusy=false;controls();}
 });
+$('reconnect-state').addEventListener('click',subscribeState);
+window.addEventListener('pagehide',closeStateStream);
+window.addEventListener('pageshow',event=>{if(event.persisted)subscribeState();});
 $('refresh-state').addEventListener('click',()=>refresh().catch(e=>{$('feedback').textContent=e.message;}));
 $('conversation-list').addEventListener('change',()=>selectConversation($('conversation-list').value).catch(e=>{$('feedback').textContent=e.message;}));
 $('chat-form').addEventListener('submit',e=>{e.preventDefault();send(false);});
@@ -168,6 +202,4 @@ $('example').addEventListener('change',()=>{$('question').value=examples[$('exam
 $('new-session').addEventListener('click',async()=>{if(busy)return;busy=true;controls();try{await createConversation();}catch(e){$('feedback').textContent=e.message;}finally{busy=false;controls();}});
 $('clear').addEventListener('click',async()=>{if(busy||!conversation)return;busy=true;controls();try{applyReceipt(await request(`/internal/routing/conversations/${conversation}/memory`,'DELETE'));resetTrace();await refresh();$('feedback').textContent='上下文已重置，正式记录仍保留。';}catch(e){$('feedback').textContent=e.message;}finally{busy=false;controls();}});
 $('refresh-metrics').addEventListener('click',async()=>{try{const m=await request('/internal/routing/metrics');$('metrics').replaceChildren(fields([['已分类',m.decisions],['规则命中',`${m.ruleHits} / ${m.decisions}`],['分类器调用',m.classifierCalls],['澄清 / 兜底',m.clarifications],['分类故障',m.classificationFailures],['经路由选择人工',m.humanRequests],['平均耗时',`${m.averageRoutingMs.toFixed(1)} ms`],['路由分布',Object.entries(m.routes).map(([route,n])=>`${routes[route]} ${n}`).join(' · ')||'暂无']]));}catch(e){$('feedback').textContent=e.message;}});
-// 普通 HTTP 轮询；不宣称具有 SSE、实时坐席在线状态或实时消息推送。
-setInterval(()=>{if(!document.hidden)refresh().catch(e=>{$('feedback').textContent=`状态刷新未完成：${e.message}`;});},3000);
 controls();initialize().catch(e=>{$('login-panel').hidden=false;$('login-feedback').textContent=e.message;});

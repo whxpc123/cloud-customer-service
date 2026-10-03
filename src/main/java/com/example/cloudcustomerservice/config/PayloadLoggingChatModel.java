@@ -68,7 +68,7 @@ public final class PayloadLoggingChatModel implements ChatModel {
      */
     @Override
     public Flux<ChatResponse> stream(Prompt prompt) {
-        // 当前接口使用同步 call；保留 ChatModel 的流式语义，按订阅记录请求与返回分片。
+        // 第十八章流式实验复用此路径；按订阅观察真实返回分片，不另行订阅或先收集全文。
         return Flux.defer(() -> {
             if (!enabled) {
                 return delegate.stream(prompt);

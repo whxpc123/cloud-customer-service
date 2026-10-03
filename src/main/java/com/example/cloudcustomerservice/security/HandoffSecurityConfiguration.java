@@ -42,12 +42,15 @@ public class HandoffSecurityConfiguration {
     /** Session 登录含 CSRF 和会话固定攻击防护；登录前后的 token 需重新读取。 */
     @Bean @Order(1) @Profile("local & knowledge")
     public SecurityFilterChain handoffSecurity(HttpSecurity http) throws Exception {
-        http.securityMatcher("/internal/routing/**", "/internal/handoff/**", "/api/handoff/**", "/api/support/**")
+        http.securityMatcher("/internal/routing/**", "/internal/handoff/**", "/api/handoff/**", "/api/support/**", "/internal/stream-lab/**")
                 .addFilterBefore(new LocalAccessFilter(), UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(a -> a
-                    .requestMatchers(HttpMethod.GET, "/internal/routing", "/internal/handoff/session").permitAll()
+                    // 异步完成分派不再次执行控制器；原始请求已校验，状态轮询仍逐次检查 Session。
+                    .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
+                    .requestMatchers(HttpMethod.GET, "/internal/routing", "/internal/handoff/session", "/internal/stream-lab").permitAll()
                     .requestMatchers("/internal/handoff/login").permitAll()
                     .requestMatchers("/api/support/**").hasAuthority("support:serve")
+                    .requestMatchers("/internal/stream-lab/**").authenticated()
                     .requestMatchers("/internal/handoff/logout").authenticated()
                     .anyRequest().hasAuthority("customer:chat"))
                 .formLogin(f -> f.loginProcessingUrl("/internal/handoff/login")

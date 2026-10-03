@@ -9,6 +9,9 @@ app:
     log-payload: ${AI_LOG_PAYLOAD:false}
 
 spring:
+  # 第十八章使用 Flux 作为 MVC 响应，应用本身仍为 Servlet。
+  main:
+    web-application-type: servlet
   # 前六章与离线测试不依赖数据库；knowledge profile 显式启用以下自动配置。
   autoconfigure:
     exclude:
@@ -39,6 +42,8 @@ spring:
 logging:
   level:
     org.springframework.ai.converter.BeanOutputConverter: OFF
+    # 流式聚合器会输出供应商异常正文；SseStreams 仅记录关联号与异常类型。
+    org.springframework.ai.chat.model.MessageAggregator: OFF
     # 学习时打印类型生成的 Schema/格式说明；设置 INTENT_SCHEMA_LOG_LEVEL=INFO 可关闭。
     com.example.cloudcustomerservice.intent.CustomerIntentRecognizer: ${INTENT_SCHEMA_LOG_LEVEL:DEBUG}
 

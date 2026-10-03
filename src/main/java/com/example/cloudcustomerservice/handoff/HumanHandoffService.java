@@ -39,7 +39,7 @@ public class HumanHandoffService {
         jdbc.update("INSERT INTO ai.cs_conversation(tenant_id,id,user_id) VALUES(?,?,?)",actor.tenantId(),id,actor.accountId());
         return receipt(load(actor,id,true,false));
     }
-    @Transactional(readOnly=true)
+    @Transactional(readOnly=true,timeout=3)
     public Receipt get(Actor actor,UUID id){HandoffIdentity.requireSame(actor);return receipt(load(actor,id,true,false));}
     /** 刷新或重新登录后按真实账户恢复会话，不再依赖上章的 Session UUID 注册表。 */
     @Transactional(readOnly=true) @PreAuthorize("hasAuthority('customer:chat')")
