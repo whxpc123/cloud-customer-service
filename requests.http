@@ -1143,3 +1143,36 @@ X-CSRF-TOKEN: {{handoffCsrf}}
 
 ### 第 25 章页面；其他场景名以 definition 返回的目录为准
 GET http://127.0.0.1:18080/internal/draft-tasks/flow
+
+
+### 第26章：当前客户持久化提交目录（需沿用已登录 Cookie）
+GET http://127.0.0.1:18080/internal/draft-tasks/submission/operations
+
+### 从已经确认的具体草稿准备操作；重复请求返回原 operationId
+@submitTaskId = 在此替换为已确认任务UUID
+@submitOperationId = 在此替换为准备接口返回的operationId
+POST http://127.0.0.1:18080/internal/draft-tasks/submission/operations
+Content-Type: application/json
+X-CSRF-TOKEN: {{handoffCsrf}}
+
+{"taskId":"{{submitTaskId}}","draftVersion":1}
+
+### 先核对固定正文；GET 不提交
+GET http://127.0.0.1:18080/internal/draft-tasks/submission/operations/{{submitOperationId}}
+
+### 用户明确批准此笔本地待审核申请创建，不执行退款
+POST http://127.0.0.1:18080/internal/draft-tasks/submission/operations/{{submitOperationId}}/decision
+Content-Type: application/json
+X-CSRF-TOKEN: {{handoffCsrf}}
+
+{"decision":"APPROVE","accepted":true}
+
+### 执行或重试时保持同一个 operationId，不另传正文
+POST http://127.0.0.1:18080/internal/draft-tasks/submission/operations/{{submitOperationId}}/execute
+Content-Type: application/json
+X-CSRF-TOKEN: {{handoffCsrf}}
+
+{}
+
+### 只查询原创建回执；NOT_OBSERVED 不等于一定失败
+GET http://127.0.0.1:18080/internal/draft-tasks/submission/operations/{{submitOperationId}}/result

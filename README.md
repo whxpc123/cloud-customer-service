@@ -2,9 +2,9 @@
 
 根据《第一章：老板下午要看的 AI 客服》实现的 Java 学习项目。后续章节在这个项目上逐步增加能力，每章的改动与验收方式记录在 `docs/chapters/`。
 
-当前进度：**第二十五章——可执行 Graph 与条件分支**。新增独立路线实验页，使用服务器测试场景运行真实 Graph，显示等待、拒绝、阻断、模拟完成和核查路径；图定义与执行连线共用，保留原草稿与审批流程。
+当前进度：**第二十六章——本地申请受理与幂等提交**。固定草稿生成稳定操作编号，用户明确批准后在同库事务中创建待审核申请；重复执行回放同一回执，新增申请受理页面。
 
-章节记录：[第一章](docs/chapters/01-first-chat.md) · [第二章](docs/chapters/02-system-prompt.md) · [第三章](docs/chapters/03-structured-output.md) · [第四章](docs/chapters/04-chat-memory.md) · [第五章](docs/chapters/05-tool-calling.md) · [第六章](docs/chapters/06-embedding-lab.md) · [第七章](docs/chapters/07-pgvector-knowledge.md) · [第八章](docs/chapters/08-document-etl.md) · [第九章](docs/chapters/09-manual-rag.md) · [第十章](docs/chapters/10-advisor-chain.md) · [第十章补充：知识管理台](docs/chapters/10-knowledge-management.md) · [第十一章](docs/chapters/11-query-transformation.md) · [第十二章](docs/chapters/12-query-expansion.md) · [第十三章](docs/chapters/13-reranking.md) · [第十四章](docs/chapters/14-hybrid-search.md) · [第十五章](docs/chapters/15-after-sale-precheck.md) · [第十六章](docs/chapters/16-customer-routing.md) · [第十七章](docs/chapters/17-human-handoff.md) · [第十八章](docs/chapters/18-sse-streaming.md) · [第十九章](docs/chapters/19-stage1-acceptance.md) · [第二十章](docs/chapters/20-bounded-draft-agent.md) · [第二十一章](docs/chapters/21-in-process-task-memory.md) · [第二十二章](docs/chapters/22-persistent-task-checkpoints.md) · [第二十三章](docs/chapters/23-immutable-draft-confirmation.md) · [第二十四章](docs/chapters/24-human-in-the-loop.md) · [第二十五章](docs/chapters/25-executable-submission-graph.md)。
+章节记录：[第一章](docs/chapters/01-first-chat.md) · [第二章](docs/chapters/02-system-prompt.md) · [第三章](docs/chapters/03-structured-output.md) · [第四章](docs/chapters/04-chat-memory.md) · [第五章](docs/chapters/05-tool-calling.md) · [第六章](docs/chapters/06-embedding-lab.md) · [第七章](docs/chapters/07-pgvector-knowledge.md) · [第八章](docs/chapters/08-document-etl.md) · [第九章](docs/chapters/09-manual-rag.md) · [第十章](docs/chapters/10-advisor-chain.md) · [第十章补充：知识管理台](docs/chapters/10-knowledge-management.md) · [第十一章](docs/chapters/11-query-transformation.md) · [第十二章](docs/chapters/12-query-expansion.md) · [第十三章](docs/chapters/13-reranking.md) · [第十四章](docs/chapters/14-hybrid-search.md) · [第十五章](docs/chapters/15-after-sale-precheck.md) · [第十六章](docs/chapters/16-customer-routing.md) · [第十七章](docs/chapters/17-human-handoff.md) · [第十八章](docs/chapters/18-sse-streaming.md) · [第十九章](docs/chapters/19-stage1-acceptance.md) · [第二十章](docs/chapters/20-bounded-draft-agent.md) · [第二十一章](docs/chapters/21-in-process-task-memory.md) · [第二十二章](docs/chapters/22-persistent-task-checkpoints.md) · [第二十三章](docs/chapters/23-immutable-draft-confirmation.md) · [第二十四章](docs/chapters/24-human-in-the-loop.md) · [第二十五章](docs/chapters/25-executable-submission-graph.md) · [第二十六章](docs/chapters/26-idempotent-submission.md)。
 
 每章对应独立 Git 提交和 `chapter-NN` 标签，具体变化见 [CHANGELOG](CHANGELOG.md)。第 1～3 章历史根据已实现代码于 2026-09-12 补建；后续每章验收完成后提交并推送。
 
@@ -36,6 +36,7 @@
 | [chapter-23](https://github.com/whxpc123/cloud-customer-service/tree/chapter-23) | 结构化草稿、不可变版本、具体内容确认、旧版与并发保护 | [与第二十二章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-22...chapter-23) |
 | [chapter-24](https://github.com/whxpc123/cloud-customer-service/tree/chapter-24) | 工具执行前中断、明确操作审批、反馈恢复与模拟执行 | [与第二十三章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-23...chapter-24) |
 | [chapter-25](https://github.com/whxpc123/cloud-customer-service/tree/chapter-25) | StateGraph 条件分支、状态策略、真实轨迹与路线实验页 | [与第二十四章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-24...chapter-25) |
+| [chapter-26](https://github.com/whxpc123/cloud-customer-service/tree/chapter-26) | 稳定操作编号、持久化批准、同库事务创建待审核申请与回执重放 | [与第二十五章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-25...chapter-26) |
 
 在 GitHub 选择对应标签查看该章完整代码，在 Compare 页面选择相邻标签查看改动。阅读历史版本可以使用独立工作目录，例如 `git worktree add ../chapter-01-view chapter-01`，避免覆盖当前开发目录。
 
@@ -120,7 +121,7 @@ curl --get 'http://localhost:18080/api/chat' \
 java -jar target/cloud-customer-service-0.0.1-SNAPSHOT.jar
 ```
 
-自动测试在需要调用的路径替换 ChatModel / EmbeddingModel，不访问百炼、不需要真实 Key，覆盖聊天回归、结构化转换、非法字段、异常兜底、角色隔离和日志。当前全量范围有 482 项 Java 测试，其中 123 项需要真实 PostgreSQL；通过 `RUN_PGVECTOR_TESTS=true RUN_ACCEPTANCE_TESTS=true ./mvnw package` 开启全部数据库验证，未启用时明确跳过。新增测试不需要真实模型 Key。前端 SSE 解析另有 122 项测试，通过 `node --test scripts/tests/sse-client.test.mjs` 运行（仅此开发测试需要 Node，应用启动不需要）。覆盖工具执行、会话隔离、向量数学、批次边界、知识过滤、重复导入及异常保护。集成测试步骤见第七章文档。启动应用和运行 JAR 仍需真实 `DASHSCOPE_API_KEY`。
+自动测试在需要调用的路径替换 ChatModel / EmbeddingModel，不访问百炼、不需要真实 Key，覆盖聊天回归、结构化转换、非法字段、异常兜底、角色隔离和日志。当前全量范围有 502 项 Java 测试，其中 143 项需要真实 PostgreSQL；通过 `RUN_PGVECTOR_TESTS=true RUN_ACCEPTANCE_TESTS=true ./mvnw package` 开启全部数据库验证，未启用时明确跳过。新增测试不需要真实模型 Key。前端 SSE 解析另有 122 项测试，通过 `node --test scripts/tests/sse-client.test.mjs` 运行（仅此开发测试需要 Node，应用启动不需要）。覆盖工具执行、会话隔离、向量数学、批次边界、知识过滤、重复导入及异常保护。集成测试步骤见第七章文档。启动应用和运行 JAR 仍需真实 `DASHSCOPE_API_KEY`。
 
 ## 目录与章节对应
 
@@ -440,3 +441,12 @@ IDEA 同步 Maven 后运行原 `CloudCustomerServiceApplication` 配置，打开
 验证：全量 482 项测试通过（含 123 项真实数据库验证）；页面八个场景、刷新只读、键盘操作、Mermaid 下载与 390 px 布局已验收。当前 18080 由终端启动，本章未在 IDEA 内启动。
 
 Java 代码与详细边界见[第二十五章说明](docs/chapters/25-executable-submission-graph.md)。
+
+
+## 第二十六章：本地申请受理与回执重放
+
+打开 <http://127.0.0.1:18080/internal/draft-tasks/submission>，或从已确认的具体草稿版本进入。准备稳定操作 → 核对固定正文并明确批准 → 执行 → 查询/回放同一回执。首次执行创建真实 PostgreSQL 待审核申请，重复执行保持相同申请编号与创建时间。
+
+批准、有效期、草稿与接待范围在服务端复核；创建申请、操作成功和任务关闭同事务提交。申请受理不代表审核通过或退款，不向外部系统投递。详情与验收见[第二十六章说明](docs/chapters/26-idempotent-submission.md)。
+
+验证：全量 502 项 Java 测试通过（143 项真实数据库验证），本章新增 20 项；浏览器创建与回放、只读刷新、390 px 布局及独立 JVM 重启验证通过。当前 18080 为终端启动，IDEA 项目切换未生效。

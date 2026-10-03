@@ -100,7 +100,7 @@ $('discard-dialog').addEventListener('close',()=>{if($('discard-dialog').returnV
   render(await api(`${base}/${selected}/close`,'POST',{expectedVersion:current.task.version}));$('message').textContent='任务已结束，持久化历史与正式客服记录保留。';await loadDrafts();await list();
 });});
 /** 清空正文和勾选，防止加载过程或任务切换期间确认上一份内容。 */
-function clearDraft(){draftView=null;$('revision-body').hidden=true;$('accept-draft').checked=false;$('confirmation-box').hidden=true;
+function clearDraft(){draftView=null;$('submission-link').hidden=true;$('revision-body').hidden=true;$('accept-draft').checked=false;$('confirmation-box').hidden=true;
   $('revision-select').replaceChildren();$('draft-badge').textContent='尚无草稿';$('draft-notice').textContent='正常完成候选后，可以整理并保存一版草稿。';}
 /** 重查目录可发现新版本，但只有用户重新查看后才能再次显式勾选确认。 */
 async function loadDrafts(){
@@ -130,6 +130,7 @@ async function showDraft(version){
   if(c){$('confirmation-heading').textContent=view.confirmationEffective?`已记录对 V${view.draftVersion} 内容的确认`:`V${view.draftVersion} 曾经确认，当前已失效`;
     $('confirmation-scope').textContent='仅确认问题描述和申请诉求。不代表售后审核通过，没有提交申请或执行退款。';
     $('confirmation-meta').textContent=`确认人 ${c.confirmedBy} · ${new Date(c.confirmedAt).toLocaleString()} · 回执 ${c.confirmationId} · ${c.scope}`;}
+  $('submission-link').hidden=!view.confirmationEffective;$('submission-link').href=`/internal/draft-tasks/submission?taskId=${view.taskId}&draftVersion=${view.draftVersion}`;
   $('hitl-link').hidden=!view.confirmationEffective;$('hitl-link').href=`/internal/draft-tasks/hitl?taskId=${view.taskId}&draftVersion=${view.draftVersion}`;
   $('draft-raw').textContent=JSON.stringify(view,null,2);controls();
 }
