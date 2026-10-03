@@ -1122,3 +1122,24 @@ X-CSRF-TOKEN: {{handoffCsrf}}
 
 ### 第二十四章页面
 GET http://127.0.0.1:18080/internal/draft-tasks/hitl
+
+
+### 第二十五章：同一登录 Cookie 下读取真实图定义与八个实验场景；GET 不执行节点
+GET http://127.0.0.1:18080/internal/draft-tasks/flow/definition
+
+### 运行服务器夹具：仅模拟编排，不读取真实草稿；没有 approval/status/taskId 输入
+POST http://127.0.0.1:18080/internal/draft-tasks/flow/runs
+Content-Type: application/json
+X-CSRF-TOKEN: {{handoffCsrf}}
+
+{"scenario":"PENDING"}
+
+### UNKNOWN 进入核查：模拟副作用计数为 1，但不自动回到执行节点
+POST http://127.0.0.1:18080/internal/draft-tasks/flow/runs
+Content-Type: application/json
+X-CSRF-TOKEN: {{handoffCsrf}}
+
+{"scenario":"UNKNOWN_RESULT"}
+
+### 第 25 章页面；其他场景名以 definition 返回的目录为准
+GET http://127.0.0.1:18080/internal/draft-tasks/flow

@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- 第二十三章：展示不可变版本，确认始终绑定当前页面实际读取的正文；不自动确认“最新”。 -->
 <html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>云杉 · 草稿版本与确认</title><link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/embedding-lab.css"><link rel="stylesheet" href="/query-lab.css"><link rel="stylesheet" href="/routing-lab.css"><link rel="stylesheet" href="/draft-agent.css"><link rel="stylesheet" href="/draft-tasks.css"><link rel="stylesheet" href="/draft-revisions.css"><script type="module" src="/persistent-draft-tasks.js"></script></head>
-<body><header><a class="brand" href="/">杉 <span>云杉客服</span></a><nav aria-label="章节导航"><a href="/internal/routing">统一客服 / 登录 ↗</a><a href="/internal/draft-tasks/hitl">工具执行前审批 ↗</a><a href="/internal/local-draft-tasks">内存对照实验 ↗</a></nav></header>
+<body><header><a class="brand" href="/">杉 <span>云杉客服</span></a><nav aria-label="章节导航"><a href="/internal/draft-tasks/flow">流程路线实验 ↗</a><a href="/internal/routing">统一客服 / 登录 ↗</a><a href="/internal/draft-tasks/hitl">工具执行前审批 ↗</a><a href="/internal/local-draft-tasks">内存对照实验 ↗</a></nav></header>
 <main><div class="route-title"><div><p class="eyebrow">CHAPTER 23 / DRAFT REVISIONS</p><h1>你确认的，<span>是这一版。</span></h1></div><p>每一版草稿保留原文，每一次确认都有凭据。<br>内容确认不代表审核通过或提交成功。</p></div>
 <aside class="local-note"><strong>持久化候选实验</strong><span>正常完成后可跨重启继续；执行中断需核查，不自动重跑。每任务最多 8 轮、100 项活动任务，没有提交或退款能力。</span></aside>
 <div class="account-row"><p id="account-status" role="status">正在检查登录状态…</p><button id="refresh" type="button">刷新任务</button></div>

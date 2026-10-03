@@ -1,0 +1,37 @@
+<!doctype html>
+<!-- 第 25 章：图的结构来自服务端执行定义，高亮轨迹只取真实 Graph 返回值。 -->
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>云杉 · 售后流程路线实验</title><link rel="icon" href="/favicon.svg">
+  <link rel="stylesheet" href="/embedding-lab.css"><link rel="stylesheet" href="/submission-flow.css">
+  <script type="module" src="/submission-flow.js"></script>
+</head>
+<body>
+<header><a class="brand" href="/">杉 <span>云杉客服</span></a><nav aria-label="章节导航"><a href="/internal/draft-tasks/hitl">工具执行前审批 ↗</a><a href="/internal/draft-tasks">草稿版本 ↗</a><a href="/internal/routing">统一客服 / 登录 ↗</a></nav></header>
+<main>
+  <div class="flow-title"><div><p class="eyebrow">CHAPTER 25 / EXECUTABLE GRAPH</p><h1>让每一步，<span>都有明确的去向。</span></h1></div><p>看见实际经过的节点，<br>也看见为什么在这里停止。</p></div>
+  <aside class="fixture-note"><strong>独立路线实验</strong><p>使用服务器预设的测试草稿与审批条件，执行真实 Graph。不会读取或批准您的真实任务，不调用模型、不创建售后单、不执行退款。第 24 章审批流程保留原有行为。</p></aside>
+  <div class="account-row"><p id="account" role="status">正在检查登录…</p><button id="refresh" type="button">刷新实验页</button></div>
+  <div class="flow-layout">
+    <aside class="scenario-panel"><div class="panel-heading"><span class="eyebrow">INPUT / 实验条件</span><h2>选一条路，运行看看</h2></div><fieldset id="scenario-list" disabled><legend class="sr-only">选择服务器预设场景</legend></fieldset><p id="scenario-description" class="fine">登录后选择场景，每次点击都从入口重新执行一张独立图。</p><button id="run" class="primary" type="button" disabled>运行所选场景</button><p class="fine">选择“已批准”只设置夹具条件，不构成任何业务授权。</p></aside>
+    <section class="graph-panel" aria-labelledby="graph-heading"><div class="graph-head"><div><p class="eyebrow">STATE · NODE · EDGE</p><h2 id="graph-heading">执行图</h2></div><div class="legend"><span><i class="line-symbol"></i>允许的路线</span><span><i class="line-symbol visited-symbol"></i>本次实际路线</span></div></div>
+      <p class="fine">点击节点查看职责。图结构与执行代码共用定义；窄屏可横向滚动图面。</p>
+      <div class="diagram-scroll" tabindex="0" role="region" aria-label="可横向滚动的流程图"><svg id="diagram" viewBox="0 0 1120 800" role="group" aria-label="售后模拟执行流程图"></svg></div>
+      <div id="node-detail" class="node-detail" aria-live="polite"><h3>先检查草稿，再判断审批</h3><p>未知结果只有核查出口，没有自动重试路线。END 表示本次图结束，业务结果要单独判断。</p></div>
+    </section>
+  </div>
+  <section class="run-panel" aria-labelledby="result-heading" aria-busy="false" id="result-panel">
+    <div class="result-head"><div><p class="eyebrow">OUTPUT / 实际结果</p><h2 id="result-heading">尚未运行</h2></div><span id="status" class="status-badge">等待选择场景</span></div>
+    <p id="notice" role="status">点击运行后，这里展示真实 Graph 的终态与轨迹。页面不会自动运行或重试。</p>
+    <div class="metrics"><div><span>审批读取次数</span><strong id="approval-reads">—</strong></div><div><span>进入模拟方法次数</span><strong id="simulation-calls">—</strong></div><div><span>模拟副作用次数 · 测试探针</span><strong id="effects">—</strong></div><div><span>模型调用次数</span><strong id="model-calls">—</strong></div></div>
+    <p id="ending" class="ending">图是否正常结束、业务是否完成，将分别展示。</p>
+    <h3>本次实际节点轨迹</h3><ol id="trace" class="trace"><li>尚无轨迹</li></ol>
+    <div class="state-grid"><div><h3>草稿检查</h3><code id="draft-check">尚未运行</code></div><div><h3>操作审批</h3><code id="approval-check">尚未运行</code></div><div><h3>模拟方法返回</h3><code id="simulation-check">尚未运行</code></div></div>
+    <p id="run-meta" class="fine">每次点击产生独立运行；结果只在当前页面展示，刷新会清空，不提供中断恢复或永久审计。</p>
+    <details><summary>查看本次返回的业务字段</summary><pre id="raw">尚无结果</pre></details>
+    <details><summary>查看从实际编译图导出的 Mermaid</summary><pre id="mermaid">登录后加载</pre><button id="download" type="button" disabled>下载流程定义 .mmd</button></details>
+  </section>
+  <footer><p><strong>等待 ≠ 中断，结束 ≠ 成功。</strong> 本实验验证分支与停止边界。正式接线仍需真实草稿校验、操作审批记录、授权复核、原子消费和业务幂等。</p></footer>
+</main>
+</body></html>

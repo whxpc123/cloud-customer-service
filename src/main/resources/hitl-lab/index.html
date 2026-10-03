@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- 第二十四章：审批卡展示服务端保留的实际操作，按钮只提交编号、版本和决策。 -->
 <html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>云杉 · 工具执行前审批</title><link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/embedding-lab.css"><link rel="stylesheet" href="/query-lab.css"><link rel="stylesheet" href="/routing-lab.css"><link rel="stylesheet" href="/draft-agent.css"><link rel="stylesheet" href="/draft-tasks.css"><link rel="stylesheet" href="/hitl-lab.css"><script type="module" src="/hitl-lab.js"></script></head>
-<body><header><a class="brand" href="/">杉 <span>云杉客服</span></a><nav aria-label="章节导航"><a href="/internal/draft-tasks">草稿版本与确认 ↗</a><a href="/internal/routing">统一客服 / 登录 ↗</a></nav></header>
+<body><header><a class="brand" href="/">杉 <span>云杉客服</span></a><nav aria-label="章节导航"><a href="/internal/draft-tasks/flow">流程路线实验 ↗</a><a href="/internal/draft-tasks">草稿版本与确认 ↗</a><a href="/internal/routing">统一客服 / 登录 ↗</a></nav></header>
 <main><div class="route-title"><div><p class="eyebrow">CHAPTER 24 / HUMAN IN THE LOOP</p><h1>内容确认之后，<span>再过一道门。</span></h1></div><p>先看清具体操作，再决定是否放行。<br>工具是否执行，以实际计数为准。</p></div>
 <aside class="local-note"><strong>仅模拟提交</strong><span>没有真实售后单、退款或附件发送。审批实验只保存在本次进程，重启后消失；已保存的草稿与内容确认仍在数据库中。</span></aside>
 <div class="account-row"><p id="account" role="status">正在检查登录…</p><button id="refresh" type="button">刷新实验</button></div>
