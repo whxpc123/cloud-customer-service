@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- 第26～28章：每个操作绑定一版正文，批准与执行分开，刷新只读已存结果。 -->
 <html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>云杉 · 售后申请受理</title><link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/embedding-lab.css"><link rel="stylesheet" href="/submission.css"><script type="module" src="/submission.js"></script></head>
-<body><header><a class="brand" href="/">杉 <span>云杉客服</span></a><nav aria-label="章节导航"><a href="/internal/draft-tasks">草稿版本 ↗</a><a href="/internal/draft-tasks/flow">路线实验 ↗</a><a href="/internal/routing">统一客服 / 登录 ↗</a></nav></header>
+<body><header><a class="brand" href="/">杉 <span>云杉客服</span></a><nav aria-label="章节导航"><a href="/internal/outbox-reconciliation">同步核查台 ↗</a><a href="/internal/draft-tasks">草稿版本 ↗</a><a href="/internal/draft-tasks/flow">路线实验 ↗</a><a href="/internal/routing">统一客服 / 登录 ↗</a></nav></header>
 <main><div class="title-row"><div><p class="eyebrow">CHAPTER 28 / OUTBOX → INBOX → RECEIPT</p><h1>本地已受理，<span>外部是否已收到？</span></h1></div><p>保留每一次承诺，<br>按回执确认结果。</p></div>
 <aside class="scope"><strong>本系统 · 待审核申请</strong><p>保存已确认草稿，创建待审核申请。需要同步时，必须在准备操作时选择并明确批准。外部同步单独确认；两个阶段均不代表审核通过或退款。</p></aside>
 <div class="account-row"><p id="account" role="status">正在检查登录…</p><button id="refresh" type="button">刷新，只读查询</button></div>

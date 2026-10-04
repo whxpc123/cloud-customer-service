@@ -33,8 +33,13 @@ public class HandoffSecurityConfiguration {
             if (password.length() < 16) throw new IllegalArgumentException("本地接待账户密码至少 16 个字符，请重新配置账户文件");
             boolean support = name.startsWith("support");
             long id = switch (name) { case "customer1001" -> 1001; case "customer2002" -> 2002; case "support9001" -> 9001; default -> 9002; };
+            var authorities = new ArrayList<SimpleGrantedAuthority>();
+            authorities.add(new SimpleGrantedAuthority(support ? "support:serve" : "customer:chat"));
+            // 教学核查员仅 support9001；support9002 仍只能接待。部署可显式关闭/授权已配置的客服账号。
+            if (support && env.getProperty("handoff.accounts." + name + ".reconcile-enabled", Boolean.class, name.equals("support9001")))
+                authorities.add(new SimpleGrantedAuthority("support:reconcile"));
             users.put(name, new HandoffPrincipal(name, "{bcrypt}" + encoder.encode(password), new Actor("tenant-yunshan", id),
-                    List.of(new SimpleGrantedAuthority(support ? "support:serve" : "customer:chat"))));
+                    authorities));
         }
         return username -> { var user = users.get(username); if (user == null) throw new UsernameNotFoundException("账户不可用"); return user; };
     }
@@ -42,13 +47,14 @@ public class HandoffSecurityConfiguration {
     /** Session 登录含 CSRF 和会话固定攻击防护；登录前后的 token 需重新读取。 */
     @Bean @Order(1) @Profile("local & knowledge")
     public SecurityFilterChain handoffSecurity(HttpSecurity http) throws Exception {
-        http.securityMatcher("/internal/routing/**", "/internal/handoff/**", "/api/handoff/**", "/api/support/**", "/internal/stream-lab/**", "/internal/draft-agent/**", "/internal/draft-tasks/**", "/internal/local-draft-tasks/**")
+        http.securityMatcher("/internal/outbox-reconciliation/**", "/internal/routing/**", "/internal/handoff/**", "/api/handoff/**", "/api/support/**", "/internal/stream-lab/**", "/internal/draft-agent/**", "/internal/draft-tasks/**", "/internal/local-draft-tasks/**")
                 .addFilterBefore(new LocalAccessFilter(), UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(a -> a
                     // 异步完成分派不再次执行控制器；原始请求已校验，状态轮询仍逐次检查 Session。
                     .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
-                    .requestMatchers(HttpMethod.GET, "/internal/routing", "/internal/handoff/session", "/internal/stream-lab", "/internal/draft-agent", "/internal/draft-tasks", "/internal/draft-tasks/hitl", "/internal/draft-tasks/flow", "/internal/draft-tasks/submission", "/internal/local-draft-tasks").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/internal/outbox-reconciliation", "/internal/routing", "/internal/handoff/session", "/internal/stream-lab", "/internal/draft-agent", "/internal/draft-tasks", "/internal/draft-tasks/hitl", "/internal/draft-tasks/flow", "/internal/draft-tasks/submission", "/internal/local-draft-tasks").permitAll()
                     .requestMatchers("/internal/handoff/login").permitAll()
+                    .requestMatchers("/api/support/outbox", "/api/support/outbox/**").hasAuthority("support:reconcile")
                     .requestMatchers("/api/support/**").hasAuthority("support:serve")
                     .requestMatchers("/internal/stream-lab/**").authenticated()
                     .requestMatchers("/internal/handoff/logout").authenticated()

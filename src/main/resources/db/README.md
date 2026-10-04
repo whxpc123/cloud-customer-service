@@ -90,3 +90,9 @@
 `rx_inbox` 按认证来源、租户和 eventId 唯一；PROCESSING 只在短事务内部存在，PROCESSED 要求完整回执与处理时间。`rx_after_sale_application` 的来源申请/操作唯一约束防止换事件号重复建单，组合外键指向同来源同租户 Inbox。登记、申请、回执同事务提交；不能独立提交“已见过消息”记录。
 
 接收端成功去重记录不随应用重启清空。历史保留、备份、归档后的重试合同需单独设计；没有公开清空或重置接口。参见[第二十八章](../../../../docs/chapters/28-inbox-receiver.md)。
+
+## 第二十九章：核查版本与审计
+
+`V10__outbox_reconciliation.sql` 在客服库新增 `cs_outbox.reconcile_version` 与 `cs_outbox_reconciliation`。旧 V1～V9 和独立接收库 V1 均不改写，不重置历史 Outbox。组合外键绑定原事件及租户；STARTED 只代表已经开始，完成记录需包含观察、前后状态与完成时间。
+
+开始留痕和结束记录使用两个短事务。新鲜观察推进版本，匹配回执时同时补记 DELIVERED；审计与修复原子提交。过期观察写 STALE，完成审计不可覆盖。接收端 lookup 是同一权威库上的单条只读查询，不新增接收端表，也不调用建单逻辑。详见[第二十九章](../../../../docs/chapters/29-result-reconciliation.md)。

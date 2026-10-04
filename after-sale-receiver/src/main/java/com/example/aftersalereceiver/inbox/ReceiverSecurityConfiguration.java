@@ -33,6 +33,8 @@ public class ReceiverSecurityConfiguration {
                         .hasAuthority(
                                 "SCOPE_after-sale.ingest"
                         )
+                        .requestMatchers(HttpMethod.POST, PATH + "/lookup")
+                        .hasAuthority("SCOPE_after-sale.reconcile")
                         .anyRequest().denyAll()
                 )
                 .sessionManagement(session -> session
@@ -41,7 +43,7 @@ public class ReceiverSecurityConfiguration {
                         )
                 )
                 .csrf(csrf -> csrf
-                        .ignoringRequestMatchers(PATH)
+                        .ignoringRequestMatchers(PATH, PATH + "/lookup")
                 )
                 .oauth2ResourceServer(resourceServer ->
                         resourceServer.jwt(

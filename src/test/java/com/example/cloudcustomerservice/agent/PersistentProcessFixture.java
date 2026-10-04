@@ -22,6 +22,17 @@ public class PersistentProcessFixture {
     }
     @TestConfiguration(proxyBeanMethods=false)
     static class Fixtures {
+        /** 仅测试开关：真实 HTTP 查询已经返回，但本地第二事务尚未启动时阻塞，供外部强杀 JVM。 */
+        @Bean @Primary @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name="ch29.block-after-lookup",havingValue="true")
+        com.example.cloudcustomerservice.outbox.RemoteAfterSaleClient blockedLookup(com.fasterxml.jackson.databind.ObjectMapper json,org.springframework.core.env.Environment env){
+            return new com.example.cloudcustomerservice.outbox.RemoteAfterSaleClient(json,java.net.URI.create(env.getRequiredProperty("app.remote-after-sale.endpoint")),env.getRequiredProperty("app.remote-after-sale.token")){
+                @Override public com.example.cloudcustomerservice.reconcile.ReconcileModel.Reply lookup(java.util.UUID id,String payload){
+                    var reply=super.lookup(id,payload);
+                    try{Files.writeString(Path.of(System.getenv("CH22_BLOCK_FILE")),"lookup-returned");new CountDownLatch(1).await();}
+                    catch(Exception e){throw new IllegalStateException(e);}return reply;
+                }
+            };
+        }
         @Bean @Primary ChatModel processModel(){return new ChatModel(){
             @Override public ChatOptions getDefaultOptions(){return com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions.builder().model("process-controlled").build();}
             @Override public ChatResponse call(Prompt prompt){

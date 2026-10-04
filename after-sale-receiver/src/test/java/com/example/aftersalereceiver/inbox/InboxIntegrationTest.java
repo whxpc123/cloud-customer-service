@@ -59,6 +59,7 @@ class InboxIntegrationTest {
         properties.add("SERVICE_TOKEN_ISSUER", () -> "urn:yunshan:local-service-issuer");
     }
     @Autowired InboxApplicationService service;
+    @Autowired InboxLookupService lookup;
     @Autowired JdbcTemplate jdbc;
     @Autowired DataSource dataSource;
     @Autowired ObjectMapper mapper;
@@ -307,6 +308,89 @@ class InboxIntegrationTest {
         assertThat(count("rx_after_sale_application")).isEqualTo(1);
     }
 
+    /** 查询三次不会创建业务记录，也不会把审核状态倒退到最初状态。 */
+    @Test void lookupIsReadOnlyAndReturnsOnlyMatchingHistoricalReceipt() throws Exception {
+        String body=payload(); UUID event=id(body,"eventId");
+        var absent=lookupHttp(body,event,token("valid","after-sale.reconcile"));
+        assertThat(absent.statusCode()).isEqualTo(200);
+        assertThat(absent.headers().firstValue("Cache-Control")).contains("no-store");
+        assertThat(mapper.readTree(absent.body()).path("state").asText()).isEqualTo("NOT_OBSERVED");
+        assertThat(count("rx_inbox")).isZero();assertThat(count("rx_after_sale_application")).isZero();
+        var ack=service.receive(SOURCE,event,body);
+        jdbc.update("UPDATE rx_after_sale_application SET status='UNDER_REVIEW'");
+        for(int i=0;i<3;i++) {
+            var response=lookupHttp(body,event,token("valid","after-sale.reconcile"));
+            assertThat(response.statusCode()).isEqualTo(200);
+            assertThat(mapper.readTree(response.body()).path("receipt")).isEqualTo(mapper.valueToTree(ack));
+        }
+        assertThat(count("rx_inbox")).isEqualTo(1);assertThat(count("rx_after_sale_application")).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT status FROM rx_after_sale_application",String.class)).isEqualTo("UNDER_REVIEW");
+        var changed=lookup.lookup(SOURCE,event,body.replace("按钮按不动。","整机无法开机。"));
+        assertThat(changed.state()).isEqualTo("PAYLOAD_CONFLICT");assertThat(changed.receipt()).isNull();
+    }
+
+    @ParameterizedTest @ValueSource(strings={"valid","subject","scope","issuer","audience","missingAudience","expired","future","missingExpiry","signature","missing"})
+    void lookupRequiresItsOwnScopeAndAllJwtChecks(String kind) throws Exception {
+        String body=payload();UUID event=id(body,"eventId");service.receive(SOURCE,event,body);
+        String jwt=kind.equals("missing")?null:token(kind,kind.equals("valid")?"after-sale.ingest":"after-sale.reconcile");
+        var response=lookupHttp(body,event,jwt);
+        assertThat(response.statusCode()).isEqualTo(Set.of("valid","subject","scope").contains(kind)?403:401);
+        assertThat(response.body()).doesNotContain("remoteApplicationId");
+        assertThat(count("rx_after_sale_application")).isEqualTo(1);
+    }
+
+    @Test void reconcileScopeCannotCreateAndWrongTenantCannotLookup() throws Exception {
+        String body=payload(); UUID event=id(body,"eventId");
+        assertThat(post(port,body,event,token("valid","after-sale.reconcile")).statusCode()).isEqualTo(403);
+        assertThat(lookupHttp(body.replace("tenant-yunshan","tenant-evil"),event,token("valid","after-sale.reconcile")).statusCode()).isEqualTo(403);
+        assertThat(count("rx_inbox")).isZero();
+    }
+
+    @Test void lookupStillRejectsWrongKeysMalformedAndOversizeBodies() throws Exception {
+        String body=payload(),jwt=token("valid","after-sale.reconcile");UUID event=id(body,"eventId");
+        assertThat(lookupHttp(body,UUID.randomUUID(),jwt).statusCode()).isEqualTo(400);
+        assertThat(lookupHttp(body+"{}",event,jwt).statusCode()).isEqualTo(400);
+        assertThat(lookupHttp(" ".repeat(65537),event,jwt).statusCode()).isEqualTo(413);
+        assertThat(count("rx_inbox")).isZero();
+    }
+
+    @Test void incompleteMissingAndWrongLinkedReceiptsAreInconsistent() throws Exception {
+        String body=payload();UUID event=id(body,"eventId");
+        jdbc.update("INSERT INTO rx_inbox(producer_id,tenant_id,event_id,payload) VALUES (?,?,?,?::jsonb)",SOURCE.producerId(),SOURCE.tenantId(),event,body);
+        assertThat(lookup.lookup(SOURCE,event,body).state()).isEqualTo("INCONSISTENT");
+        jdbc.execute("TRUNCATE rx_after_sale_application, rx_inbox");service.receive(SOURCE,event,body);
+        jdbc.update("UPDATE rx_inbox SET receipt=jsonb_set(receipt,'{applicationId}',to_jsonb(?::text))",UUID.randomUUID().toString());
+        assertThat(lookup.lookup(SOURCE,event,body).state()).isEqualTo("INCONSISTENT");
+        jdbc.update("DELETE FROM rx_after_sale_application");
+        assertThat(lookup.lookup(SOURCE,event,body).state()).isEqualTo("INCONSISTENT");
+    }
+
+    @Test void uncommittedRemoteResultIsNotObservedThenBecomesPersistedWithoutAnotherCreate() throws Exception {
+        String body=payload();UUID event=id(body,"eventId");
+        UUID remote=UUID.randomUUID();var ack=new Ack(event,id(body,"applicationId"),remote.toString(),"PERSISTED");
+        try(Connection owner=dataSource.getConnection()) {
+            owner.setAutoCommit(false);
+            try(var st=owner.prepareStatement("INSERT INTO rx_inbox(producer_id,tenant_id,event_id,payload,status,receipt,processed_at) VALUES (?,?,?,?::jsonb,'PROCESSED',?::jsonb,clock_timestamp())")) {
+                st.setString(1,SOURCE.producerId());st.setString(2,SOURCE.tenantId());st.setObject(3,event);st.setString(4,body);st.setString(5,mapper.writeValueAsString(ack));st.executeUpdate();
+            }
+            try(var st=owner.prepareStatement("INSERT INTO rx_after_sale_application(remote_application_id,producer_id,tenant_id,source_event_id,source_application_id,source_operation_id,order_no,draft_version,user_statement) VALUES (?,?,?,?,?,?,?,1,?::jsonb->'userStatement')")) {
+                st.setObject(1,remote);st.setString(2,SOURCE.producerId());st.setString(3,SOURCE.tenantId());st.setObject(4,event);
+                st.setObject(5,id(body,"applicationId"));st.setObject(6,id(body,"operationId"));st.setString(7,"A10001");st.setString(8,body);st.executeUpdate();
+            }
+            // 查询使用另一连接的已提交快照；没有为了“没查到”去等待或创建。
+            assertThat(lookup.lookup(SOURCE,event,body).state()).isEqualTo("NOT_OBSERVED");
+            owner.commit();
+            assertThat(lookup.lookup(SOURCE,event,body).receipt()).isEqualTo(ack);
+            assertThat(count("rx_after_sale_application")).isEqualTo(1);
+        }
+    }
+
+    HttpResponse<String> lookupHttp(String body,UUID event,String jwt)throws Exception {
+        var request=HttpRequest.newBuilder(URI.create(uri(port)+"/lookup")).timeout(Duration.ofSeconds(10)).header("Content-Type","application/json");
+        if(jwt!=null)request.header("Authorization","Bearer "+jwt);
+        return HTTP.send(request.header("Idempotency-Key",event.toString()).POST(HttpRequest.BodyPublishers.ofString(body)).build(),HttpResponse.BodyHandlers.ofString());
+    }
+
     /** 独立 JVM 使用同一个隔离测试库，但无共享内存；配置经环境传递，不进入命令输出。 */
     class Child implements AutoCloseable {
         final int port; final Process process;
@@ -349,11 +433,12 @@ class InboxIntegrationTest {
         }catch(Exception e){throw new IllegalStateException(e);}
     }
     /** 每次合法令牌都有不同 jti；签名无效例使用另一把私钥，其余例仍正确签名。 */
-    static String token(String kind) throws Exception {
+    static String token(String kind) throws Exception { return token(kind, "after-sale.ingest"); }
+    static String token(String kind, String scope) throws Exception {
         Instant now=Instant.now();var claims=new JWTClaimsSet.Builder().issuer(kind.equals("issuer") ? "bad-issuer" : "urn:yunshan:local-service-issuer")
                 .subject(kind.equals("subject") ? "other-producer" : "yunshan-customer-service")
                 .audience(kind.equals("audience") ? "wrong-service" : "after-sale-receiver")
-                .claim("scope",kind.equals("scope") ? "read" : "after-sale.ingest").jwtID(UUID.randomUUID().toString())
+                .claim("scope",kind.equals("scope") ? "read" : scope).jwtID(UUID.randomUUID().toString())
                 .issueTime(Date.from(now)).notBeforeTime(Date.from(kind.equals("future") ? now.plusSeconds(3600) : now.minusSeconds(10)));
         if(kind.equals("missingAudience"))claims.audience((java.util.List<String>) null);
         if(!kind.equals("missingExpiry"))claims.expirationTime(Date.from(kind.equals("expired") ? now.minusSeconds(300) : now.plusSeconds(300)));

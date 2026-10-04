@@ -80,9 +80,10 @@ class PersistentDraftRestartTest {
     final class Client {
         final String root;String csrf;
         final HttpClient http=HttpClient.newBuilder().cookieHandler(new CookieManager(null,CookiePolicy.ACCEPT_ALL)).build();
-        Client(int port)throws Exception{root="http://127.0.0.1:"+port;csrf=call("/internal/handoff/session","GET",null,200).path("csrfToken").asText();
+        Client(int port)throws Exception{this(port,"customer1001");}
+        Client(int port,String username)throws Exception{root="http://127.0.0.1:"+port;csrf=call("/internal/handoff/session","GET",null,200).path("csrfToken").asText();
             var response=http.send(HttpRequest.newBuilder(URI.create(root+"/internal/handoff/login")).header("Content-Type","application/x-www-form-urlencoded").header("X-CSRF-TOKEN",csrf)
-                .POST(HttpRequest.BodyPublishers.ofString("username=customer1001&password=process-test-only-password")).build(),HttpResponse.BodyHandlers.discarding());assertThat(response.statusCode()).isEqualTo(204);
+                .POST(HttpRequest.BodyPublishers.ofString("username="+username+"&password=process-test-only-password")).build(),HttpResponse.BodyHandlers.discarding());assertThat(response.statusCode()).isEqualTo(204);
             csrf=call("/internal/handoff/session","GET",null,200).path("csrfToken").asText();
         }
         JsonNode call(String path,String method,String body,int expected)throws Exception{var builder=HttpRequest.newBuilder(URI.create(root+path)).timeout(Duration.ofSeconds(20)).header("Content-Type","application/json");if(csrf!=null)builder.header("X-CSRF-TOKEN",csrf);

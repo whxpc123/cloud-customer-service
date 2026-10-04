@@ -1198,3 +1198,23 @@ GET http://127.0.0.1:18080/internal/draft-tasks/submission/operations/{{submitOp
 
 ### 当前账户全部历史事件的数量、延迟与领取次数分布
 GET http://127.0.0.1:18080/internal/draft-tasks/submission/delivery-summary
+
+### 第29章核查台；需要 support9001 或已明确配置 support:reconcile 的账户
+GET http://127.0.0.1:18080/internal/outbox-reconciliation
+
+### 沿用核查员登录 Cookie；客户和普通接待员不能查询此目录
+GET http://127.0.0.1:18080/api/support/outbox?status=REVIEW&page=1
+
+### 本地持久化指标，GET 不查询远端
+GET http://127.0.0.1:18080/api/support/outbox/summary
+
+### 从上面目录复制原事件号；不另造事件编号或修改原正文
+@reconcileEventId = 在此替换为原事件UUID
+GET http://127.0.0.1:18080/api/support/outbox/{{reconcileEventId}}
+
+### 明确发起一次核查；仅接受空对象，租户和操作人从当前会话确定
+POST http://127.0.0.1:18080/api/support/outbox/{{reconcileEventId}}/reconcile
+Content-Type: application/json
+X-CSRF-TOKEN: {{handoffCsrf}}
+
+{}

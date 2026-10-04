@@ -1,6 +1,8 @@
 package com.example.aftersalereceiver.inbox;
 
 import java.util.UUID;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.CacheControl;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.CodingErrorAction;
@@ -22,12 +24,14 @@ import static com.example.aftersalereceiver.inbox.InboxModels.*;
 public class InboxController {
 
     private final InboxApplicationService service;
+    private final InboxLookupService lookupService;
 
     private final String allowedSubject;
     private final TrustedSource source;
 
     public InboxController(
             InboxApplicationService service,
+            InboxLookupService lookupService,
 
             @Value("${app.ingress.producer-subject}")
             String allowedSubject,
@@ -39,6 +43,7 @@ public class InboxController {
             String tenantId) {
 
         this.service = service;
+        this.lookupService = lookupService;
         this.allowedSubject = allowedSubject;
         this.source = new TrustedSource(
                 producerId,
@@ -68,6 +73,23 @@ public class InboxController {
             );
         }
 
+        return service.receive(source, headerEventId, readBody(request));
+    }
+
+    /** POST 只为携带原正文进行核对；这个分支从不调用 receive，不创建业务。 */
+    @PostMapping(value = "/lookup", consumes = "application/json", produces = "application/json")
+    public ResponseEntity<InboxLookupService.Reply> lookup(@AuthenticationPrincipal Jwt jwt,
+            @RequestHeader("Idempotency-Key") UUID headerEventId, HttpServletRequest request) throws Exception {
+        if (jwt == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        if (!allowedSubject.equals(jwt.getSubject())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "PRODUCER_NOT_ALLOWED");
+        }
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(lookupService.lookup(source, headerEventId, readBody(request)));
+    }
+
+    /** 两个入口共用实际读取上限和严格 UTF-8，不能让查询入口绕过第28章保护。 */
+    private String readBody(HttpServletRequest request) throws Exception {
         // 既检查 Content-Length，也限制实际读取量，覆盖 chunked 和虚假的长度声明。
         // 最多持有 64 KiB + 1 字节；不会先让 StringHttpMessageConverter 读取整个大请求。
         if (request.getContentLengthLong() > InboxProtocol.MAX_BYTES) {
@@ -84,10 +106,6 @@ public class InboxController {
         } catch (CharacterCodingException error) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "INVALID_EVENT_ENCODING");
         }
-        return service.receive(
-                source,
-                headerEventId,
-                json
-        );
+        return json;
     }
 }

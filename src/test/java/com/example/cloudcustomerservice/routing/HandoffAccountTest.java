@@ -18,7 +18,13 @@ class HandoffAccountTest {
         var user=(HandoffPrincipal)new HandoffSecurityConfiguration().handoffUsers(env).loadUserByUsername("support9001");
         assertThat(user.actor().accountId()).isEqualTo(9001);assertThat(user.getPassword()).doesNotContain("only-test-long-password");
         assertThat(PasswordEncoderFactories.createDelegatingPasswordEncoder().matches("only-test-long-password",user.getPassword())).isTrue();
-        assertThat(user.getAuthorities()).extracting(a->a.getAuthority()).containsExactly("support:serve");
+        assertThat(user.getAuthorities()).extracting(a->a.getAuthority()).containsExactly("support:serve","support:reconcile");
+        // 第29章核查权限单独控制；撤销核查不影响接待，第二接待员默认无核查权。
+        env.withProperty("handoff.accounts.support9001.reconcile-enabled","false")
+           .withProperty("handoff.accounts.support9002.password","only-test-long-password");
+        var restricted=new HandoffSecurityConfiguration().handoffUsers(env);
+        assertThat(restricted.loadUserByUsername("support9001").getAuthorities()).extracting(a->a.getAuthority()).containsExactly("support:serve");
+        assertThat(restricted.loadUserByUsername("support9002").getAuthorities()).extracting(a->a.getAuthority()).containsExactly("support:serve");
     }
     @Test void weakConfiguredPasswordFailsStartup(){
         assertThatThrownBy(()->new HandoffSecurityConfiguration().handoffUsers(new MockEnvironment().withProperty("handoff.accounts.customer1001.password","short")))

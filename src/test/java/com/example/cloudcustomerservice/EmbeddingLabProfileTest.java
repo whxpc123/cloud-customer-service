@@ -54,6 +54,8 @@ class EmbeddingLabProfileTest {
         mvc.perform(get("/internal/query-transformation")).andExpect(status().isNotFound());
         mvc.perform(post("/internal/query-transformation/c/compress").contentType("application/json").content("{}")).andExpect(status().isNotFound());
         mvc.perform(get("/internal/embedding-lab")).andExpect(status().isNotFound());
+        mvc.perform(get("/internal/outbox-reconciliation")).andExpect(status().isNotFound());
+        mvc.perform(get("/api/support/outbox")).andExpect(status().isNotFound());
         mvc.perform(get("/internal/knowledge-admin")).andExpect(status().isNotFound());
         mvc.perform(get("/internal/knowledge-admin/documents")).andExpect(status().isNotFound());
         mvc.perform(post("/internal/knowledge-admin/evaluations").contentType("application/json").content("{}")).andExpect(status().isNotFound());

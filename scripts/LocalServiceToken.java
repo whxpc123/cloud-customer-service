@@ -37,7 +37,7 @@ public class LocalServiceToken {
         String header = "{\"alg\":\"RS256\",\"typ\":\"JWT\"}";
         String claims = """
                 {"iss":"urn:yunshan:local-service-issuer","sub":"yunshan-customer-service",
-                "aud":"after-sale-receiver","scope":"after-sale.ingest","jti":"%s",
+                "aud":"after-sale-receiver","scope":"after-sale.ingest after-sale.reconcile","jti":"%s",
                 "iat":%d,"nbf":%d,"exp":%d}
                 """.formatted(UUID.randomUUID(), now.getEpochSecond(), now.minusSeconds(5).getEpochSecond(), now.plusSeconds(8*3600).getEpochSecond());
         String input = URL.encodeToString(header.getBytes(StandardCharsets.UTF_8)) + "."

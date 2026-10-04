@@ -24,3 +24,26 @@ Idempotency-Key: {{eventId}}
   },
   "occurredAt": "2026-10-04T08:00:00+08:00"
 }
+
+### 第29章：只读查询同一事件；令牌需要 after-sale.reconcile scope
+# 保持上面的原始编号与原始正文；查不到不会创建，正文不同会返回冲突。
+POST {{receiver}}/integration/after-sales/applications/lookup
+Authorization: Bearer {{receiverToken}}
+Content-Type: application/json
+Idempotency-Key: {{eventId}}
+
+{
+  "schemaVersion": 1,
+  "eventId": "{{eventId}}",
+  "eventType": "AFTER_SALE_APPLICATION_CREATED",
+  "applicationId": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+  "operationId": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+  "tenantId": "tenant-yunshan",
+  "orderNo": "A10001",
+  "draftVersion": 1,
+  "userStatement": {
+    "userDescription": "本机合成样例：按钮按不动。",
+    "requestedHandling": "登记待审核申请，不退款。"
+  },
+  "occurredAt": "2026-10-04T08:00:00+08:00"
+}

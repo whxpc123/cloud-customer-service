@@ -1,6 +1,7 @@
 package com.example.cloudcustomerservice.outbox;
 
 import java.io.IOException;
+import com.example.cloudcustomerservice.reconcile.ReconcileModel;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.time.Duration;
@@ -198,4 +199,30 @@ public class RemoteAfterSaleClient {
             );
         }
     }
+    /** 只向固定查询子路径提交原事件；不会失败后回退到 deliver，也不会自动重发。 */
+    public ReconcileModel.Reply lookup(UUID eventId, String payload) {
+        URI lookupEndpoint = URI.create(endpoint.toASCIIString().replaceAll("/+$", "") + "/lookup");
+        try {
+            return client.post().uri(lookupEndpoint).contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON).header("Idempotency-Key", eventId.toString())
+                    .body(payload).exchange((request, response) -> {
+                        int status = response.getStatusCode().value();
+                        if (status != 200) throw new DeliveryFailure("LOOKUP_HTTP_" + status, false);
+                        byte[] bytes = response.getBody().readNBytes(65_537);
+                        if (bytes.length > 65_536) throw new DeliveryFailure("LOOKUP_RESPONSE_TOO_LARGE", false);
+                        try {
+                            // 查询回执是判定证据，拒绝重复键、未知字段和尾随对象，避免含混解释。
+                            return mapper.copy().enable(com.fasterxml.jackson.core.JsonParser.Feature.STRICT_DUPLICATE_DETECTION)
+                                    .enable(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+                                            com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+                                    .readValue(bytes, ReconcileModel.Reply.class);
+                        } catch (IOException error) {
+                            throw new DeliveryFailure("LOOKUP_INVALID_JSON", false);
+                        }
+                    });
+        } catch (ResourceAccessException error) {
+            throw new DeliveryFailure("LOOKUP_NETWORK_UNCONFIRMED", false);
+        }
+    }
+
 }
