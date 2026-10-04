@@ -81,3 +81,12 @@
 `ai.cs_outbox` 在申请创建事务中写入，eventId 和 payload 固定；(application_id,destination,event_type) 唯一，组合外键关联申请/操作/租户。租约领取和回执/重试各自短事务；网络在事务外。状态 PENDING/SENDING/DELIVERED/REVIEW，过期租约可重领，最多 8 次。表的索引用于到期待发和过期领取扫描。
 
 用户状态与统计只读、按申请的 tenantId/userId 过滤。没有公开的删除、换号、重置/补发接口。数据库管理员仍是特权主体，触发器不等于生产审计权限体系。V1～V8 迁移文件保持原样。
+
+
+## 第二十八章：独立接收数据库
+
+本章没有新增或改写客服库 V1～V9。接收服务的迁移放在 `after-sale-receiver/src/main/resources/db/migration/V1__receiver_inbox.sql`，使用独立数据库和独立 Flyway history。
+
+`rx_inbox` 按认证来源、租户和 eventId 唯一；PROCESSING 只在短事务内部存在，PROCESSED 要求完整回执与处理时间。`rx_after_sale_application` 的来源申请/操作唯一约束防止换事件号重复建单，组合外键指向同来源同租户 Inbox。登记、申请、回执同事务提交；不能独立提交“已见过消息”记录。
+
+接收端成功去重记录不随应用重启清空。历史保留、备份、归档后的重试合同需单独设计；没有公开清空或重置接口。参见[第二十八章](../../../../docs/chapters/28-inbox-receiver.md)。

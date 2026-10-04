@@ -1,0 +1,30 @@
+# 默认接入真实服务令牌签发方；没有配置凭证时启动失败，不退化成匿名接口。
+server:
+  port: ${RECEIVER_PORT:18083}
+  address: ${RECEIVER_ADDRESS:127.0.0.1}
+  error:
+    include-message: never
+    include-stacktrace: never
+spring:
+  application:
+    name: after-sale-receiver
+  datasource:
+    url: ${RECEIVER_JDBC_URL}
+    username: ${RECEIVER_DB_USER}
+    password: ${RECEIVER_DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 10
+      connection-timeout: 3000
+  flyway:
+    enabled: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${SERVICE_TOKEN_ISSUER}
+          audiences: [after-sale-receiver]
+app:
+  ingress:
+    producer-subject: yunshan-customer-service
+    producer-id: yunshan-customer-service
+    tenant-id: tenant-yunshan

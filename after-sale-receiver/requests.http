@@ -1,0 +1,26 @@
+### 接收端只开放服务 Bearer POST，不使用客服页面 Cookie。
+# receiverToken 在 IDEA 的 http-client.private.env.json 中设置，禁止提交真实令牌。
+# 重复执行必须保持事件、申请、操作和正文全部不变；换号不能绕过业务唯一约束。
+@receiver = http://127.0.0.1:18083
+@eventId = aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa
+
+POST {{receiver}}/integration/after-sales/applications
+Authorization: Bearer {{receiverToken}}
+Content-Type: application/json
+Idempotency-Key: {{eventId}}
+
+{
+  "schemaVersion": 1,
+  "eventId": "{{eventId}}",
+  "eventType": "AFTER_SALE_APPLICATION_CREATED",
+  "applicationId": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+  "operationId": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+  "tenantId": "tenant-yunshan",
+  "orderNo": "A10001",
+  "draftVersion": 1,
+  "userStatement": {
+    "userDescription": "本机合成样例：按钮按不动。",
+    "requestedHandling": "登记待审核申请，不退款。"
+  },
+  "occurredAt": "2026-10-04T08:00:00+08:00"
+}

@@ -2,9 +2,9 @@
 
 根据《第一章：老板下午要看的 AI 客服》实现的 Java 学习项目。后续章节在这个项目上逐步增加能力，每章的改动与验收方式记录在 `docs/chapters/`。
 
-当前进度：**第二十七章——Transactional Outbox 可靠投递**。明确批准同步范围后，本地申请和待发事件同事务保存；后台租约领取、退避重试并核对持久化回执，页面分别显示本地受理和远端同步。历史操作不自动外发。
+当前进度：**第二十八章——Inbox 与接收方幂等受理**。新增独立售后服务和独立数据库，验证服务身份后，在同一事务中登记事件、创建待审核申请、保存固定回执；重复事件回放原结果，冲突请求拒绝。客服端口保持 18080，接收端口 18083。
 
-章节记录：[第一章](docs/chapters/01-first-chat.md) · [第二章](docs/chapters/02-system-prompt.md) · [第三章](docs/chapters/03-structured-output.md) · [第四章](docs/chapters/04-chat-memory.md) · [第五章](docs/chapters/05-tool-calling.md) · [第六章](docs/chapters/06-embedding-lab.md) · [第七章](docs/chapters/07-pgvector-knowledge.md) · [第八章](docs/chapters/08-document-etl.md) · [第九章](docs/chapters/09-manual-rag.md) · [第十章](docs/chapters/10-advisor-chain.md) · [第十章补充：知识管理台](docs/chapters/10-knowledge-management.md) · [第十一章](docs/chapters/11-query-transformation.md) · [第十二章](docs/chapters/12-query-expansion.md) · [第十三章](docs/chapters/13-reranking.md) · [第十四章](docs/chapters/14-hybrid-search.md) · [第十五章](docs/chapters/15-after-sale-precheck.md) · [第十六章](docs/chapters/16-customer-routing.md) · [第十七章](docs/chapters/17-human-handoff.md) · [第十八章](docs/chapters/18-sse-streaming.md) · [第十九章](docs/chapters/19-stage1-acceptance.md) · [第二十章](docs/chapters/20-bounded-draft-agent.md) · [第二十一章](docs/chapters/21-in-process-task-memory.md) · [第二十二章](docs/chapters/22-persistent-task-checkpoints.md) · [第二十三章](docs/chapters/23-immutable-draft-confirmation.md) · [第二十四章](docs/chapters/24-human-in-the-loop.md) · [第二十五章](docs/chapters/25-executable-submission-graph.md) · [第二十六章](docs/chapters/26-idempotent-submission.md) · [第二十七章](docs/chapters/27-transactional-outbox.md)。
+章节记录：[第一章](docs/chapters/01-first-chat.md) · [第二章](docs/chapters/02-system-prompt.md) · [第三章](docs/chapters/03-structured-output.md) · [第四章](docs/chapters/04-chat-memory.md) · [第五章](docs/chapters/05-tool-calling.md) · [第六章](docs/chapters/06-embedding-lab.md) · [第七章](docs/chapters/07-pgvector-knowledge.md) · [第八章](docs/chapters/08-document-etl.md) · [第九章](docs/chapters/09-manual-rag.md) · [第十章](docs/chapters/10-advisor-chain.md) · [第十章补充：知识管理台](docs/chapters/10-knowledge-management.md) · [第十一章](docs/chapters/11-query-transformation.md) · [第十二章](docs/chapters/12-query-expansion.md) · [第十三章](docs/chapters/13-reranking.md) · [第十四章](docs/chapters/14-hybrid-search.md) · [第十五章](docs/chapters/15-after-sale-precheck.md) · [第十六章](docs/chapters/16-customer-routing.md) · [第十七章](docs/chapters/17-human-handoff.md) · [第十八章](docs/chapters/18-sse-streaming.md) · [第十九章](docs/chapters/19-stage1-acceptance.md) · [第二十章](docs/chapters/20-bounded-draft-agent.md) · [第二十一章](docs/chapters/21-in-process-task-memory.md) · [第二十二章](docs/chapters/22-persistent-task-checkpoints.md) · [第二十三章](docs/chapters/23-immutable-draft-confirmation.md) · [第二十四章](docs/chapters/24-human-in-the-loop.md) · [第二十五章](docs/chapters/25-executable-submission-graph.md) · [第二十六章](docs/chapters/26-idempotent-submission.md) · [第二十七章](docs/chapters/27-transactional-outbox.md) · [第二十八章](docs/chapters/28-inbox-receiver.md)。
 
 每章对应独立 Git 提交和 `chapter-NN` 标签，具体变化见 [CHANGELOG](CHANGELOG.md)。第 1～3 章历史根据已实现代码于 2026-09-12 补建；后续每章验收完成后提交并推送。
 
@@ -38,6 +38,7 @@
 | [chapter-25](https://github.com/whxpc123/cloud-customer-service/tree/chapter-25) | StateGraph 条件分支、状态策略、真实轨迹与路线实验页 | [与第二十四章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-24...chapter-25) |
 | [chapter-26](https://github.com/whxpc123/cloud-customer-service/tree/chapter-26) | 稳定操作编号、持久化批准、同库事务创建待审核申请与回执重放 | [与第二十五章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-25...chapter-26) |
 | [chapter-27](https://github.com/whxpc123/cloud-customer-service/tree/chapter-27) | 固定同步授权、同事务 Outbox、领取租约、退避重试与远端持久化回执 | [与第二十六章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-26...chapter-27) |
+| [chapter-28](https://github.com/whxpc123/cloud-customer-service/tree/chapter-28) | 独立接收服务、JWT 来源认证、Inbox 同事务建单、固定回执回放及业务防重 | [与第二十七章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-27...chapter-28) |
 
 在 GitHub 选择对应标签查看该章完整代码，在 Compare 页面选择相邻标签查看改动。阅读历史版本可以使用独立工作目录，例如 `git worktree add ../chapter-01-view chapter-01`，避免覆盖当前开发目录。
 
@@ -122,7 +123,7 @@ curl --get 'http://localhost:18080/api/chat' \
 java -jar target/cloud-customer-service-0.0.1-SNAPSHOT.jar
 ```
 
-自动测试在需要调用的路径替换 ChatModel / EmbeddingModel，不访问百炼、不需要真实 Key，覆盖聊天回归、结构化转换、非法字段、异常兜底、角色隔离和日志。当前全量范围有 544 项 Java 测试，其中 156 项需要真实 PostgreSQL；通过 `RUN_PGVECTOR_TESTS=true RUN_ACCEPTANCE_TESTS=true ./mvnw package` 开启全部数据库验证，未启用时明确跳过。新增测试不需要真实模型 Key。前端 SSE 解析另有 122 项测试，通过 `node --test scripts/tests/sse-client.test.mjs` 运行（仅此开发测试需要 Node，应用启动不需要）。覆盖工具执行、会话隔离、向量数学、批次边界、知识过滤、重复导入及异常保护。集成测试步骤见第七章文档。启动应用和运行 JAR 仍需真实 `DASHSCOPE_API_KEY`。
+自动测试在需要调用的路径替换 ChatModel / EmbeddingModel，不访问百炼、不需要真实 Key，覆盖聊天回归、结构化转换、非法字段、异常兜底、角色隔离和日志。主项目全量范围有 544 项 Java 测试，其中 156 项需要真实 PostgreSQL；通过 `RUN_PGVECTOR_TESTS=true RUN_ACCEPTANCE_TESTS=true ./mvnw package` 开启全部数据库验证，未启用时明确跳过。新增测试不需要真实模型 Key。前端 SSE 解析另有 122 项测试，通过 `node --test scripts/tests/sse-client.test.mjs` 运行（仅此开发测试需要 Node，应用启动不需要）。覆盖工具执行、会话隔离、向量数学、批次边界、知识过滤、重复导入及异常保护。集成测试步骤见第七章文档。启动应用和运行 JAR 仍需真实 `DASHSCOPE_API_KEY`。
 
 ## 目录与章节对应
 
@@ -461,4 +462,17 @@ Java 代码与详细边界见[第二十五章说明](docs/chapters/25-executable
 
 默认 `local,knowledge` 只保存队列。发送须显式增加 `outbox-delivery` 并配置固定 endpoint/token；新增 IDEA 运行配置 `CloudCustomerServiceOutboxDemo` 可配合 `scripts/start-outbox-demo.sh --drop-first-ack` 验证“先落盘、丢第一次回执、重发获得同一结果”。本机模拟接收器不是正式售后平台或生产 Inbox。完整步骤、授权字段和边界见[第二十七章说明](docs/chapters/27-transactional-outbox.md)。
 
-验证：544 项 Java 测试全部通过（含 156 项真实数据库验证）；停用/恢复投递、首次回执丢失后的幂等重发、三 JVM 崩溃恢复、浏览器双回执及 390 px 无横向溢出均已验收。当前主程序 18080 和教学接收器 18081 由终端运行；IDEA 项目切换未生效，本次未验证 IDEA 内启动。
+验证：544 项 Java 测试全部通过（含 156 项真实数据库验证）；停用/恢复投递、首次回执丢失后的幂等重发、三 JVM 崩溃恢复、浏览器双回执及 390 px 无横向溢出均已验收。第 27 章验收时，主程序 18080 和教学接收器 18081 由终端运行；IDEA 项目切换未生效，本次未验证 IDEA 内启动。
+
+
+## 第二十八章：接收方 Inbox 与固定回执回放
+
+独立项目位于 `after-sale-receiver/`：接收库 `after_sale_receiver` 保存 `rx_inbox` 与 `rx_after_sale_application`，不使用客服数据库或模型。来源身份通过真实 JWT 验证后固定映射；同一事件的正文一致才返回原 PERSISTED 回执。换 eventId 复用来源申请/operationId 返回 409，事务失败则两表一起回滚。
+
+在仓库根目录先执行 `./scripts/prepare-receiver-local.sh`，再执行 `./scripts/start-after-sale-receiver.sh` 启动 18083。客服 IDEA 配置选 `CloudCustomerServiceInbox`，仍用 18080；接收子项目单独导入 IDEA 并运行 `AfterSaleReceiverApplication`。本机签发工具只写 `.local`，令牌 8 小时有效；真实环境使用实际服务身份提供方。
+
+页面沿用 <http://127.0.0.1:18080/internal/draft-tasks/submission>，补充重复事件和原回执说明。第 27 章文件模拟器、历史回执与默认不开启投递的运行方式保留。新接收库不接管旧演示结果，不补发历史申请。
+
+子项目须单独执行 `RUN_RECEIVER_TESTS=true ./mvnw -f after-sale-receiver/pom.xml package`，不能把根项目测试通过当成接收服务也验证完毕。完整运行和验证记录见[第二十八章说明](docs/chapters/28-inbox-receiver.md)。
+
+本章已验证：主项目 544 项 + 接收项目 49 项，共 **593 项测试通过**（183 项真实数据库）；浏览器新建申请完成两库投递，再回放三次仍只有一份接收方申请。本次服务通过终端运行，IDEA 菜单切换未生效，未宣称已在 IDEA 内启动。

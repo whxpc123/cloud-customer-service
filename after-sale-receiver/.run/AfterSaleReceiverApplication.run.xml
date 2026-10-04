@@ -1,0 +1,11 @@
+<!-- 将独立 pom.xml 作为 IDEA 项目打开，准备本地配置后可直接运行，无模型 Key。 -->
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="AfterSaleReceiverApplication" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="com.example.aftersalereceiver.AfterSaleReceiverApplication" />
+    <option name="PROGRAM_PARAMETERS" value="--spring.profiles.active=local-jwt --server.port=18083 --spring.config.additional-location=file:../.local/receiver-database.properties,file:../.local/receiver-jwt.properties" />
+    <option name="VM_PARAMETERS" value="-DsocksNonProxyHosts=localhost|127.*|[::1]" />
+    <module name="after-sale-receiver" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <method v="2"><option name="Make" enabled="true" /></method>
+  </configuration>
+</component>
