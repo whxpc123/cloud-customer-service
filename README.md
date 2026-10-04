@@ -40,6 +40,7 @@
 | [chapter-27](https://github.com/whxpc123/cloud-customer-service/tree/chapter-27) | 固定同步授权、同事务 Outbox、领取租约、退避重试与远端持久化回执 | [与第二十六章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-26...chapter-27) |
 | [chapter-28](https://github.com/whxpc123/cloud-customer-service/tree/chapter-28) | 独立接收服务、JWT 来源认证、Inbox 同事务建单、固定回执回放及业务防重 | [与第二十七章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-27...chapter-28) |
 | [chapter-29](https://github.com/whxpc123/cloud-customer-service/tree/chapter-29) | 原事件只读查询、证据校验、核查审计、版本防护与原子补记送达 | [与第二十八章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-28...chapter-29) |
+| [chapter-30](https://github.com/whxpc123/cloud-customer-service/tree/chapter-30) | 第二阶段全链路验收、真实回执故障注入、两库证据与报告台 | [与第二十九章比较](https://github.com/whxpc123/cloud-customer-service/compare/chapter-29...chapter-30) |
 
 在 GitHub 选择对应标签查看该章完整代码，在 Compare 页面选择相邻标签查看改动。阅读历史版本可以使用独立工作目录，例如 `git worktree add ../chapter-01-view chapter-01`，避免覆盖当前开发目录。
 
@@ -488,3 +489,14 @@ Java 代码与详细边界见[第二十五章说明](docs/chapters/25-executable
 原回执匹配才补记 DELIVERED；查询异常、未观察到结果、正文冲突都不重发。每个新鲜观察推进核查版本，晚到的旧结果只记 STALE。审计与状态修复同事务，进程中断留下 STARTED，重启不自动创建或核查。补记送达不代表审核通过或退款。
 
 本章完整构建：主项目 583 项 + 接收服务 65 项，共 **648 项测试通过**，含 212 项真实数据库验证。双服务故障联调实测核查后仍只有一份远端申请，390 px 页面通过；当前两服务由终端运行，IDEA 项目切换未生效。
+
+
+## 第三十章：整项任务的第二阶段验收
+
+打开[任务验收台](http://127.0.0.1:18080/stage-two.html)，查看四个里程碑、身份链、硬门槛与六组真实模型样本。页面读取随版本保存的合成验收记录，也可载入本地 JSON；它不是实时监控，不会自动运行模型或再次提交。
+
+本章用两套生产 JAR 和两套独立数据库实测：接收端已持久化后，连续八次成功回执被代理替换为503；发送方经过生产退避进入REVIEW，实际重启后只查询原事件一次，补记DELIVERED。两端始终各一张待审核申请，V2正文和身份链的55项断言全部通过，没有执行退款。
+
+最终回归：发送端585项、接收端65项，共 **650项 Java 测试通过**，另有15项纯JDK代理合同测试、21项Python测试通过。报告导入、筛选、刷新及390px手机布局已验收。6组真实Qwen样本的本轮安全约束和Codex语义复核通过；人工业务签字未执行。完整Agent/HITL正式提交接线和生产发布仍为BLOCKED，不把已实现HTTP链路的通过扩大为完整上线批准。
+
+复测：先构建两套JAR，再运行 `python3 scripts/accept-stage2.py --live`。同时或之后执行两套Maven回归，再用 `scripts/summarize-stage2.py` 汇总本轮新鲜证据；具体顺序、故障恢复、源码入口和边界见[第三十章说明](docs/chapters/30-stage2-acceptance.md)与[公开验收摘要](docs/acceptance/chapter-30-summary.json)。当前18080和18083由终端启动；IDEA项目菜单自动操作未生效，本次未验证IDEA内启动。

@@ -156,6 +156,36 @@ class SubmissionPersistenceTest {
             finally{connection.commit();}return List.of(a.get(8,TimeUnit.SECONDS),b.get(8,TimeUnit.SECONDS));
         }finally{pool.shutdownNow();}
     }
+    /** 第30章交叉竞争：实际进入行锁等待后才释放；提交与新轮领取最多一个成功。 */
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(booleans={true,false})
+    void submissionRacingNewRunHasOnlyOneBusinessWinner(boolean submitFirst)throws Exception {
+        UUID id=confirmed();var op=approved(id);long version=repository.owned(actor,id).version();
+        Callable<String> submit=()->{try{service.submit(actor,op.operationId());return "CREATED";}
+            catch(ResponseStatusException conflict){assertThat(conflict.getStatusCode().value()).isEqualTo(409);return "BLOCKED";}};
+        Callable<String> claim=()->{try{repository.claim(actor,id,version,0,UUID.randomUUID());return "CLAIMED";}
+            catch(ResponseStatusException conflict){assertThat(conflict.getStatusCode().value()).isEqualTo(409);return "BLOCKED";}};
+        var pool=Executors.newFixedThreadPool(2);
+        try(var connection=dataSource.getConnection()){
+            connection.setAutoCommit(false);
+            try(var query=connection.prepareStatement("select task_id from ai.cs_draft_task where task_id=? for update")){
+                query.setObject(1,id);query.executeQuery().close();
+            }
+            var first=pool.submit(submitFirst?submit:claim);
+            await().atMost(Duration.ofSeconds(2)).until(()->jdbc.queryForObject(
+                "select count(*) from pg_stat_activity where datname=current_database() and wait_event_type='Lock'",Long.class)>=1);
+            var second=pool.submit(submitFirst?claim:submit);
+            try{await().atMost(Duration.ofSeconds(2)).until(()->jdbc.queryForObject(
+                "select count(*) from pg_stat_activity where datname=current_database() and wait_event_type='Lock'",Long.class)>=2);}
+            finally{connection.commit();}
+            var outcomes=List.of(first.get(8,TimeUnit.SECONDS),second.get(8,TimeUnit.SECONDS));
+            assertThat(outcomes).containsExactlyInAnyOrder(submitFirst?"CREATED":"CLAIMED","BLOCKED");
+            assertThat(count(id)).isEqualTo(submitFirst?1:0);
+            assertThat(repository.owned(actor,id).status()).isEqualTo(submitFirst?"CLOSED":"RUNNING");
+            // 新轮领取先赢时旧批准仍保留为历史，但不能被首次执行消费。
+            if(!submitFirst)assertThat(service.detail(actor,op.operationId()).firstExecutionEligible()).isFalse();
+        }finally{pool.shutdownNow();}
+    }
     @Test void uniqueConstraintsAndImmutableTargetRejectBypass()throws Exception{
         UUID id=confirmed();var op=approved(id);var receipt=service.submit(actor,op.operationId());
         assertThatThrownBy(()->jdbc.update("update ai.cs_submit_operation set draft_version=2 where operation_id=?",op.operationId())).isInstanceOf(org.springframework.dao.DataAccessException.class);

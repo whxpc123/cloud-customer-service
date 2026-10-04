@@ -29,12 +29,18 @@ class HitlServiceLimitsTest {
         var access=new Access(actor,id->new HandoffModel.Receipt(id,null,HandoffModel.Mode.BOT,0,null,null,null,null,""));
         when(model.getDefaultOptions()).thenReturn(com.alibaba.cloud.ai.dashscope.chat.DashScopeChatOptions.builder().model("offline-slow").build());
         var entered=new CountDownLatch(2);var release=new CountDownLatch(1);var calls=new AtomicInteger();
-        when(model.call(any(Prompt.class))).thenAnswer(i->{calls.incrementAndGet();entered.countDown();release.await(10,TimeUnit.SECONDS);
+        when(model.call(any(Prompt.class))).thenAnswer(i->{calls.incrementAndGet();entered.countDown();release.await(30,TimeUnit.SECONDS);
             return new ChatResponse(List.of(new Generation(AssistantMessage.builder().content("").toolCalls(List.of(new AssistantMessage.ToolCall("late","function",SubmissionProbe.TOOL_NAME,
                 "{\"taskId\":\""+task+"\",\"draftVersion\":1}"))).build())));});
-        var service=new HitlLabService(model,new ObjectMapper(),drafts,store,false,Clock.systemUTC(),Duration.ofMillis(250),Duration.ofMinutes(10));
+        var service=new HitlLabService(model,new ObjectMapper(),drafts,store,false,Clock.systemUTC(),Duration.ofSeconds(5),Duration.ofMinutes(10));
+        // 先用屏障证明两个模型工作者已进入，再等待调用超时。
+        // 原测试把框架冷启动也塞进250ms预算，满负载时模型未开始便超时，无法验证“迟到工作者”。
+        var callers=Executors.newFixedThreadPool(2);
         try {
-            var one=service.start(access,task,1L,4L);var two=service.start(access,task,1L,4L);assertThat(entered.await(2,TimeUnit.SECONDS)).isTrue();
+            var first=callers.submit(()->service.start(access,task,1L,4L));
+            var second=callers.submit(()->service.start(access,task,1L,4L));
+            assertThat(entered.await(10,TimeUnit.SECONDS)).as("两个模型工作者确实进入阻塞点").isTrue();
+            var one=first.get(10,TimeUnit.SECONDS);var two=second.get(10,TimeUnit.SECONDS);
             var three=service.start(access,task,1L,4L);assertThat(calls).hasValue(2);
             for(var view:List.of(one,two,three)){assertThat(view.phase()).isEqualTo(HitlLabSession.Phase.RECOVERY_REQUIRED);assertThat(view.card()).isNull();assertThat(view.simulatedExecutions()).isZero();}
             release.countDown();
@@ -43,7 +49,7 @@ class HitlServiceLimitsTest {
             try(var restarted=new CloseableService(model,drafts,store)){
                 assertThatThrownBy(()->restarted.service.get(access,one.executionId())).hasMessageContaining("404");
             }
-        }finally{release.countDown();service.close();}
+        }finally{release.countDown();callers.shutdownNow();service.close();}
     }
     /** 新 Service 没有重建旧 MemorySaver；不会因 taskId 仍存在就伪造原审批。 */
     record CloseableService(HitlLabService service) implements AutoCloseable {
